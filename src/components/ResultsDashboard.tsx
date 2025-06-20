@@ -1,3 +1,4 @@
+
 import { MedicineResult } from "@/types/medicine";
 import { MedicineCard } from "./MedicineCard";
 import { Loader2, Package, Globe, Database, Brain } from "lucide-react";
@@ -59,7 +60,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
             <span>Global Coverage</span>
           </div>
         </div>
-        <div className="text-center">
+        <div className="text-center mt-8">
           <p className="text-gray-600 flex items-center justify-center gap-2">
             made with 
             <img 
