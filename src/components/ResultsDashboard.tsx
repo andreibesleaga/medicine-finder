@@ -1,15 +1,15 @@
-
 import { MedicineResult } from "@/types/medicine";
 import { MedicineCard } from "./MedicineCard";
-import { Loader2, Package, Globe, Database, Brain } from "lucide-react";
+import { Loader2, Package, Globe, Database, Brain, RotateCcw } from "lucide-react";
 
 interface ResultsDashboardProps {
   results: MedicineResult[];
   isLoading: boolean;
   searchTerm: string;
+  onReset?: () => void;
 }
 
-export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDashboardProps) => {
+export const ResultsDashboard = ({ results, isLoading, searchTerm, onReset }: ResultsDashboardProps) => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-4">
@@ -143,6 +143,18 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
         <p className="text-gray-500 max-w-md mx-auto mb-4">
           Enter an active drug ingredient above to discover brand names and equivalents worldwide
         </p>
+        
+        {/* Reset Link */}
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6 text-sm font-medium"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Search
+          </button>
+        )}
+        
         <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-blue-500" />
