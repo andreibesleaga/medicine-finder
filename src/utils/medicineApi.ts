@@ -1,4 +1,3 @@
-
 import { MedicineResult, RxNormResponse } from "@/types/medicine";
 
 const RXNORM_BASE_URL = "https://rxnav.nlm.nih.gov/REST";
@@ -241,7 +240,7 @@ const queryGlobalPharmacyDatabase = async (term: string, country?: string): Prom
       { id: "ai-aspirina-mx", brandName: "Aspirina", activeIngredient: "aspirin", country: "Mexico", manufacturer: "Bayer", source: 'ai' },
       { id: "ai-aspirina-ar", brandName: "Aspirina", activeIngredient: "aspirin", country: "Argentina", manufacturer: "Bayer", source: 'ai' },
       { id: "ai-aspirina-br", brandName: "Aspirina", activeIngredient: "aspirin", country: "Brazil", manufacturer: "Bayer", source: 'ai' },
-      { id: "ai-aspirina-cl", bran dName: "Aspirina", activeIngredient: "aspirin", country: "Chile", manufacturer: "Bayer", source: 'ai' },
+      { id: "ai-aspirina-cl", brandName: "Aspirina", activeIngredient: "aspirin", country: "Chile", manufacturer: "Bayer", source: 'ai' },
       { id: "ai-aspirina-co", brandName: "Aspirina", activeIngredient: "aspirin", country: "Colombia", manufacturer: "Bayer", source: 'ai' },
       { id: "ai-aspirin-se", brandName: "Aspirin", activeIngredient: "aspirin", country: "Sweden", manufacturer: "Various", source: 'ai' },
       { id: "ai-aspirin-no", brandName: "Aspirin", activeIngredient: "aspirin", country: "Norway", manufacturer: "Various", source: 'ai' },
@@ -574,8 +573,7 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
       }
       
       // Then sort by country (US first, then alphabetically)
-      if (a.country === "United States" &&
-Name !== "United States") return -1;
+      if (a.country === "United States" && b.country !== "United States") return -1;
       if (b.country === "United States" && a.country !== "United States") return 1;
       
       return a.country.localeCompare(b.country);
