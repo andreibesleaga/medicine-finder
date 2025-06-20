@@ -37,7 +37,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
 
   if (!searchTerm && results.length === 0) {
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-8">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
           <Package className="w-10 h-10 text-gray-400" />
         </div>
