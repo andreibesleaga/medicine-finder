@@ -23,7 +23,8 @@ This project is built with:
 
 
 
-## .env API keys, for AI searches to work
+
+### .env API keys, for AI searches to work
 ### API Keys for Medicine Search
 ### Copy this file to .env.local and add your actual API keys
 
