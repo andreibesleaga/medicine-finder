@@ -1,6 +1,5 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Globe } from "lucide-react";
 import { countries } from "@/constants/countries";
 
@@ -11,9 +10,8 @@ interface CountrySelectorProps {
 }
 
 export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelectorProps) => {
-  const regions = countries.filter(country => country.isRegion);
-  const countriesOnly = countries.filter(country => !country.isRegion && country.value !== "all");
   const allOption = countries.find(country => country.value === "all");
+  const countriesOnly = countries.filter(country => !country.isRegion && country.value !== "all");
 
   return (
     <div className="min-w-48">
@@ -25,22 +23,10 @@ export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelec
         <SelectContent>
           {/* All Countries option */}
           {allOption && (
-            <>
-              <SelectItem key={allOption.value} value={allOption.value}>
-                {allOption.label}
-              </SelectItem>
-              <Separator className="my-2" />
-            </>
-          )}
-          
-          {/* Regions */}
-          {regions.map((region) => (
-            <SelectItem key={region.value} value={region.value}>
-              {region.label}
+            <SelectItem key={allOption.value} value={allOption.value}>
+              {allOption.label}
             </SelectItem>
-          ))}
-          
-          <Separator className="my-2" />
+          )}
           
           {/* Individual Countries */}
           {countriesOnly.map((country) => (
