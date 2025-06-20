@@ -63,7 +63,7 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
       });
     }
 
-    // Enhanced deduplication with better matching
+    // Enhanced deduplication with better matching and unique IDs
     const uniqueResults = allResults.filter((result, index, array) => {
       const normalizedBrand = result.brandName.toLowerCase().trim().replace(/[^\w\s]/g, '');
       const normalizedIngredient = result.activeIngredient.toLowerCase().trim();
@@ -82,11 +82,17 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
       return firstIndex === index;
     });
 
+    // Ensure unique IDs for React keys
+    const resultsWithUniqueIds = uniqueResults.map((result, index) => ({
+      ...result,
+      id: `${result.source}-${result.brandName.toLowerCase().replace(/[^\w]/g, '-')}-${result.country.toLowerCase().replace(/[^\w]/g, '-')}-${index}`
+    }));
+
     // Enhanced sorting with better prioritization
-    const sortedResults = uniqueResults.sort((a, b) => {
+    const sortedResults = resultsWithUniqueIds.sort((a, b) => {
       // Prioritize local database results
-      const aIsLocal = localResults.some(lr => lr.id === a.id);
-      const bIsLocal = localResults.some(lr => lr.id === b.id);
+      const aIsLocal = localResults.some(lr => lr.brandName === a.brandName && lr.country === a.country);
+      const bIsLocal = localResults.some(lr => lr.brandName === b.brandName && lr.country === b.country);
       
       if (aIsLocal && !bIsLocal) return -1;
       if (bIsLocal && !aIsLocal) return 1;

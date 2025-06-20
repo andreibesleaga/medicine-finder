@@ -33,7 +33,7 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       { name: "Wikidata", fn: () => queryWikidataAPI(term, country), timeout: 6000 }
     ];
 
-    // AI Services with fallbacks
+    // AI Services with fallbacks - Fixed parameter count
     const aiServiceQueries = [
       { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
       { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
@@ -87,14 +87,13 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
 
     console.log(`API Summary: ${successCount} successful, ${errorCount} failed out of ${allQueries.length} total`);
 
-    // Enhanced deduplication
-    const uniqueResults = results.filter((result, index, array) =>
-      array.findIndex(r =>
-        r.brandName.toLowerCase().trim() === result.brandName.toLowerCase().trim() &&
-        r.country === result.country &&
-        r.activeIngredient.toLowerCase() === result.activeIngredient.toLowerCase()
-      ) === index
-    );
+    // Enhanced deduplication with better unique key generation
+    const uniqueResults = results.filter((result, index, array) => {
+      const key = `${result.brandName.toLowerCase().trim()}-${result.country.toLowerCase()}-${result.activeIngredient.toLowerCase()}`;
+      return array.findIndex(r => 
+        `${r.brandName.toLowerCase().trim()}-${r.country.toLowerCase()}-${r.activeIngredient.toLowerCase()}` === key
+      ) === index;
+    });
 
     console.log("Total unique AI results:", uniqueResults.length);
     
