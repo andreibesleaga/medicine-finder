@@ -1,0 +1,96 @@
+
+import { MedicineResult } from "@/types/medicine";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Building, Pill, Database } from "lucide-react";
+
+interface MedicineCardProps {
+  medicine: MedicineResult;
+}
+
+export const MedicineCard = ({ medicine }: MedicineCardProps) => {
+  const getSourceBadge = (source: string) => {
+    switch (source) {
+      case 'rxnorm':
+        return <Badge variant="default" className="bg-blue-100 text-blue-800">RxNorm</Badge>;
+      case 'ai':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">AI Enhanced</Badge>;
+      case 'both':
+        return <Badge variant="outline" className="bg-green-100 text-green-800">Verified</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
+
+  return (
+    <Card className="hover:shadow-lg transition-shadow duration-200 border-gray-200">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-lg font-semibold text-gray-900 leading-tight">
+            {medicine.brandName}
+          </CardTitle>
+          {getSourceBadge(medicine.source)}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-3">
+        {/* Active Ingredient */}
+        <div className="flex items-center gap-2 text-sm">
+          <Pill className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span className="text-gray-600">Active:</span>
+          <span className="font-medium text-gray-900">{medicine.activeIngredient}</span>
+        </div>
+
+        {/* Country */}
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span className="text-gray-600">Country:</span>
+          <span className="font-medium text-gray-900">{medicine.country}</span>
+        </div>
+
+        {/* Manufacturer */}
+        {medicine.manufacturer && (
+          <div className="flex items-center gap-2 text-sm">
+            <Building className="w-4 h-4 text-orange-600 flex-shrink-0" />
+            <span className="text-gray-600">Manufacturer:</span>
+            <span className="font-medium text-gray-900 text-xs">{medicine.manufacturer}</span>
+          </div>
+        )}
+
+        {/* Dosage Form & Strength */}
+        {(medicine.dosageForm || medicine.strength) && (
+          <div className="flex items-start gap-2 text-sm">
+            <Database className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              {medicine.dosageForm && (
+                <div>
+                  <span className="text-gray-600">Form:</span>
+                  <span className="font-medium text-gray-900 ml-1">{medicine.dosageForm}</span>
+                </div>
+              )}
+              {medicine.strength && (
+                <div>
+                  <span className="text-gray-600">Strength:</span>
+                  <span className="font-medium text-gray-900 ml-1">{medicine.strength}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* RxNorm Data */}
+        {medicine.rxNormData && (
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="text-xs text-gray-500 mb-1">RxNorm Details:</div>
+            <div className="text-xs space-y-1">
+              <div><span className="text-gray-600">RXCUI:</span> <span className="font-mono">{medicine.rxNormData.rxcui}</span></div>
+              {medicine.rxNormData.tty && (
+                <div><span className="text-gray-600">Type:</span> <span>{medicine.rxNormData.tty}</span></div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
