@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Loader2, Globe } from "lucide-react";
 import { searchMedicines } from "@/utils/medicineApi";
 import { MedicineResult } from "@/types/medicine";
 import { useToast } from "@/hooks/use-toast";
@@ -12,8 +13,29 @@ interface SearchInputProps {
   onLoadingChange: (loading: boolean) => void;
 }
 
+const countries = [
+  { value: "all", label: "All Countries" },
+  { value: "United States", label: "United States" },
+  { value: "Canada", label: "Canada" },
+  { value: "United Kingdom", label: "United Kingdom" },
+  { value: "Germany", label: "Germany" },
+  { value: "France", label: "France" },
+  { value: "Australia", label: "Australia" },
+  { value: "India", label: "India" },
+  { value: "Brazil", label: "Brazil" },
+  { value: "Italy", label: "Italy" },
+  { value: "Spain", label: "Spain" },
+  { value: "Mexico", label: "Mexico" },
+  { value: "South Africa", label: "South Africa" },
+  { value: "Pakistan", label: "Pakistan" },
+  { value: "Thailand", label: "Thailand" },
+  { value: "Egypt", label: "Egypt" },
+  { value: "United Arab Emirates", label: "UAE" }
+];
+
 export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -27,19 +49,23 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
       return;
     }
 
-    console.log("Starting search for:", searchTerm);
+    console.log("Starting search for:", searchTerm, "in country:", selectedCountry);
     setIsLoading(true);
     onLoadingChange(true);
 
     try {
-      const results = await searchMedicines(searchTerm.trim());
+      const results = await searchMedicines(
+        searchTerm.trim(), 
+        selectedCountry === "all" ? undefined : selectedCountry
+      );
       console.log("Search completed, found results:", results.length);
       
       onSearch(searchTerm, results);
       
+      const countryText = selectedCountry === "all" ? "worldwide" : `in ${selectedCountry}`;
       toast({
         title: "Search completed",
-        description: `Found ${results.length} medicine brands containing "${searchTerm}"`,
+        description: `Found ${results.length} medicine brands containing "${searchTerm}" ${countryText}`,
       });
     } catch (error) {
       console.error("Search error:", error);
@@ -61,8 +87,8 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
   };
 
   return (
-    <div className="max-w-2xl mx-auto mb-8">
-      <div className="flex gap-3">
+    <div className="max-w-4xl mx-auto mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1">
           <Input
             type="text"
@@ -74,6 +100,23 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
             className="h-12 text-lg px-4 border-2 border-gray-200 focus:border-blue-500 transition-colors"
           />
         </div>
+        
+        <div className="min-w-48">
+          <Select value={selectedCountry} onValueChange={setSelectedCountry} disabled={isLoading}>
+            <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-blue-500">
+              <Globe className="w-4 h-4 mr-2 text-gray-500" />
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((country) => (
+                <SelectItem key={country.value} value={country.value}>
+                  {country.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
         <Button
           onClick={handleSearch}
           disabled={isLoading || !searchTerm.trim()}
@@ -93,9 +136,12 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
           )}
         </Button>
       </div>
-      <p className="text-sm text-gray-500 mt-2 text-center">
-        Search for generic drug names to find brand equivalents worldwide
-      </p>
+      
+      <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 mt-3 text-center sm:text-left">
+        <p>Search for generic drug names to find brand equivalents worldwide</p>
+        <span className="hidden sm:inline">•</span>
+        <p>Enhanced with AI for global coverage beyond RxNorm database</p>
+      </div>
     </div>
   );
 };
