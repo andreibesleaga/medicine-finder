@@ -10,58 +10,73 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
   console.log("Starting comprehensive global search for:", term, "in country:", country || "worldwide");
 
   try {
-    // First search local database
+    // Initialize local database if needed
+    await localMedicineDb.initialize();
+
+    // Search local database first for fast results
     console.log("Searching local database...");
     const localResults = await localMedicineDb.searchLocal(term, country);
     console.log("Local database results:", localResults.length);
 
-    // If we have sufficient local results, prioritize them but still get some remote results
-    const shouldSearchRemote = localResults.length < 20; // Threshold for remote search
+    // Always perform remote searches for comprehensive coverage
+    console.log("Starting remote searches...");
     
-    let remoteResults: MedicineResult[] = [];
-    
-    if (shouldSearchRemote) {
-      // Parallel search execution for remote sources
-      const [rxNormResults, aiResults, comprehensiveResults] = await Promise.all([
-        searchRxNorm(term),
-        queryAIEngines(term, country),
-        performComprehensiveGlobalSearch(term, country)
-      ]);
+    // Execute all remote searches in parallel for better performance
+    const [rxNormResults, aiResults, comprehensiveResults] = await Promise.allSettled([
+      searchRxNorm(term),
+      queryAIEngines(term, country),
+      performComprehensiveGlobalSearch(term, country)
+    ]);
 
-      console.log("Remote search results breakdown:");
-      console.log("RxNorm results:", rxNormResults.length);
-      console.log("AI results:", aiResults.length);
-      console.log("Comprehensive results:", comprehensiveResults.length);
+    // Extract results from settled promises
+    const rxNormData = rxNormResults.status === 'fulfilled' ? rxNormResults.value : [];
+    const aiData = aiResults.status === 'fulfilled' ? aiResults.value : [];
+    const comprehensiveData = comprehensiveResults.status === 'fulfilled' ? comprehensiveResults.value : [];
 
-      // Combine remote results
-      remoteResults = [...rxNormResults, ...aiResults, ...comprehensiveResults];
-    }
+    console.log("Remote search results breakdown:");
+    console.log("RxNorm results:", rxNormData.length);
+    console.log("AI results:", aiData.length);
+    console.log("Comprehensive results:", comprehensiveData.length);
 
-    // Combine local and remote results
-    let allResults = [...localResults, ...remoteResults];
+    // Combine all results
+    let allResults = [...localResults, ...rxNormData, ...aiData, ...comprehensiveData];
 
-    // Filter by country if specified
+    // Filter by country if specified with improved matching
     if (country && country !== 'all') {
-      allResults = allResults.filter(result =>
-        result.country.toLowerCase().includes(country.toLowerCase()) ||
-        result.country === 'Global' ||
-        result.country === 'European Union' ||
-        result.country.includes('WHO') ||
-        result.country.includes('Region')
-      );
+      const countryLower = country.toLowerCase();
+      allResults = allResults.filter(result => {
+        const resultCountry = result.country.toLowerCase();
+        return (
+          resultCountry.includes(countryLower) ||
+          resultCountry === 'global' ||
+          resultCountry === 'european union' ||
+          resultCountry.includes('who') ||
+          resultCountry.includes('region') ||
+          resultCountry.includes('worldwide')
+        );
+      });
     }
 
-    // Remove duplicates with enhanced deduplication
+    // Enhanced deduplication with better matching
     const uniqueResults = allResults.filter((result, index, array) => {
-      const firstIndex = array.findIndex(r =>
-        r.brandName.toLowerCase().trim() === result.brandName.toLowerCase().trim() &&
-        r.country === result.country &&
-        r.activeIngredient.toLowerCase() === result.activeIngredient.toLowerCase()
-      );
+      const normalizedBrand = result.brandName.toLowerCase().trim().replace(/[^\w\s]/g, '');
+      const normalizedIngredient = result.activeIngredient.toLowerCase().trim();
+      const normalizedCountry = result.country.toLowerCase().trim();
+      
+      const firstIndex = array.findIndex(r => {
+        const rBrand = r.brandName.toLowerCase().trim().replace(/[^\w\s]/g, '');
+        const rIngredient = r.activeIngredient.toLowerCase().trim();
+        const rCountry = r.country.toLowerCase().trim();
+        
+        return rBrand === normalizedBrand && 
+               rIngredient === normalizedIngredient && 
+               rCountry === normalizedCountry;
+      });
+      
       return firstIndex === index;
     });
 
-    // Sort results with enhanced prioritization (local results first)
+    // Enhanced sorting with better prioritization
     const sortedResults = uniqueResults.sort((a, b) => {
       // Prioritize local database results
       const aIsLocal = localResults.some(lr => lr.id === a.id);
@@ -70,57 +85,68 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
       if (aIsLocal && !bIsLocal) return -1;
       if (bIsLocal && !aIsLocal) return 1;
 
-      // Exact brand name matches
-      const aExactMatch = a.brandName.toLowerCase() === term.toLowerCase() ? 2 : 0;
-      const bExactMatch = b.brandName.toLowerCase() === term.toLowerCase() ? 2 : 0;
+      // Exact brand name matches get highest priority
+      const termLower = term.toLowerCase();
+      const aExactMatch = a.brandName.toLowerCase() === termLower ? 3 : 0;
+      const bExactMatch = b.brandName.toLowerCase() === termLower ? 3 : 0;
       
-      // Partial matches
-      const aPartialMatch = a.brandName.toLowerCase().includes(term.toLowerCase()) ? 1 : 0;
-      const bPartialMatch = b.brandName.toLowerCase().includes(term.toLowerCase()) ? 1 : 0;
+      // Brand name starts with search term
+      const aStartsMatch = a.brandName.toLowerCase().startsWith(termLower) ? 2 : 0;
+      const bStartsMatch = b.brandName.toLowerCase().startsWith(termLower) ? 2 : 0;
       
-      const aScore = aExactMatch + aPartialMatch;
-      const bScore = bExactMatch + bPartialMatch;
+      // Brand name contains search term
+      const aContainsMatch = a.brandName.toLowerCase().includes(termLower) ? 1 : 0;
+      const bContainsMatch = b.brandName.toLowerCase().includes(termLower) ? 1 : 0;
+      
+      const aScore = aExactMatch + aStartsMatch + aContainsMatch;
+      const bScore = bExactMatch + bStartsMatch + bContainsMatch;
 
       if (aScore !== bScore) {
         return bScore - aScore;
       }
 
-      // Prioritize by source reliability
-      const sourceOrder = { 'rxnorm': 3, 'ai': 2, 'both': 1 };
-      const aSourceScore = sourceOrder[a.source] || 0;
-      const bSourceScore = sourceOrder[b.source] || 0;
+      // Source reliability priority
+      const sourceOrder = { 'rxnorm': 4, 'both': 3, 'ai': 2 };
+      const aSourceScore = sourceOrder[a.source] || 1;
+      const bSourceScore = sourceOrder[b.source] || 1;
       
       if (aSourceScore !== bSourceScore) {
         return bSourceScore - aSourceScore;
       }
 
-      // Country prioritization
+      // Country-specific prioritization
       if (country && country !== 'all') {
-        if (a.country.toLowerCase().includes(country.toLowerCase()) && 
-            !b.country.toLowerCase().includes(country.toLowerCase())) return -1;
-        if (b.country.toLowerCase().includes(country.toLowerCase()) && 
-            !a.country.toLowerCase().includes(country.toLowerCase())) return 1;
+        const countryLower = country.toLowerCase();
+        const aCountryMatch = a.country.toLowerCase().includes(countryLower);
+        const bCountryMatch = b.country.toLowerCase().includes(countryLower);
+        
+        if (aCountryMatch && !bCountryMatch) return -1;
+        if (bCountryMatch && !aCountryMatch) return 1;
       }
 
-      // US results priority for global searches
-      if (a.country === "United States" && b.country !== "United States") return -1;
-      if (b.country === "United States" && a.country !== "United States") return 1;
+      // US and major countries priority for global searches
+      const majorCountries = ['united states', 'united kingdom', 'germany', 'france', 'canada', 'australia'];
+      const aMajor = majorCountries.includes(a.country.toLowerCase());
+      const bMajor = majorCountries.includes(b.country.toLowerCase());
+      
+      if (aMajor && !bMajor) return -1;
+      if (bMajor && !aMajor) return 1;
 
+      // Alphabetical by country as final sort
       return a.country.localeCompare(b.country);
     });
 
-    console.log("Total unique sorted results:", sortedResults.length);
-    console.log("Local vs Remote breakdown:", {
-      local: localResults.length,
-      remote: remoteResults.length,
-      total: sortedResults.length
-    });
+    console.log("Search completed successfully:");
+    console.log(`- Local results: ${localResults.length}`);
+    console.log(`- Remote results: ${rxNormData.length + aiData.length + comprehensiveData.length}`);
+    console.log(`- Total unique results: ${sortedResults.length}`);
+    console.log(`- Countries represented: ${new Set(sortedResults.map(r => r.country)).size}`);
 
     return sortedResults;
 
   } catch (error) {
     console.error("Search medicines error:", error);
-    throw new Error("Failed to search medicines");
+    throw new Error(`Failed to search medicines: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

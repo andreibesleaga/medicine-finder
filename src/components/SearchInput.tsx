@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Loader2, Globe } from "lucide-react";
+import { Search, Loader2, Globe, Database } from "lucide-react";
 import { searchMedicines } from "@/utils/medicineApi";
 import { MedicineResult } from "@/types/medicine";
 import { useToast } from "@/hooks/use-toast";
@@ -15,100 +15,35 @@ interface SearchInputProps {
 
 const countries = [
   { value: "all", label: "All Countries" },
-  { value: "Afghanistan", label: "Afghanistan" },
-  { value: "Albania", label: "Albania" },
-  { value: "Algeria", label: "Algeria" },
-  { value: "Argentina", label: "Argentina" },
-  { value: "Armenia", label: "Armenia" },
-  { value: "Australia", label: "Australia" },
-  { value: "Austria", label: "Austria" },
-  { value: "Azerbaijan", label: "Azerbaijan" },
-  { value: "Bahrain", label: "Bahrain" },
-  { value: "Bangladesh", label: "Bangladesh" },
-  { value: "Belarus", label: "Belarus" },
-  { value: "Belgium", label: "Belgium" },
-  { value: "Bolivia", label: "Bolivia" },
-  { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" },
-  { value: "Brazil", label: "Brazil" },
-  { value: "Bulgaria", label: "Bulgaria" },
-  { value: "Cambodia", label: "Cambodia" },
-  { value: "Canada", label: "Canada" },
-  { value: "Chile", label: "Chile" },
-  { value: "China", label: "China" },
-  { value: "Colombia", label: "Colombia" },
-  { value: "Costa Rica", label: "Costa Rica" },
-  { value: "Croatia", label: "Croatia" },
-  { value: "Czech Republic", label: "Czech Republic" },
-  { value: "Denmark", label: "Denmark" },
-  { value: "Dominican Republic", label: "Dominican Republic" },
-  { value: "Ecuador", label: "Ecuador" },
-  { value: "Egypt", label: "Egypt" },
-  { value: "Estonia", label: "Estonia" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Finland", label: "Finland" },
-  { value: "France", label: "France" },
-  { value: "Georgia", label: "Georgia" },
-  { value: "Germany", label: "Germany" },
-  { value: "Ghana", label: "Ghana" },
-  { value: "Greece", label: "Greece" },
-  { value: "Guatemala", label: "Guatemala" },
-  { value: "Hungary", label: "Hungary" },
-  { value: "Iceland", label: "Iceland" },
-  { value: "India", label: "India" },
-  { value: "Indonesia", label: "Indonesia" },
-  { value: "Iran", label: "Iran" },
-  { value: "Iraq", label: "Iraq" },
-  { value: "Ireland", label: "Ireland" },
-  { value: "Israel", label: "Israel" },
-  { value: "Italy", label: "Italy" },
-  { value: "Jamaica", label: "Jamaica" },
-  { value: "Japan", label: "Japan" },
-  { value: "Jordan", label: "Jordan" },
-  { value: "Kazakhstan", label: "Kazakhstan" },
-  { value: "Kenya", label: "Kenya" },
-  { value: "Kuwait", label: "Kuwait" },
-  { value: "Latvia", label: "Latvia" },
-  { value: "Lebanon", label: "Lebanon" },
-  { value: "Lithuania", label: "Lithuania" },
-  { value: "Luxembourg", label: "Luxembourg" },
-  { value: "Malaysia", label: "Malaysia" },
-  { value: "Malta", label: "Malta" },
-  { value: "Mexico", label: "Mexico" },
-  { value: "Morocco", label: "Morocco" },
-  { value: "Netherlands", label: "Netherlands" },
-  { value: "New Zealand", label: "New Zealand" },
-  { value: "Nigeria", label: "Nigeria" },
-  { value: "Norway", label: "Norway" },
-  { value: "Pakistan", label: "Pakistan" },
-  { value: "Panama", label: "Panama" },
-  { value: "Peru", label: "Peru" },
-  { value: "Philippines", label: "Philippines" },
-  { value: "Poland", label: "Poland" },
-  { value: "Portugal", label: "Portugal" },
-  { value: "Qatar", label: "Qatar" },
-  { value: "Romania", label: "Romania" },
-  { value: "Russia", label: "Russia" },
-  { value: "Saudi Arabia", label: "Saudi Arabia" },
-  { value: "Serbia", label: "Serbia" },
-  { value: "Singapore", label: "Singapore" },
-  { value: "Slovakia", label: "Slovakia" },
-  { value: "Slovenia", label: "Slovenia" },
-  { value: "South Africa", label: "South Africa" },
-  { value: "South Korea", label: "South Korea" },
-  { value: "Spain", label: "Spain" },
-  { value: "Sri Lanka", label: "Sri Lanka" },
-  { value: "Sweden", label: "Sweden" },
-  { value: "Switzerland", label: "Switzerland" },
-  { value: "Taiwan", label: "Taiwan" },
-  { value: "Thailand", label: "Thailand" },
-  { value: "Turkey", label: "Turkey" },
-  { value: "Ukraine", label: "Ukraine" },
-  { value: "United Arab Emirates", label: "UAE" },
-  { value: "United Kingdom", label: "United Kingdom" },
   { value: "United States", label: "United States" },
-  { value: "Uruguay", label: "Uruguay" },
-  { value: "Venezuela", label: "Venezuela" },
-  { value: "Vietnam", label: "Vietnam" }
+  { value: "United Kingdom", label: "United Kingdom" },
+  { value: "Germany", label: "Germany" },
+  { value: "France", label: "France" },
+  { value: "Canada", label: "Canada" },
+  { value: "Australia", label: "Australia" },
+  { value: "Japan", label: "Japan" },
+  { value: "India", label: "India" },
+  { value: "Brazil", label: "Brazil" },
+  { value: "China", label: "China" },
+  { value: "Italy", label: "Italy" },
+  { value: "Spain", label: "Spain" },
+  { value: "Netherlands", label: "Netherlands" },
+  { value: "Switzerland", label: "Switzerland" },
+  { value: "Sweden", label: "Sweden" },
+  { value: "Norway", label: "Norway" },
+  { value: "Denmark", label: "Denmark" },
+  { value: "Belgium", label: "Belgium" },
+  { value: "Austria", label: "Austria" },
+  { value: "South Korea", label: "South Korea" },
+  { value: "Mexico", label: "Mexico" },
+  { value: "Argentina", label: "Argentina" },
+  { value: "South Africa", label: "South Africa" },
+  { value: "Russia", label: "Russia" },
+  { value: "Poland", label: "Poland" },
+  { value: "Turkey", label: "Turkey" },
+  { value: "Israel", label: "Israel" },
+  { value: "Singapore", label: "Singapore" },
+  { value: "New Zealand", label: "New Zealand" }
 ];
 
 export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => {
@@ -127,29 +62,37 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
       return;
     }
 
-    console.log("Starting search for:", searchTerm, "in country:", selectedCountry);
+    const cleanTerm = searchTerm.trim().toLowerCase();
+    console.log("Starting optimized search for:", cleanTerm, "in country:", selectedCountry);
+    
     setIsLoading(true);
     onLoadingChange(true);
 
     try {
+      const startTime = Date.now();
+      
       const results = await searchMedicines(
-        searchTerm.trim(), 
+        cleanTerm, 
         selectedCountry === "all" ? undefined : selectedCountry
       );
-      console.log("Search completed, found results:", results.length);
+      
+      const searchTime = Date.now() - startTime;
+      console.log(`Search completed in ${searchTime}ms, found ${results.length} results`);
       
       onSearch(searchTerm, results);
       
       const countryText = selectedCountry === "all" ? "worldwide" : `in ${selectedCountry}`;
+      const uniqueCountries = new Set(results.map(r => r.country)).size;
+      
       toast({
         title: "Search completed",
-        description: `Found ${results.length} medicine brands containing "${searchTerm}" ${countryText}`,
+        description: `Found ${results.length} medicine brands from ${uniqueCountries} countries containing "${cleanTerm}" ${countryText} (${searchTime}ms)`,
       });
     } catch (error) {
       console.error("Search error:", error);
       toast({
         title: "Search failed",
-        description: "Unable to search for medicines. Please try again.",
+        description: `Unable to search for medicines: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -216,9 +159,10 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
       </div>
       
       <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 mt-3 text-center sm:text-left">
-        <p>Search for generic drug names to find brand equivalents worldwide</p>
-        <span className="hidden sm:inline">•</span>
-        <p>Enhanced with AI for global coverage beyond RxNorm database</p>
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4 text-blue-500" />
+          <span>Local + Global databases • AI enhanced • Real-time results</span>
+        </div>
       </div>
     </div>
   );
