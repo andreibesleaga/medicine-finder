@@ -37,7 +37,7 @@ export const DatabaseManager = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Medicine Database Manager</h1>
         <p className="text-gray-600">
-          Download and manage official medicine databases for offline searching
+          Download and manage official medicine databases for offline searching (TEST DATA ONLY)
         </p>
       </div>
 
