@@ -5,6 +5,7 @@ import { Search, Loader2, Database } from "lucide-react";
 import { MedicineResult } from "@/types/medicine";
 import { useSearchMedicine } from "@/hooks/useSearchMedicine";
 import { CountrySelector } from "./CountrySelector";
+import { Link } from "react-router-dom";
 
 interface SearchInputProps {
   onSearch: (term: string, results: MedicineResult[]) => void;
@@ -63,11 +64,17 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
         </Button>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 mt-3 text-center sm:text-left">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between text-sm text-gray-500 mt-3">
+        <div className="flex items-center gap-2 text-center sm:text-left">
           <Database className="w-4 h-4 text-blue-500" />
           <span>Local + Global databases • AI enhanced • Real-time results</span>
         </div>
+        <Link to="/database">
+          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+            <Database className="w-3 h-3 mr-1" />
+            Manage Local Databases
+          </Button>
+        </Link>
       </div>
     </div>
   );
