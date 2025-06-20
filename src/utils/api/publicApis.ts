@@ -150,7 +150,7 @@ export const queryWikidataAPI = async (term: string, country?: string): Promise<
 
     if (data.search) {
       for (const entity of data.search.slice(0, 5)) {
-        if (entity.description && entity.description.toLowerCase().includes('drug')) {
+        if (entity.description && entity.description.toLowerCase().includes(term)) {
           results.push({
             id: `wikidata-${entity.id}`,
             brandName: entity.label,
