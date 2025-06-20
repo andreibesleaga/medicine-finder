@@ -10,6 +10,7 @@ import {
   searchWHOMedRegistry,
   searchGenericDatabase 
 } from "./globalMedicineApis";
+import { searchAllEUDatabases } from "./euMedicineApis";
 import { enhanceMedicineData, findAlternativeNames } from "./medicineDataEnhancer";
 import { getCachedResult, setCachedResult } from "./searchCache";
 import { searchProgressTracker } from "./searchProgressTracker";
@@ -37,8 +38,9 @@ export const performComprehensiveGlobalSearch = async (
     
     console.log("Searching for terms:", searchTerms);
     
-    // Global regulatory agencies
+    // Global regulatory agencies including comprehensive EU coverage
     const globalApis = [
+      { name: "EU Databases", fn: () => searchAllEUDatabases(term) },
       { name: "Health Canada", fn: () => searchHealthCanada(term) },
       { name: "India CDSCO", fn: () => searchCDSCO(term) },
       { name: "Australia TGA", fn: () => searchTGA(term) },
