@@ -2,7 +2,8 @@
 import { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Building, Pill, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Building, Pill, Database, ExternalLink } from "lucide-react";
 import { getRegionForCountry } from "@/constants/countries";
 
 interface MedicineCardProps {
@@ -21,6 +22,41 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
+  };
+
+  const getExternalLink = () => {
+    // If RxNorm data is available, link to RxNav
+    if (medicine.rxNormData?.rxcui) {
+      return `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${medicine.rxNormData.rxcui}`;
+    }
+
+    // For FDA/US medicines, link to FDA Orange Book
+    if (medicine.country.toLowerCase().includes('united states')) {
+      return `https://www.accessdata.fda.gov/scripts/cder/ob/search_product.cfm?Appl_Type=N&Appl_No=&Product_No=&TECode=&Applicant=&Brand_Name=${encodeURIComponent(medicine.brandName)}&Generic_Name=${encodeURIComponent(medicine.activeIngredient)}`;
+    }
+
+    // For European medicines, link to EMA
+    if (medicine.country.toLowerCase().includes('europe') || 
+        medicine.country.toLowerCase().includes('eu') ||
+        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom'].some(country => 
+          medicine.country.toLowerCase().includes(country))) {
+      return `https://www.ema.europa.eu/en/medicines/field_ema_web_categories%253Aname_field/Human/ema_group_types/ema_medicine/search_api_aggregation_ema_medicine_types/field_ema_med_status/authorised?search_api_views_fulltext=${encodeURIComponent(medicine.brandName)}`;
+    }
+
+    // Default to a comprehensive drug information search
+    return `https://go.drugbank.com/unearth/q?searcher=drugs&query=${encodeURIComponent(medicine.brandName + ' ' + medicine.activeIngredient)}&button=`;
+  };
+
+  const getLinkText = () => {
+    if (medicine.rxNormData?.rxcui) return "View in RxNav";
+    if (medicine.country.toLowerCase().includes('united states')) return "FDA Orange Book";
+    if (medicine.country.toLowerCase().includes('europe') || 
+        medicine.country.toLowerCase().includes('eu') ||
+        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom'].some(country => 
+          medicine.country.toLowerCase().includes(country))) {
+      return "View in EMA";
+    }
+    return "More Info";
   };
 
   const region = getRegionForCountry(medicine.country);
@@ -96,6 +132,19 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
             </div>
           </div>
         )}
+
+        {/* External Link Button */}
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center gap-2 hover:bg-blue-50"
+            onClick={() => window.open(getExternalLink(), '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            {getLinkText()}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
