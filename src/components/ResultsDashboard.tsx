@@ -38,7 +38,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
 
   if (!searchTerm && results.length === 0) {
     return (
-      <div className="text-center py-4">
+      <div className="text-center py-8">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
           <Package className="w-10 h-10 text-gray-400" />
         </div>
@@ -60,7 +60,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
             <span>Global Coverage</span>
           </div>
         </div>
-        <div className="text-center mt-16">
+        <div className="text-center mt-8">
           <p className="text-gray-600 flex items-center justify-center gap-2">
             made with 
             <img 
@@ -128,10 +128,46 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
       </div>
 
       {/* Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         {results.map((result) => (
           <MedicineCard key={result.id} medicine={result} />
         ))}
+      </div>
+
+      {/* Ready to Search Section at the end */}
+      <div className="text-center py-8 border-t border-gray-200">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
+          <Package className="w-10 h-10 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
+        <p className="text-gray-500 max-w-md mx-auto mb-4">
+          Enter an active drug ingredient above to discover brand names and equivalents from around the world
+        </p>
+        <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
+          <div className="flex items-center gap-2">
+            <Database className="w-5 h-5 text-blue-500" />
+            <span>RxNorm Database</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-500" />
+            <span>AI Enhanced</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-green-500" />
+            <span>Global Coverage</span>
+          </div>
+        </div>
+        <div className="text-center mt-8">
+          <p className="text-gray-600 flex items-center justify-center gap-2">
+            made with 
+            <img 
+              src="https://lovable.dev/favicon.ico" 
+              alt="Lovable" 
+              className="w-4 h-4" 
+            /> 
+            by Andrei Besleaga Nicolae
+          </p>
+        </div>
       </div>
     </div>
   );
