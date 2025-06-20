@@ -5,7 +5,7 @@ import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { SearchProgressComponent } from "@/components/SearchProgress";
 import { MedicineResult } from "@/types/medicine";
 import { Button } from "@/components/ui/button";
-import { Database } from "lucide-react";
+import { Database, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -23,8 +23,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
+      <div className="container mx-auto px-4 py-8 flex-1">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
@@ -65,6 +65,15 @@ const Index = () => {
           searchTerm={searchTerm}
         />
       </div>
+
+      {/* Footer */}
+      <footer className="py-6 bg-white/50 backdrop-blur-sm border-t border-gray-200">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-600 flex items-center justify-center gap-1">
+            made with <Heart className="w-4 h-4 text-red-500 fill-current" /> by Andrei Besleaga Nicolae
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
