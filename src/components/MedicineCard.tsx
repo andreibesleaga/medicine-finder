@@ -1,4 +1,3 @@
-
 import { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,12 +34,13 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
       return `https://www.accessdata.fda.gov/scripts/cder/ob/search_product.cfm?Appl_Type=N&Appl_No=&Product_No=&TECode=&Applicant=&Brand_Name=${encodeURIComponent(medicine.brandName)}&Generic_Name=${encodeURIComponent(medicine.activeIngredient)}`;
     }
 
-    // For European medicines, link to EMA
+    // For European medicines, use EMA's working search URL
     if (medicine.country.toLowerCase().includes('europe') || 
         medicine.country.toLowerCase().includes('eu') ||
-        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom'].some(country => 
+        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom', 'ireland', 'belgium', 'austria', 'portugal', 'sweden', 'denmark', 'finland', 'poland', 'czech republic', 'hungary', 'slovakia', 'slovenia', 'estonia', 'latvia', 'lithuania', 'luxembourg', 'malta', 'cyprus'].some(country => 
           medicine.country.toLowerCase().includes(country))) {
-      return `https://www.ema.europa.eu/en/medicines/field_ema_web_categories%253Aname_field/Human/ema_group_types/ema_medicine/search_api_aggregation_ema_medicine_types/field_ema_med_status/authorised?search_api_views_fulltext=${encodeURIComponent(medicine.brandName)}`;
+      // Use EMA's actual working search URL
+      return `https://www.ema.europa.eu/en/medicines/human/EPAR?search_api_views_fulltext=${encodeURIComponent(medicine.brandName)}`;
     }
 
     // Default to a comprehensive drug information search
@@ -52,9 +52,9 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
     if (medicine.country.toLowerCase().includes('united states')) return "FDA Orange Book";
     if (medicine.country.toLowerCase().includes('europe') || 
         medicine.country.toLowerCase().includes('eu') ||
-        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom'].some(country => 
+        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom', 'ireland', 'belgium', 'austria', 'portugal', 'sweden', 'denmark', 'finland', 'poland', 'czech republic', 'hungary', 'slovakia', 'slovenia', 'estonia', 'latvia', 'lithuania', 'luxembourg', 'malta', 'cyprus'].some(country => 
           medicine.country.toLowerCase().includes(country))) {
-      return "View in EMA";
+      return "Search EMA";
     }
     return "More Info";
   };
