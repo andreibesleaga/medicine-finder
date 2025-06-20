@@ -29,9 +29,9 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
       return `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${medicine.rxNormData.rxcui}`;
     }
 
-    // For FDA/US medicines, use simplified Orange Book search
+    // For FDA/US medicines, use correct Orange Book format
     if (medicine.country.toLowerCase().includes('united states')) {
-      return `https://www.accessdata.fda.gov/scripts/cder/ob/search_product.cfm?Brand_Name=${encodeURIComponent(medicine.brandName)}`;
+      return `https://www.accessdata.fda.gov/scripts/cder/ob/index.cfm?panel=0&drugname=${encodeURIComponent(medicine.brandName)}`;
     }
 
     // For European medicines, use EMA's correct search URL format with only the active ingredient
