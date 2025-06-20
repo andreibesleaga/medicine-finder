@@ -36,7 +36,7 @@ const Index = () => {
             Medicine Brand Finder
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            Search for active drug ingredients and discover brand names worldwide with official databases, RxNorm data, and AI-enhanced global coverage
+            Search for active drug ingredients and discover brand names worldwide with official databases, RxNorm data, and APIs AI enhanced global coverage
           </p>
           
           <div className="flex justify-center">
