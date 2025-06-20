@@ -16,7 +16,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm, onReset }: Re
         <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Searching Medicine Database</h3>
         <p className="text-gray-500 text-center max-w-md mb-4">
-          Querying RxNorm API and AI engines worldwide to find all brand names containing "{searchTerm}"
+          Querying RxNorm API and AI engines worldwide to find all brand names
         </p>
         <div className="flex items-center gap-4 text-sm text-gray-400">
           <div className="flex items-center gap-2">
