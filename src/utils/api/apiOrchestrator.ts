@@ -25,49 +25,67 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
   try {
     // Standard APIs with better error handling
     const standardApiQueries = [
-      { name: "OpenFDA", fn: () => searchOpenFDA(term).catch(() => []) },
-      { name: "EMA", fn: () => searchEMA(term).catch(() => []) },
-      { name: "WHO", fn: () => searchWHO(term).catch(() => []) },
-      { name: "ClinicalTrials", fn: () => searchClinicalTrials(term).catch(() => []) },
-      { name: "PubChem", fn: () => queryPubChemAPI(term, country).catch(() => []) },
-      { name: "Wikidata", fn: () => queryWikidataAPI(term, country).catch(() => []) }
+      { name: "OpenFDA", fn: () => searchOpenFDA(term), timeout: 5000 },
+      { name: "EMA", fn: () => searchEMA(term), timeout: 5000 },
+      { name: "WHO", fn: () => searchWHO(term), timeout: 8000 },
+      { name: "ClinicalTrials", fn: () => searchClinicalTrials(term), timeout: 8000 },
+      { name: "PubChem", fn: () => queryPubChemAPI(term, country), timeout: 6000 },
+      { name: "Wikidata", fn: () => queryWikidataAPI(term, country), timeout: 6000 }
     ];
 
     // AI Services with fallbacks
     const aiServiceQueries = [
-      { name: "OpenAI", fn: () => searchOpenAI(term, country).catch(() => []) },
-      { name: "Perplexity", fn: () => searchPerplexity(term, country).catch(() => []) },
-      { name: "DeepSeek", fn: () => searchDeepSeek(term, country).catch(() => []) },
-      { name: "DrugBank", fn: () => queryDrugBankAPI(term, country).catch(() => []) },
-      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term, country).catch(() => []) }
+      { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
+      { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
+      { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 10000 },
+      { name: "DrugBank", fn: () => queryDrugBankAPI(term, country), timeout: 8000 },
+      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term, country), timeout: 8000 }
     ];
 
     const allQueries = [...standardApiQueries, ...aiServiceQueries];
     searchProgressTracker.setTotal(allQueries.length);
 
-    // Execute queries with proper progress tracking
-    const apiPromises = allQueries.map(async (api) => {
+    // Execute queries with timeout and proper error handling
+    const executeWithTimeout = async (query: typeof allQueries[0]) => {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error(`Timeout after ${query.timeout}ms`)), query.timeout)
+      );
+
       try {
-        searchProgressTracker.updateProgress(api.name);
-        const result = await api.fn();
-        searchProgressTracker.updateProgress(api.name, true);
-        return { name: api.name, data: result };
+        searchProgressTracker.updateProgress(query.name);
+        const result = await Promise.race([query.fn(), timeoutPromise]);
+        searchProgressTracker.updateProgress(query.name, true);
+        return { name: query.name, data: result as MedicineResult[], success: true };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        searchProgressTracker.updateProgress(api.name, true, errorMsg);
-        console.warn(`${api.name} API failed:`, error);
-        return { name: api.name, data: [] };
+        searchProgressTracker.updateProgress(query.name, true, errorMsg);
+        console.warn(`${query.name} API failed:`, error);
+        return { name: query.name, data: [], success: false, error: errorMsg };
       }
-    });
+    };
 
-    const apiResults = await Promise.allSettled(apiPromises);
+    const apiResults = await Promise.allSettled(
+      allQueries.map(query => executeWithTimeout(query))
+    );
+
+    let successCount = 0;
+    let errorCount = 0;
 
     apiResults.forEach((result) => {
       if (result.status === 'fulfilled') {
-        results.push(...result.value.data);
-        console.log(`${result.value.name} returned ${result.value.data.length} results`);
+        if (result.value.success) {
+          results.push(...result.value.data);
+          successCount++;
+          console.log(`${result.value.name} returned ${result.value.data.length} results`);
+        } else {
+          errorCount++;
+        }
+      } else {
+        errorCount++;
       }
     });
+
+    console.log(`API Summary: ${successCount} successful, ${errorCount} failed out of ${allQueries.length} total`);
 
     // Enhanced deduplication
     const uniqueResults = results.filter((result, index, array) =>
@@ -81,7 +99,7 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
     console.log("Total unique AI results:", uniqueResults.length);
     
     // Cache the results with 1 hour expiry
-    setCachedResult(cacheKey, uniqueResults);
+    setCachedResult(cacheKey, uniqueResults, 60 * 60 * 1000);
     
     return uniqueResults;
 

@@ -47,17 +47,34 @@ export const useSearchMedicine = ({ onSearch, onLoadingChange }: UseSearchMedici
       const countryText = selectedCountry === "all" ? "worldwide" : `in ${selectedCountry}`;
       const uniqueCountries = new Set(results.map(r => r.country)).size;
       
-      toast({
-        title: "Search completed",
-        description: `Found ${results.length} medicine brands from ${uniqueCountries} countries containing "${cleanTerm}" ${countryText} (${searchTime}ms)`,
-      });
+      // Show different messages based on results
+      if (results.length === 0) {
+        toast({
+          title: "No results found",
+          description: `No medicines found for "${cleanTerm}" ${countryText}. Try a different search term or check spelling.`,
+          variant: "destructive",
+        });
+      } else if (results.length < 5) {
+        toast({
+          title: "Limited results",
+          description: `Found ${results.length} medicine brands from ${uniqueCountries} countries for "${cleanTerm}" ${countryText} (${searchTime}ms)`,
+        });
+      } else {
+        toast({
+          title: "Search successful",
+          description: `Found ${results.length} medicine brands from ${uniqueCountries} countries for "${cleanTerm}" ${countryText} (${searchTime}ms)`,
+        });
+      }
     } catch (error) {
       console.error("Search error:", error);
       toast({
         title: "Search failed",
-        description: `Unable to search for medicines: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Unable to search for medicines: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         variant: "destructive",
       });
+      
+      // Still call onSearch with empty results to clear previous results
+      onSearch(searchTerm, []);
     } finally {
       setIsLoading(false);
       onLoadingChange(false);
@@ -65,7 +82,7 @@ export const useSearchMedicine = ({ onSearch, onLoadingChange }: UseSearchMedici
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !isLoading) {
+    if (e.key === "Enter" && !isLoading && searchTerm.trim()) {
       handleSearch();
     }
   };

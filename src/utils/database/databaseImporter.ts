@@ -1,3 +1,4 @@
+
 import { MedicineResult } from "@/types/medicine";
 import { localMedicineDb } from "./localMedicineDb";
 
@@ -10,7 +11,7 @@ export interface DatabaseSource {
   isActive: boolean;
 }
 
-export const officialDatabaseSources = [
+export const officialDatabaseSources: DatabaseSource[] = [
   {
     name: "RxNorm",
     country: "United States",
@@ -60,29 +61,11 @@ export const officialDatabaseSources = [
     isActive: true
   },
   {
-    name: "NCI Drug Dictionary",
-    country: "United States",
-    url: "https://www.cancer.gov/publications/dictionaries/cancer-drug",
-    format: "Web/API",
-    description: "National Cancer Institute's Drug Dictionary",
-    isActive: true
-  },
-  {
-    name: "DailyMed",
-    country: "United States",
-    url: "https://dailymed.nlm.nih.gov/dailymed/",
-    format: "XML",
-    description: "Current medication content from drug labels",
-    isActive: true
-  },
-  
-  // European Union Medicine Databases
-  {
-    name: "EMA Product Database",
-    country: "European Union",
-    url: "https://www.ema.europa.eu/en/medicines/download-medicine-data",
-    format: "XML/JSON",
-    description: "European Medicines Agency centrally authorized products",
+    name: "UK MHRA Database",
+    country: "United Kingdom", 
+    url: "https://products.mhra.gov.uk/",
+    format: "JSON/API",
+    description: "UK Medicines and Healthcare products Regulatory Agency",
     isActive: true
   },
   {
@@ -102,63 +85,55 @@ export const officialDatabaseSources = [
     isActive: true
   },
   {
-    name: "Italian AIFA Database",
-    country: "Italy",
-    url: "https://www.aifa.gov.it/en/medicines-data",
-    format: "CSV/XML",
-    description: "Italian Medicines Agency database",
-    isActive: true
-  },
-  {
-    name: "Spanish AEMPS Database",
-    country: "Spain",
-    url: "https://cima.aemps.es/cima/publico/lista.html",
-    format: "CSV",
-    description: "Spanish Agency of Medicines and Medical Devices",
-    isActive: true
-  },
-  {
-    name: "Dutch MEB Database",
-    country: "Netherlands",
-    url: "https://www.geneesmiddeleninformatiebank.nl/",
-    format: "JSON/XML",
-    description: "Netherlands Medicines Evaluation Board",
-    isActive: true
-  },
-  {
-    name: "UK MHRA Database",
-    country: "United Kingdom", 
-    url: "https://products.mhra.gov.uk/",
-    format: "JSON/API",
-    description: "UK Medicines and Healthcare products Regulatory Agency",
-    isActive: true
-  },
-  {
-    name: "EPAR Database",
-    country: "European Union",
-    url: "https://www.ema.europa.eu/en/medicines/download-medicine-data",
-    format: "XML",
-    description: "European Public Assessment Reports",
+    name: "Australia TGA",
+    country: "Australia",
+    url: "https://www.tga.gov.au/resources/artg",
+    format: "Excel/CSV",
+    description: "Australian Register of Therapeutic Goods",
     isActive: true
   }
 ];
+
+// Sample medicine data for each country/region
+const getSampleMedicineData = (source: DatabaseSource): MedicineResult[] => {
+  const commonMedicines = [
+    { ingredient: "acetaminophen", brands: ["Tylenol", "Panadol", "Acetol"] },
+    { ingredient: "ibuprofen", brands: ["Advil", "Motrin", "Nurofen"] },
+    { ingredient: "aspirin", brands: ["Bayer", "Aspro", "Disprin"] },
+    { ingredient: "omeprazole", brands: ["Prilosec", "Losec", "Omez"] },
+    { ingredient: "metformin", brands: ["Glucophage", "Fortamet", "Riomet"] }
+  ];
+
+  const results: MedicineResult[] = [];
+  
+  // Generate 2-3 medicines per source for demonstration
+  const medicinesToAdd = commonMedicines.slice(0, Math.floor(Math.random() * 3) + 2);
+  
+  medicinesToAdd.forEach((medicine, index) => {
+    const randomBrand = medicine.brands[Math.floor(Math.random() * medicine.brands.length)];
+    
+    results.push({
+      id: `${source.name.toLowerCase().replace(/\s+/g, '-')}-${medicine.ingredient}-${index}`,
+      brandName: randomBrand,
+      activeIngredient: medicine.ingredient,
+      country: source.country,
+      manufacturer: `${source.name} Approved Manufacturer`,
+      source: 'ai'
+    });
+  });
+
+  return results;
+};
 
 export const downloadAndImportDatabase = async (source: DatabaseSource): Promise<void> => {
   console.log(`Downloading and importing data from ${source.name} (${source.country})...`);
   
   try {
-    // Simulate downloading and parsing data
-    const medicineData: MedicineResult[] = [];
+    // Simulate download delay
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
     
-    // Example: Add a dummy medicine entry
-    medicineData.push({
-      id: `dummy-${source.name.toLowerCase().replace(/\s+/g, '-')}`,
-      brandName: `Example Medicine (${source.country})`,
-      activeIngredient: "Example Ingredient",
-      country: source.country,
-      manufacturer: `${source.name} Approved`,
-      source: 'ai'
-    });
+    // Generate sample medicine data for this source
+    const medicineData = getSampleMedicineData(source);
     
     // Bulk insert into local database
     await localMedicineDb.bulkInsert(medicineData);
@@ -167,7 +142,7 @@ export const downloadAndImportDatabase = async (source: DatabaseSource): Promise
     
   } catch (error) {
     console.error(`Error importing data from ${source.name}:`, error);
-    throw error;
+    throw new Error(`Failed to import from ${source.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

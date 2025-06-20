@@ -22,24 +22,30 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
     console.log("Starting remote searches...");
     
     // Execute all remote searches in parallel for better performance
-    const [rxNormResults, aiResults, comprehensiveResults] = await Promise.allSettled([
-      searchRxNorm(term),
-      queryAIEngines(term, country),
-      performComprehensiveGlobalSearch(term, country)
-    ]);
+    const searchPromises = [
+      searchRxNorm(term).catch(error => {
+        console.warn("RxNorm search failed:", error);
+        return [];
+      }),
+      queryAIEngines(term, country).catch(error => {
+        console.warn("AI engines search failed:", error);
+        return [];
+      }),
+      performComprehensiveGlobalSearch(term, country).catch(error => {
+        console.warn("Comprehensive search failed:", error);
+        return [];
+      })
+    ];
 
-    // Extract results from settled promises
-    const rxNormData = rxNormResults.status === 'fulfilled' ? rxNormResults.value : [];
-    const aiData = aiResults.status === 'fulfilled' ? aiResults.value : [];
-    const comprehensiveData = comprehensiveResults.status === 'fulfilled' ? comprehensiveResults.value : [];
+    const [rxNormResults, aiResults, comprehensiveResults] = await Promise.all(searchPromises);
 
     console.log("Remote search results breakdown:");
-    console.log("RxNorm results:", rxNormData.length);
-    console.log("AI results:", aiData.length);
-    console.log("Comprehensive results:", comprehensiveData.length);
+    console.log("RxNorm results:", rxNormResults.length);
+    console.log("AI results:", aiResults.length);
+    console.log("Comprehensive results:", comprehensiveResults.length);
 
     // Combine all results
-    let allResults = [...localResults, ...rxNormData, ...aiData, ...comprehensiveData];
+    let allResults = [...localResults, ...rxNormResults, ...aiResults, ...comprehensiveResults];
 
     // Filter by country if specified with improved matching
     if (country && country !== 'all') {
@@ -138,7 +144,7 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
 
     console.log("Search completed successfully:");
     console.log(`- Local results: ${localResults.length}`);
-    console.log(`- Remote results: ${rxNormData.length + aiData.length + comprehensiveData.length}`);
+    console.log(`- Remote results: ${rxNormResults.length + aiResults.length + comprehensiveResults.length}`);
     console.log(`- Total unique results: ${sortedResults.length}`);
     console.log(`- Countries represented: ${new Set(sortedResults.map(r => r.country)).size}`);
 
