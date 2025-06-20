@@ -32,6 +32,7 @@ export interface MedicineResult {
   dosageForm?: string;
   strength?: string;
   source: 'rxnorm' | 'ai' | 'both';
+  relevanceScore?: number;
 }
 
 export interface SearchResponse {

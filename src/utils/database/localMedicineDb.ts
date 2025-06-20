@@ -99,15 +99,16 @@ export class LocalMedicineDatabase {
             if (manufacturerContains) relevanceScore += 20;
             if (fuzzyMatch) relevanceScore += 10;
             
-            results.push({ ...medicine, relevanceScore });
+            const medicineWithScore: MedicineResult = { ...medicine, relevanceScore };
+            results.push(medicineWithScore);
           }
           
           cursor.continue();
         } else {
           // Sort results by relevance score and then alphabetically
           const sortedResults = results.sort((a, b) => {
-            const scoreA = (a as any).relevanceScore || 0;
-            const scoreB = (b as any).relevanceScore || 0;
+            const scoreA = a.relevanceScore || 0;
+            const scoreB = b.relevanceScore || 0;
             
             if (scoreA !== scoreB) return scoreB - scoreA;
             
