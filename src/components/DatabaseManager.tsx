@@ -35,12 +35,12 @@ export const DatabaseManager = () => {
     setImportStatus(prev => ({ ...prev, [source.name]: 'downloading' }));
     
     try {
-      const count = await downloadAndImportDatabase(source);
+      await downloadAndImportDatabase(source);
       setImportStatus(prev => ({ ...prev, [source.name]: 'success' }));
       
       toast({
         title: "Import successful",
-        description: `Imported ${count} medicines from ${source.name}`,
+        description: `Imported data from ${source.name}`,
       });
       
       await loadLocalCount();
@@ -204,7 +204,6 @@ export const DatabaseManager = () => {
                 
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{source.format.toUpperCase()}</Badge>
-                  {source.size && <Badge variant="outline">{source.size}</Badge>}
                 </div>
                 
                 <Button 
