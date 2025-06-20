@@ -8,6 +8,7 @@ import { searchWHO, searchClinicalTrials, queryPubChemAPI, queryWikidataAPI } fr
 import { performComprehensiveGlobalSearch } from "./comprehensiveSearch";
 import { getCachedResult, setCachedResult } from "./searchCache";
 import { searchProgressTracker } from "./searchProgressTracker";
+import { SecureApiWrapper } from "./secureApiWrapper";
 
 export const queryAIEngines = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying AI engines for:", term, "in country:", country || "worldwide");
@@ -33,8 +34,17 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       { name: "Wikidata", fn: () => queryWikidataAPI(term, country), timeout: 6000 }
     ];
 
-    // AI Services with fallbacks - Fixed parameter count
-    const aiServiceQueries = [
+    // Use secure API wrapper if available, otherwise fallback to direct calls
+    const useSecureApis = SecureApiWrapper.isSecureApiAvailable();
+    console.log("Using secure APIs:", useSecureApis);
+
+    const aiServiceQueries = useSecureApis ? [
+      { name: "OpenAI (Secure)", fn: () => SecureApiWrapper.searchOpenAISecure(term, country), timeout: 10000 },
+      { name: "Perplexity (Secure)", fn: () => SecureApiWrapper.searchPerplexitySecure(term, country), timeout: 10000 },
+      { name: "DeepSeek (Secure)", fn: () => SecureApiWrapper.searchDeepSeekSecure(term, country), timeout: 10000 },
+      { name: "DrugBank (Secure)", fn: () => SecureApiWrapper.queryDrugBankSecure(term, country), timeout: 8000 },
+      { name: "ChemSpider (Secure)", fn: () => SecureApiWrapper.queryChemSpiderSecure(term, country), timeout: 8000 }
+    ] : [
       { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
       { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
       { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 10000 },
