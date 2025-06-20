@@ -1,3 +1,4 @@
+
 import { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,13 +35,13 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
       return `https://www.accessdata.fda.gov/scripts/cder/ob/search_product.cfm?Appl_Type=N&Appl_No=&Product_No=&TECode=&Applicant=&Brand_Name=${encodeURIComponent(medicine.brandName)}&Generic_Name=${encodeURIComponent(medicine.activeIngredient)}`;
     }
 
-    // For European medicines, use EMA's working search URL
+    // For European medicines, use EMA's correct search URL format
     if (medicine.country.toLowerCase().includes('europe') || 
         medicine.country.toLowerCase().includes('eu') ||
         ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom', 'ireland', 'belgium', 'austria', 'portugal', 'sweden', 'denmark', 'finland', 'poland', 'czech republic', 'hungary', 'slovakia', 'slovenia', 'estonia', 'latvia', 'lithuania', 'luxembourg', 'malta', 'cyprus'].some(country => 
           medicine.country.toLowerCase().includes(country))) {
-      // Use EMA's actual working search URL
-      return `https://www.ema.europa.eu/en/medicines/human/EPAR?search_api_views_fulltext=${encodeURIComponent(medicine.brandName)}`;
+      // Use the correct EMA search URL format
+      return `https://www.ema.europa.eu/en/search?search_api_fulltext=${encodeURIComponent(medicine.brandName)}&f%5B0%5D=ema_search_entity_is_document%3ADocument`;
     }
 
     // Default to a comprehensive drug information search
