@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Download, Database, Globe, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { Download, Database, Globe, RefreshCw, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { officialDatabaseSources, downloadAndImportDatabase, importAllDatabases } from "@/utils/database/databaseImporter";
 import { localMedicineDb } from "@/utils/database/localMedicineDb";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +112,16 @@ export const DatabaseManager = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {/* Back to Main Link */}
+      <div className="mb-6">
+        <Link to="/">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Main
+          </Button>
+        </Link>
+      </div>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Medicine Database Manager</h1>
         <p className="text-gray-600">
