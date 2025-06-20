@@ -3,6 +3,7 @@ import { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Building, Pill, Database } from "lucide-react";
+import { getRegionForCountry } from "@/constants/countries";
 
 interface MedicineCardProps {
   medicine: MedicineResult;
@@ -21,6 +22,8 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
+
+  const region = getRegionForCountry(medicine.country);
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 border-gray-200">
@@ -41,11 +44,14 @@ export const MedicineCard = ({ medicine }: MedicineCardProps) => {
           <span className="font-medium text-gray-900">{medicine.activeIngredient}</span>
         </div>
 
-        {/* Country */}
+        {/* Country and Region */}
         <div className="flex items-center gap-2 text-sm">
           <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span className="text-gray-600">Country:</span>
-          <span className="font-medium text-gray-900">{medicine.country}</span>
+          <span className="text-gray-600">Location:</span>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-900">{medicine.country}</span>
+            <span className="text-xs text-gray-500">{region}</span>
+          </div>
         </div>
 
         {/* Manufacturer */}
