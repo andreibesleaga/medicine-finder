@@ -1,4 +1,3 @@
-
 import { MedicineResult } from "@/types/medicine";
 import { MedicineCard } from "./MedicineCard";
 import { Loader2, Package, Globe, Database, Brain } from "lucide-react";
@@ -38,7 +37,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
 
   if (!searchTerm && results.length === 0) {
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-8">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
           <Package className="w-10 h-10 text-gray-400" />
         </div>
@@ -46,7 +45,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
         <p className="text-gray-500 max-w-md mx-auto mb-4">
           Enter an active drug ingredient above to discover brand names and equivalents from around the world
         </p>
-        <div className="flex justify-center items-center gap-6 text-sm text-gray-400">
+        <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-blue-500" />
             <span>RxNorm Database</span>
@@ -59,6 +58,17 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
             <Globe className="w-5 h-5 text-green-500" />
             <span>Global Coverage</span>
           </div>
+        </div>
+        <div className="text-center">
+          <p className="text-gray-600 flex items-center justify-center gap-2">
+            made with 
+            <img 
+              src="https://lovable.dev/favicon.ico" 
+              alt="Lovable" 
+              className="w-4 h-4" 
+            /> 
+            by Andrei Besleaga Nicolae
+          </p>
         </div>
       </div>
     );

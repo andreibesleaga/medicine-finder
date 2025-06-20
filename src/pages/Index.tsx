@@ -4,9 +4,6 @@ import { SearchInput } from "@/components/SearchInput";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { SearchProgressComponent } from "@/components/SearchProgress";
 import { MedicineResult } from "@/types/medicine";
-import { Button } from "@/components/ui/button";
-import { Database } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const Index = () => {
   const [results, setResults] = useState<MedicineResult[]>([]);
@@ -35,18 +32,9 @@ const Index = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Medicine Brand Finder
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Search for active drug ingredients and discover brand names worldwide with official databases, RxNorm data, and APIs AI enhanced global coverage
           </p>
-          
-          <div className="flex justify-center">
-            <Link to="/database">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                Manage Local Databases
-              </Button>
-            </Link>
-          </div>
         </div>
 
         {/* Search Input */}
@@ -64,19 +52,6 @@ const Index = () => {
           isLoading={isLoading} 
           searchTerm={searchTerm}
         />
-
-        {/* Made with Lovable text */}
-        <div className="text-center mt-12 pt-8">
-          <p className="text-gray-600 flex items-center justify-center gap-2">
-            made with 
-            <img 
-              src="https://lovable.dev/favicon.ico" 
-              alt="Lovable" 
-              className="w-4 h-4" 
-            /> 
-            by Andrei Besleaga Nicolae
-          </p>
-        </div>
       </div>
     </div>
   );
