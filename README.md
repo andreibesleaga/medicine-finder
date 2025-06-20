@@ -7,7 +7,6 @@ Medicine Finder uses several online free medicine APIs (in RxNorm international 
 
 **Live Demo URL (without AI API)**: https://medicine-finder.lovable.app
 
-**URL**: https://github.com/andreibesleaga/medicine-finder
 
 
 ## What technologies are used for this project?
