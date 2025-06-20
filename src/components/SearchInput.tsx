@@ -66,7 +66,7 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
       <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-500 mt-3 text-center sm:text-left">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-blue-500" />
-          <span>Local + Global databases • AI enhanced • Real-time results</span>
+          <span>Local & Global databases • AI enhanced • Real-time</span>
         </div>
       </div>
     </div>
