@@ -44,7 +44,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
         </div>
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
         <p className="text-gray-500 max-w-md mx-auto mb-4">
-          Enter an active drug ingredient above to discover brand names and equivalents from around the world
+          Enter an active drug ingredient above to discover brand names and equivalents worldwide
         </p>
         <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
           <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
         </div>
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
         <p className="text-gray-500 max-w-md mx-auto mb-4">
-          Enter an active drug ingredient above to discover brand names and equivalents from around the world
+          Enter an active drug ingredient above to discover brand names and equivalents worldwide
         </p>
         <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
           <div className="flex items-center gap-2">
