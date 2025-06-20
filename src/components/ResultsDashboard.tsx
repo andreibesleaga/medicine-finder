@@ -12,7 +12,7 @@ interface ResultsDashboardProps {
 export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDashboardProps) => {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
+      <div className="flex flex-col items-center justify-center py-4">
         <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Searching Medicine Database</h3>
         <p className="text-gray-500 text-center max-w-md mb-4">
@@ -77,7 +77,7 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm }: ResultsDash
 
   if (results.length === 0 && searchTerm) {
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-4">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6">
           <Globe className="w-10 h-10 text-yellow-600" />
         </div>
