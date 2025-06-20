@@ -9,22 +9,22 @@ const EMA_BASE_URL = "https://spor.ema.europa.eu/rmswi/api";
 // RxNorm API functions
 export const searchRxNorm = async (term: string): Promise<MedicineResult[]> => {
   console.log("Searching RxNorm for:", term);
-  
+
   try {
     // Search for drugs containing the term
     const searchUrl = `${RXNORM_BASE_URL}/drugs.json?name=${encodeURIComponent(term)}`;
     console.log("RxNorm search URL:", searchUrl);
-    
+
     const response = await fetch(searchUrl);
     if (!response.ok) {
       throw new Error(`RxNorm API error: ${response.status}`);
     }
-    
+
     const data: RxNormResponse = await response.json();
     console.log("RxNorm raw response:", data);
-    
+
     const results: MedicineResult[] = [];
-    
+
     // Process drug groups
     if (data.drugGroup?.conceptGroup) {
       for (const group of data.drugGroup.conceptGroup) {
@@ -45,10 +45,10 @@ export const searchRxNorm = async (term: string): Promise<MedicineResult[]> => {
         }
       }
     }
-    
+
     console.log("Processed RxNorm results:", results.length);
     return results;
-    
+
   } catch (error) {
     console.error("RxNorm API error:", error);
     return [];
@@ -58,27 +58,27 @@ export const searchRxNorm = async (term: string): Promise<MedicineResult[]> => {
 // OpenFDA API for US medicines
 export const searchOpenFDA = async (term: string): Promise<MedicineResult[]> => {
   console.log("Searching OpenFDA for:", term);
-  
+
   try {
     const searchUrl = `${OPENFDA_BASE_URL}/label.json?search=openfda.brand_name:"${encodeURIComponent(term)}"&limit=100`;
-    
+
     const response = await fetch(searchUrl);
     if (!response.ok) {
       throw new Error(`OpenFDA API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log("OpenFDA results:", data.results?.length || 0);
-    
+
     const results: MedicineResult[] = [];
-    
+
     if (data.results) {
       for (const result of data.results) {
         if (result.openfda?.brand_name) {
-          const brandNames = Array.isArray(result.openfda.brand_name) 
-            ? result.openfda.brand_name 
+          const brandNames = Array.isArray(result.openfda.brand_name)
+            ? result.openfda.brand_name
             : [result.openfda.brand_name];
-          
+
           for (const brandName of brandNames) {
             results.push({
               id: `openfda-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
@@ -92,9 +92,9 @@ export const searchOpenFDA = async (term: string): Promise<MedicineResult[]> => 
         }
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("OpenFDA API error:", error);
     return [];
@@ -104,27 +104,27 @@ export const searchOpenFDA = async (term: string): Promise<MedicineResult[]> => 
 // European Medicines Agency API
 export const searchEMA = async (term: string): Promise<MedicineResult[]> => {
   console.log("Searching EMA for:", term);
-  
+
   try {
     // EMA SPOR API for authorized medicines
     const searchUrl = `${EMA_BASE_URL}/medicinal-products?name=${encodeURIComponent(term)}`;
-    
+
     const response = await fetch(searchUrl, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'MedicineSearch/1.0'
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`EMA API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log("EMA results:", data.length || 0);
-    
+
     const results: MedicineResult[] = [];
-    
+
     if (Array.isArray(data)) {
       for (const medicine of data) {
         results.push({
@@ -137,9 +137,9 @@ export const searchEMA = async (term: string): Promise<MedicineResult[]> => {
         });
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("EMA API error:", error);
     return [];
@@ -149,42 +149,49 @@ export const searchEMA = async (term: string): Promise<MedicineResult[]> => {
 // WHO Global Health Observatory API
 export const searchWHO = async (term: string): Promise<MedicineResult[]> => {
   console.log("Searching WHO database for:", term);
-  
+
   try {
     // WHO doesn't have a direct medicine API, but we can use their country-specific data
-    const countries = ['IN', 'CN', 'JP', 'KR', 'TH', 'VN', 'ID', 'PH', 'MY', 'SG'];
+    const countries = [
+      "AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR", "AM", "AW", "AU", "AT", "AZ",
+      "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ", "BM", "BT", "BO", "BQ", "BA", "BW", "BV", "BR",
+      "IO", "BN", "BG", "BF", "BI", "CV", "KH", "CM", "CA", "KY", "CF", "TD", "CL", "CN", "CX", "CC",
+      "CO", "KM", "CG", "CD", "CK", "CR", "CI", "HR", "CU", "CW", "CY", "CZ", "DK", "DJ", "DM", "DO",
+      "EC", "EG", "SV", "GQ", "ER", "EE", "SZ", "ET", "FK", "FO", "FJ", "FI", "FR", "GF", "PF", "TF",
+      "GA", "GM", "GE", "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT", "GG", "GN", "GW", "GY",
+      "HT", "HM", "VA", "HN", "HK", "HU", "IS", "IN", "ID", "IR", "IQ", "IE", "IM", "IL", "IT", "JM",
+      "JP", "JE", "JO", "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB", "LS", "LR", "LY",
+      "LI", "LT", "LU", "MO", "MG", "MW", "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+      "FM", "MD", "MC", "MN", "ME", "MS", "MA", "MZ", "MM", "NA", "NR", "NP", "NL", "NC", "NZ", "NI",
+      "NE", "NG", "NU", "NF", "MK", "MP", "NO", "OM", "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH",
+      "PN", "PL", "PT", "PR", "QA", "RE", "RO", "RU", "RW", "BL", "SH", "KN", "LC", "MF", "PM", "VC",
+      "WS", "SM", "ST", "SA", "SN", "RS", "SC", "SL", "SG", "SX", "SK", "SI", "SB", "SO", "ZA", "GS",
+      "SS", "ES", "LK", "SD", "SR", "SJ", "SE", "CH", "SY", "TW", "TJ", "TZ", "TH", "TL", "TG", "TK",
+      "TO", "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU",
+      "VE", "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+    ];
+
     const results: MedicineResult[] = [];
-    
+
     // Simulate country-specific medicine data based on WHO patterns
     for (const countryCode of countries) {
       const countryName = getCountryName(countryCode);
-      
+
       // Add common international brands known to be available in these countries
-      if (term.toLowerCase().includes('acetaminophen') || term.toLowerCase().includes('paracetamol')) {
+      if (term.toLowerCase().includes('acetaminophen') || term.toLowerCase().includes(term)) {
         results.push({
-          id: `who-${countryCode}-paracetamol`,
-          brandName: countryCode === 'IN' ? 'Crocin' : 'Paracetamol',
-          activeIngredient: 'acetaminophen',
-          country: countryName,
-          manufacturer: 'Various',
-          source: 'ai'
-        });
-      }
-      
-      if (term.toLowerCase().includes('ibuprofen')) {
-        results.push({
-          id: `who-${countryCode}-ibuprofen`,
-          brandName: countryCode === 'IN' ? 'Brufen' : 'Ibuprofen',
-          activeIngredient: 'ibuprofen',
+          id: `who-${countryCode}-${term}`,
+          brandName: '',
+          activeIngredient: '',
           country: countryName,
           manufacturer: 'Various',
           source: 'ai'
         });
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("WHO API error:", error);
     return [];
@@ -194,16 +201,16 @@ export const searchWHO = async (term: string): Promise<MedicineResult[]> => {
 // OpenAI GPT API for medicine brand suggestions
 export const searchOpenAI = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Searching OpenAI for medicine brands:", term);
-  
+
   try {
-    const prompt = `List brand names for the medicine "${term}" available in ${country || 'worldwide'}. Format as JSON array with fields: brandName, country, manufacturer. Limit to 10 results.`;
-    
+    const prompt = `List brand names for the medicine "${term}" available in ${country || 'worldwide'}. Format as JSON array with fields: brandName, country, manufacturer. Limit to 100 results.`;
+
     // Note: This would require an OpenAI API key to be set in environment variables
     // For now, we'll return empty results to avoid API key issues
     console.log("OpenAI search would use prompt:", prompt);
-    
+
     return [];
-    
+
   } catch (error) {
     console.error("OpenAI API error:", error);
     return [];
@@ -213,15 +220,15 @@ export const searchOpenAI = async (term: string, country?: string): Promise<Medi
 // Perplexity AI API for comprehensive medicine search
 export const searchPerplexity = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Searching Perplexity AI for:", term);
-  
+
   try {
     const query = `What are the brand names for the medicine "${term}" ${country ? `in ${country}` : 'worldwide'}? Include manufacturer and country information.`;
-    
+
     // Note: This would require a Perplexity API key
     console.log("Perplexity search query:", query);
-    
+
     return [];
-    
+
   } catch (error) {
     console.error("Perplexity API error:", error);
     return [];
@@ -231,27 +238,27 @@ export const searchPerplexity = async (term: string, country?: string): Promise<
 // NIH Clinical Trials API
 export const searchClinicalTrials = async (term: string): Promise<MedicineResult[]> => {
   console.log("Searching ClinicalTrials.gov for:", term);
-  
+
   try {
     const searchUrl = `https://clinicaltrials.gov/api/query/study_fields?expr=${encodeURIComponent(term)}&fields=BriefTitle,InterventionName,LocationCountry&min_rnk=1&max_rnk=50&fmt=json`;
-    
+
     const response = await fetch(searchUrl);
     if (!response.ok) {
       throw new Error(`ClinicalTrials API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log("ClinicalTrials results:", data.StudyFieldsResponse?.NStudiesFound || 0);
-    
+
     const results: MedicineResult[] = [];
-    
+
     if (data.StudyFieldsResponse?.StudyFields) {
       for (const study of data.StudyFieldsResponse.StudyFields) {
         if (study.InterventionName) {
-          const interventions = Array.isArray(study.InterventionName) 
-            ? study.InterventionName 
+          const interventions = Array.isArray(study.InterventionName)
+            ? study.InterventionName
             : [study.InterventionName];
-          
+
           for (const intervention of interventions) {
             if (intervention.toLowerCase().includes(term.toLowerCase())) {
               results.push({
@@ -267,9 +274,9 @@ export const searchClinicalTrials = async (term: string): Promise<MedicineResult
         }
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("ClinicalTrials API error:", error);
     return [];
@@ -279,9 +286,9 @@ export const searchClinicalTrials = async (term: string): Promise<MedicineResult
 // Enhanced AI engines for worldwide medicine brands
 export const queryAIEngines = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying AI engines for:", term, "in country:", country || "worldwide");
-  
+
   const results: MedicineResult[] = [];
-  
+
   try {
     // Query multiple real API endpoints
     const apiQueries = [
@@ -296,9 +303,9 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       queryChemSpiderAPI(term, country),
       queryWikidataAPI(term, country)
     ];
-    
+
     const apiResults = await Promise.allSettled(apiQueries);
-    
+
     apiResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         results.push(...result.value);
@@ -307,18 +314,18 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
         console.warn(`API ${index + 1} failed:`, result.reason);
       }
     });
-    
+
     // Remove duplicates
-    const uniqueResults = results.filter((result, index, array) => 
-      array.findIndex(r => 
-        r.brandName.toLowerCase() === result.brandName.toLowerCase() && 
+    const uniqueResults = results.filter((result, index, array) =>
+      array.findIndex(r =>
+        r.brandName.toLowerCase() === result.brandName.toLowerCase() &&
         r.country === result.country
       ) === index
     );
-    
+
     console.log("Total unique API results:", uniqueResults.length);
     return uniqueResults;
-    
+
   } catch (error) {
     console.error("AI engines query error:", error);
     return [];
@@ -328,14 +335,14 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
 // DrugBank API (requires subscription/API key)
 const queryDrugBankAPI = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying DrugBank API for:", term);
-  
+
   try {
     // DrugBank API requires authentication
     // This would need an API key from DrugBank
     console.log("DrugBank API would search for:", term);
-    
+
     return [];
-    
+
   } catch (error) {
     console.error("DrugBank API error:", error);
     return [];
@@ -345,32 +352,32 @@ const queryDrugBankAPI = async (term: string, country?: string): Promise<Medicin
 // PubChem API for chemical information
 const queryPubChemAPI = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying PubChem API for:", term);
-  
+
   try {
     const searchUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(term)}/synonyms/JSON`;
-    
+
     const response = await fetch(searchUrl);
     if (!response.ok) {
       throw new Error(`PubChem API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log("PubChem synonyms found:", data.InformationList?.Information?.[0]?.Synonym?.length || 0);
-    
+
     const results: MedicineResult[] = [];
-    
+
     if (data.InformationList?.Information?.[0]?.Synonym) {
       const synonyms = data.InformationList.Information[0].Synonym;
-      
+
       // Filter for likely brand names (capitalized, not too technical)
-      const brandNames = synonyms.filter((synonym: string) => 
-        /^[A-Z][a-z]/.test(synonym) && 
-        synonym.length < 20 && 
+      const brandNames = synonyms.filter((synonym: string) =>
+        /^[A-Z][a-z]/.test(synonym) &&
+        synonym.length < 20 &&
         !synonym.includes('-') &&
         !synonym.includes('(') &&
         !synonym.toLowerCase().includes('acid')
       ).slice(0, 10);
-      
+
       for (const brandName of brandNames) {
         results.push({
           id: `pubchem-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
@@ -382,9 +389,9 @@ const queryPubChemAPI = async (term: string, country?: string): Promise<Medicine
         });
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("PubChem API error:", error);
     return [];
@@ -394,13 +401,13 @@ const queryPubChemAPI = async (term: string, country?: string): Promise<Medicine
 // ChemSpider API
 const queryChemSpiderAPI = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying ChemSpider API for:", term);
-  
+
   try {
     // ChemSpider requires API key
     console.log("ChemSpider API would search for:", term);
-    
+
     return [];
-    
+
   } catch (error) {
     console.error("ChemSpider API error:", error);
     return [];
@@ -410,23 +417,23 @@ const queryChemSpiderAPI = async (term: string, country?: string): Promise<Medic
 // Wikidata API for medicine information
 const queryWikidataAPI = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Querying Wikidata API for:", term);
-  
+
   try {
     const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(term)}&language=en&format=json&origin=*`;
-    
+
     const response = await fetch(searchUrl);
     if (!response.ok) {
       throw new Error(`Wikidata API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log("Wikidata entities found:", data.search?.length || 0);
-    
+
     const results: MedicineResult[] = [];
-    
+
     if (data.search) {
       for (const entity of data.search.slice(0, 5)) {
-        if (entity.description && entity.description.toLowerCase().includes('drug')) {
+        if (entity.description && entity.description.toLowerCase().includes(term)) {
           results.push({
             id: `wikidata-${entity.id}`,
             brandName: entity.label,
@@ -438,9 +445,9 @@ const queryWikidataAPI = async (term: string, country?: string): Promise<Medicin
         }
       }
     }
-    
+
     return results;
-    
+
   } catch (error) {
     console.error("Wikidata API error:", error);
     return [];
@@ -450,73 +457,312 @@ const queryWikidataAPI = async (term: string, country?: string): Promise<Medicin
 // Helper function to get country name from code
 const getCountryName = (code: string): string => {
   const countryMap: { [key: string]: string } = {
-    'IN': 'India',
-    'CN': 'China',
-    'JP': 'Japan',
-    'KR': 'South Korea',
-    'TH': 'Thailand',
-    'VN': 'Vietnam',
-    'ID': 'Indonesia',
-    'PH': 'Philippines',
-    'MY': 'Malaysia',
-    'SG': 'Singapore'
+    "AF": "Afghanistan",
+    "AX": "Åland Islands",
+    "AL": "Albania",
+    "DZ": "Algeria",
+    "AS": "American Samoa",
+    "AD": "Andorra",
+    "AO": "Angola",
+    "AI": "Anguilla",
+    "AQ": "Antarctica",
+    "AG": "Antigua and Barbuda",
+    "AR": "Argentina",
+    "AM": "Armenia",
+    "AW": "Aruba",
+    "AU": "Australia",
+    "AT": "Austria",
+    "AZ": "Azerbaijan",
+    "BS": "Bahamas",
+    "BH": "Bahrain",
+    "BD": "Bangladesh",
+    "BB": "Barbados",
+    "BY": "Belarus",
+    "BE": "Belgium",
+    "BZ": "Belize",
+    "BJ": "Benin",
+    "BM": "Bermuda",
+    "BT": "Bhutan",
+    "BO": "Bolivia (Plurinational State of)",
+    "BQ": "Bonaire, Sint Eustatius and Saba",
+    "BA": "Bosnia and Herzegovina",
+    "BW": "Botswana",
+    "BV": "Bouvet Island",
+    "BR": "Brazil",
+    "IO": "British Indian Ocean Territory",
+    "BN": "Brunei Darussalam",
+    "BG": "Bulgaria",
+    "BF": "Burkina Faso",
+    "BI": "Burundi",
+    "CV": "Cabo Verde",
+    "KH": "Cambodia",
+    "CM": "Cameroon",
+    "CA": "Canada",
+    "KY": "Cayman Islands",
+    "CF": "Central African Republic",
+    "TD": "Chad",
+    "CL": "Chile",
+    "CN": "China",
+    "CX": "Christmas Island",
+    "CC": "Cocos (Keeling) Islands",
+    "CO": "Colombia",
+    "KM": "Comoros",
+    "CG": "Congo",
+    "CD": "Congo (Democratic Republic of the)",
+    "CK": "Cook Islands",
+    "CR": "Costa Rica",
+    "CI": "Côte d'Ivoire",
+    "HR": "Croatia",
+    "CU": "Cuba",
+    "CW": "Curaçao",
+    "CY": "Cyprus",
+    "CZ": "Czechia",
+    "DK": "Denmark",
+    "DJ": "Djibouti",
+    "DM": "Dominica",
+    "DO": "Dominican Republic",
+    "EC": "Ecuador",
+    "EG": "Egypt",
+    "SV": "El Salvador",
+    "GQ": "Equatorial Guinea",
+    "ER": "Eritrea",
+    "EE": "Estonia",
+    "SZ": "Eswatini",
+    "ET": "Ethiopia",
+    "FK": "Falkland Islands (Malvinas)",
+    "FO": "Faroe Islands",
+    "FJ": "Fiji",
+    "FI": "Finland",
+    "FR": "France",
+    "GF": "French Guiana",
+    "PF": "French Polynesia",
+    "TF": "French Southern Territories",
+    "GA": "Gabon",
+    "GM": "Gambia",
+    "GE": "Georgia",
+    "DE": "Germany",
+    "GH": "Ghana",
+    "GI": "Gibraltar",
+    "GR": "Greece",
+    "GL": "Greenland",
+    "GD": "Grenada",
+    "GP": "Guadeloupe",
+    "GU": "Guam",
+    "GT": "Guatemala",
+    "GG": "Guernsey",
+    "GN": "Guinea",
+    "GW": "Guinea-Bissau",
+    "GY": "Guyana",
+    "HT": "Haiti",
+    "HM": "Heard Island and McDonald Islands",
+    "VA": "Holy See",
+    "HN": "Honduras",
+    "HK": "Hong Kong",
+    "HU": "Hungary",
+    "IS": "Iceland",
+    "IN": "India",
+    "ID": "Indonesia",
+    "IR": "Iran (Islamic Republic of)",
+    "IQ": "Iraq",
+    "IE": "Ireland",
+    "IM": "Isle of Man",
+    "IL": "Israel",
+    "IT": "Italy",
+    "JM": "Jamaica",
+    "JP": "Japan",
+    "JE": "Jersey",
+    "JO": "Jordan",
+    "KZ": "Kazakhstan",
+    "KE": "Kenya",
+    "KI": "Kiribati",
+    "KP": "Korea (Democratic People's Republic of)",
+    "KR": "South Korea",
+    "KW": "Kuwait",
+    "KG": "Kyrgyzstan",
+    "LA": "Lao People's Democratic Republic",
+    "LV": "Latvia",
+    "LB": "Lebanon",
+    "LS": "Lesotho",
+    "LR": "Liberia",
+    "LY": "Libya",
+    "LI": "Liechtenstein",
+    "LT": "Lithuania",
+    "LU": "Luxembourg",
+    "MO": "Macao",
+    "MG": "Madagascar",
+    "MW": "Malawi",
+    "MY": "Malaysia",
+    "MV": "Maldives",
+    "ML": "Mali",
+    "MT": "Malta",
+    "MH": "Marshall Islands",
+    "MQ": "Martinique",
+    "MR": "Mauritania",
+    "MU": "Mauritius",
+    "YT": "Mayotte",
+    "MX": "Mexico",
+    "FM": "Micronesia (Federated States of)",
+    "MD": "Moldova (Republic of)",
+    "MC": "Monaco",
+    "MN": "Mongolia",
+    "ME": "Montenegro",
+    "MS": "Montserrat",
+    "MA": "Morocco",
+    "MZ": "Mozambique",
+    "MM": "Myanmar",
+    "NA": "Namibia",
+    "NR": "Nauru",
+    "NP": "Nepal",
+    "NL": "Netherlands",
+    "NC": "New Caledonia",
+    "NZ": "New Zealand",
+    "NI": "Nicaragua",
+    "NE": "Niger",
+    "NG": "Nigeria",
+    "NU": "Niue",
+    "NF": "Norfolk Island",
+    "MK": "North Macedonia",
+    "MP": "Northern Mariana Islands",
+    "NO": "Norway",
+    "OM": "Oman",
+    "PK": "Pakistan",
+    "PW": "Palau",
+    "PS": "Palestine, State of",
+    "PA": "Panama",
+    "PG": "Papua New Guinea",
+    "PY": "Paraguay",
+    "PE": "Peru",
+    "PH": "Philippines",
+    "PN": "Pitcairn",
+    "PL": "Poland",
+    "PT": "Portugal",
+    "PR": "Puerto Rico",
+    "QA": "Qatar",
+    "RE": "Réunion",
+    "RO": "Romania",
+    "RU": "Russian Federation",
+    "RW": "Rwanda",
+    "BL": "Saint Barthélemy",
+    "SH": "Saint Helena, Ascension and Tristan da Cunha",
+    "KN": "Saint Kitts and Nevis",
+    "LC": "Saint Lucia",
+    "MF": "Saint Martin (French part)",
+    "PM": "Saint Pierre and Miquelon",
+    "VC": "Saint Vincent and the Grenadines",
+    "WS": "Samoa",
+    "SM": "San Marino",
+    "ST": "Sao Tome and Principe",
+    "SA": "Saudi Arabia",
+    "SN": "Senegal",
+    "RS": "Serbia",
+    "SC": "Seychelles",
+    "SL": "Sierra Leone",
+    "SG": "Singapore",
+    "SX": "Sint Maarten (Dutch part)",
+    "SK": "Slovakia",
+    "SI": "Slovenia",
+    "SB": "Solomon Islands",
+    "SO": "Somalia",
+    "ZA": "South Africa",
+    "GS": "South Georgia and the South Sandwich Islands",
+    "SS": "South Sudan",
+    "ES": "Spain",
+    "LK": "Sri Lanka",
+    "SD": "Sudan",
+    "SR": "Suriname",
+    "SJ": "Svalbard and Jan Mayen",
+    "SE": "Sweden",
+    "CH": "Switzerland",
+    "SY": "Syrian Arab Republic",
+    "TW": "Taiwan, Province of China",
+    "TJ": "Tajikistan",
+    "TZ": "Tanzania, United Republic of",
+    "TH": "Thailand",
+    "TL": "Timor-Leste",
+    "TG": "Togo",
+    "TK": "Tokelau",
+    "TO": "Tonga",
+    "TT": "Trinidad and Tobago",
+    "TN": "Tunisia",
+    "TR": "Turkey",
+    "TM": "Turkmenistan",
+    "TC": "Turks and Caicos Islands",
+    "TV": "Tuvalu",
+    "UG": "Uganda",
+    "UA": "Ukraine",
+    "AE": "United Arab Emirates",
+    "GB": "United Kingdom of Great Britain and Northern Ireland",
+    "US": "United States of America",
+    "UM": "United States Minor Outlying Islands",
+    "UY": "Uruguay",
+    "UZ": "Uzbekistan",
+    "VU": "Vanuatu",
+    "VE": "Venezuela (Bolivarian Republic of)",
+    "VN": "Vietnam",
+    "VG": "Virgin Islands (British)",
+    "VI": "Virgin Islands (U.S.)",
+    "WF": "Wallis and Futuna",
+    "EH": "Western Sahara",
+    "YE": "Yemen",
+    "ZM": "Zambia",
+    "ZW": "Zimbabwe"
   };
-  
+
   return countryMap[code] || code;
 };
 
 // Enhanced main search function with comprehensive global coverage
 export const searchMedicines = async (term: string, country?: string): Promise<MedicineResult[]> => {
   console.log("Starting comprehensive global search for:", term, "in country:", country || "worldwide");
-  
+
   try {
     // Search RxNorm first for US-based results
     const rxNormResults = await searchRxNorm(term);
     console.log("RxNorm results count:", rxNormResults.length);
-    
+
     // Query comprehensive AI engines for worldwide results
     const aiResults = await queryAIEngines(term, country);
     console.log("AI results count:", aiResults.length);
-    
+
     // Combine all results
     let allResults = [...rxNormResults, ...aiResults];
-    
+
     // Filter by country if specified
     if (country && country !== 'all') {
-      allResults = allResults.filter(result => 
-        result.country.toLowerCase().includes(country.toLowerCase()) || 
+      allResults = allResults.filter(result =>
+        result.country.toLowerCase().includes(country.toLowerCase()) ||
         result.country === 'Global' ||
         result.country === 'European Union'
       );
     }
-    
+
     // Remove duplicates based on brand name and country
-    const uniqueResults = allResults.filter((result, index, array) => 
-      array.findIndex(r => 
-        r.brandName.toLowerCase() === result.brandName.toLowerCase() && 
+    const uniqueResults = allResults.filter((result, index, array) =>
+      array.findIndex(r =>
+        r.brandName.toLowerCase() === result.brandName.toLowerCase() &&
         r.country === result.country
       ) === index
     );
-    
+
     // Sort results by relevance (exact matches first, then partial matches)
     const sortedResults = uniqueResults.sort((a, b) => {
       const aExactMatch = a.brandName.toLowerCase() === term.toLowerCase() ? 1 : 0;
       const bExactMatch = b.brandName.toLowerCase() === term.toLowerCase() ? 1 : 0;
-      
+
       if (aExactMatch !== bExactMatch) {
         return bExactMatch - aExactMatch;
       }
-      
+
       // Then sort by country (US first, then alphabetically)
       if (a.country === "United States" && b.country !== "United States") return -1;
       if (b.country === "United States" && a.country !== "United States") return 1;
-      
+
       return a.country.localeCompare(b.country);
     });
-    
+
     console.log("Total unique sorted results:", sortedResults.length);
     return sortedResults;
-    
+
   } catch (error) {
     console.error("Search medicines error:", error);
     throw new Error("Failed to search medicines");
