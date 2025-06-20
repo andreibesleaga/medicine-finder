@@ -1,5 +1,6 @@
 
 import { MedicineResult, RxNormResponse } from "@/types/medicine";
+import { ApiSecurity } from "../security/apiSecurity";
 
 const RXNORM_BASE_URL = "https://rxnav.nlm.nih.gov/REST";
 
@@ -10,12 +11,13 @@ export const searchRxNorm = async (term: string): Promise<MedicineResult[]> => {
     const searchUrl = `${RXNORM_BASE_URL}/drugs.json?name=${encodeURIComponent(term)}`;
     console.log("RxNorm search URL:", searchUrl);
 
-    const response = await fetch(searchUrl);
+    const response = await ApiSecurity.secureApiRequest(searchUrl);
     if (!response.ok) {
       throw new Error(`RxNorm API error: ${response.status}`);
     }
 
-    const data: RxNormResponse = await response.json();
+    const rawData = await response.json();
+    const data: RxNormResponse = ApiSecurity.sanitizeApiResponse(rawData);
     console.log("RxNorm raw response:", data);
 
     const results: MedicineResult[] = [];
@@ -43,6 +45,7 @@ export const searchRxNorm = async (term: string): Promise<MedicineResult[]> => {
     return results;
 
   } catch (error) {
+    ApiSecurity.logSecurityEvent('RXNORM_API_ERROR', { error: error?.toString(), term });
     console.error("RxNorm API error:", error);
     return [];
   }
