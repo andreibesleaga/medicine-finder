@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { SearchInput } from "@/components/SearchInput";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
+import { SearchProgressComponent } from "@/components/SearchProgress";
 import { MedicineResult } from "@/types/medicine";
 
 const Index = () => {
@@ -32,7 +33,7 @@ const Index = () => {
             Medicine Brand Finder
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Search for active drug ingredients and discover brand names worldwide with official RxNorm data
+            Search for active drug ingredients and discover brand names worldwide with official RxNorm data and AI-enhanced global coverage
           </p>
         </div>
 
@@ -41,6 +42,9 @@ const Index = () => {
           onSearch={handleSearch} 
           onLoadingChange={handleLoadingChange}
         />
+
+        {/* Search Progress */}
+        <SearchProgressComponent isSearching={isLoading} />
 
         {/* Results Dashboard */}
         <ResultsDashboard 
