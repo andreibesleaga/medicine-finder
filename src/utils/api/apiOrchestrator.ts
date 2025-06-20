@@ -99,7 +99,7 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
     console.log("Total unique AI results:", uniqueResults.length);
     
     // Cache the results with 1 hour expiry
-    setCachedResult(cacheKey, uniqueResults, 60 * 60 * 1000);
+    setCachedResult(cacheKey, uniqueResults);
     
     return uniqueResults;
 
