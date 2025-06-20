@@ -5,6 +5,7 @@ import { searchOpenFDA } from "./fdaApi";
 import { searchEMA } from "./emaApi";
 import { searchOpenAI, searchPerplexity, searchDeepSeek, queryDrugBankAPI, queryChemSpiderAPI } from "./aiServices";
 import { searchWHO, searchClinicalTrials, queryPubChemAPI, queryWikidataAPI } from "./publicApis";
+import { performComprehensiveGlobalSearch } from "./comprehensiveSearch";
 import { getCachedResult, setCachedResult } from "./searchCache";
 import { searchProgressTracker } from "./searchProgressTracker";
 
@@ -22,23 +23,35 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
   const results: MedicineResult[] = [];
 
   try {
-    const apiQueries = [
+    // Standard APIs
+    const standardApiQueries = [
       { name: "OpenFDA", fn: () => searchOpenFDA(term) },
       { name: "EMA", fn: () => searchEMA(term) },
       { name: "WHO", fn: () => searchWHO(term) },
       { name: "ClinicalTrials", fn: () => searchClinicalTrials(term) },
+      { name: "PubChem", fn: () => queryPubChemAPI(term, country) },
+      { name: "Wikidata", fn: () => queryWikidataAPI(term, country) }
+    ];
+
+    // AI Services
+    const aiServiceQueries = [
       { name: "OpenAI", fn: () => searchOpenAI(term, country) },
       { name: "Perplexity", fn: () => searchPerplexity(term, country) },
       { name: "DeepSeek", fn: () => searchDeepSeek(term, country) },
       { name: "DrugBank", fn: () => queryDrugBankAPI(term, country) },
-      { name: "PubChem", fn: () => queryPubChemAPI(term, country) },
-      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term, country) },
-      { name: "Wikidata", fn: () => queryWikidataAPI(term, country) }
+      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term, country) }
     ];
 
-    searchProgressTracker.setTotal(apiQueries.length);
+    // Comprehensive Global Search
+    const comprehensiveQuery = {
+      name: "Comprehensive Global",
+      fn: () => performComprehensiveGlobalSearch(term, country)
+    };
 
-    const apiPromises = apiQueries.map(async (api) => {
+    const allQueries = [...standardApiQueries, ...aiServiceQueries, comprehensiveQuery];
+    searchProgressTracker.setTotal(allQueries.length);
+
+    const apiPromises = allQueries.map(async (api) => {
       try {
         searchProgressTracker.updateProgress(api.name);
         const result = await api.fn();
