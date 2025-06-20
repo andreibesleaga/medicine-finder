@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 interface BulkImportSectionProps {
   onImportComplete: () => void;
   importStatus: Record<string, 'pending' | 'downloading' | 'success' | 'error'>;
-  setImportStatus: (status: Record<string, 'pending' | 'downloading' | 'success' | 'error'>) => void;
+  setImportStatus: React.Dispatch<React.SetStateAction<Record<string, 'pending' | 'downloading' | 'success' | 'error'>>>;
 }
 
 export const BulkImportSection = ({ onImportComplete, importStatus, setImportStatus }: BulkImportSectionProps) => {

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { officialDatabaseSources } from "@/utils/database/databaseImporter";
-import { localMedicineDb } from "@/utils/database/localMedicineDb";
 import { DatabaseStatus } from "./database/DatabaseStatus";
 import { BulkImportSection } from "./database/BulkImportSection";
 import { DatabaseSourceCard } from "./database/DatabaseSourceCard";
