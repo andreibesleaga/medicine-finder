@@ -1,3 +1,4 @@
+
 import { MedicineResult } from "@/types/medicine";
 import { searchRxNorm } from "./rxnormApi";
 import { searchOpenFDA } from "./fdaApi";
@@ -28,8 +29,8 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       { name: "EMA", fn: () => searchEMA(term), timeout: 5000 },
       { name: "WHO", fn: () => searchWHO(term), timeout: 8000 },
       { name: "ClinicalTrials", fn: () => searchClinicalTrials(term), timeout: 8000 },
-      { name: "PubChem", fn: () => queryPubChemAPI(term), timeout: 6000 },
-      { name: "Wikidata", fn: () => queryWikidataAPI(term), timeout: 6000 }
+      { name: "PubChem", fn: () => queryPubChemAPI(term, country), timeout: 6000 },
+      { name: "Wikidata", fn: () => queryWikidataAPI(term, country), timeout: 6000 }
     ];
 
     // AI Services with fallbacks
