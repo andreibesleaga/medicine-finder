@@ -37,8 +37,8 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
       { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
       { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 10000 },
-      { name: "DrugBank", fn: () => queryDrugBankAPI(term, country), timeout: 8000 },
-      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term, country), timeout: 8000 }
+      { name: "DrugBank", fn: () => queryDrugBankAPI(term), timeout: 8000 },
+      { name: "ChemSpider", fn: () => queryChemSpiderAPI(term), timeout: 8000 }
     ];
 
     const allQueries = [...standardApiQueries, ...aiServiceQueries];
