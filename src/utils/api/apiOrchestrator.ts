@@ -3,7 +3,7 @@ import { MedicineResult } from "@/types/medicine";
 import { searchRxNorm } from "./rxnormApi";
 import { searchOpenFDA } from "./fdaApi";
 import { searchEMA } from "./emaApi";
-import { searchOpenAI, searchPerplexity, queryDrugBankAPI, queryChemSpiderAPI } from "./aiServices";
+import { searchOpenAI, searchPerplexity, searchDeepSeek, queryDrugBankAPI, queryChemSpiderAPI } from "./aiServices";
 import { searchWHO, searchClinicalTrials, queryPubChemAPI, queryWikidataAPI } from "./publicApis";
 
 export const queryAIEngines = async (term: string, country?: string): Promise<MedicineResult[]> => {
@@ -19,6 +19,7 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       searchClinicalTrials(term),
       searchOpenAI(term, country),
       searchPerplexity(term, country),
+      searchDeepSeek(term, country),
       queryDrugBankAPI(term, country),
       queryPubChemAPI(term, country),
       queryChemSpiderAPI(term, country),
