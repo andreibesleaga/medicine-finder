@@ -64,16 +64,20 @@ const Index = () => {
           isLoading={isLoading} 
           searchTerm={searchTerm}
         />
-      </div>
 
-      {/* Footer */}
-      <footer className="py-6 bg-white/50 backdrop-blur-sm border-t border-gray-200">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-600 flex items-center justify-center gap-1">
-            made with <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=16&h=16&fit=crop&crop=center" alt="heart" className="w-4 h-4" /> by Andrei Besleaga Nicolae
+        {/* Made with Lovable text */}
+        <div className="text-center mt-12 pt-8">
+          <p className="text-gray-600 flex items-center justify-center gap-2">
+            made with 
+            <img 
+              src="https://lovable.dev/favicon.ico" 
+              alt="Lovable" 
+              className="w-4 h-4" 
+            /> 
+            by Andrei Besleaga Nicolae
           </p>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
