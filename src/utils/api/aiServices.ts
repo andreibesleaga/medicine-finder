@@ -298,6 +298,7 @@ export const searchOpenRouter = async (term: string, country?: string): Promise<
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        model: "deepseek/deepseek-r1-0528",
         messages: [
           {
             role: 'system',
