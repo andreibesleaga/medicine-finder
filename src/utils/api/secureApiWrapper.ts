@@ -65,6 +65,16 @@ export class SecureApiWrapper {
     }
   }
 
+  static async searchOpenRouterSecure(term: string, country?: string): Promise<MedicineResult[]> {
+    try {
+      const results = await this.callSecureEndpoint('openrouter-search', { term, country });
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.warn("OpenRouter secure search failed:", error);
+      return [];
+    }
+  }
+
   static async queryDrugBankSecure(term: string, country?: string): Promise<MedicineResult[]> {
     try {
       const results = await this.callSecureEndpoint('drugbank-search', { term, country });
@@ -99,6 +109,7 @@ export class SecureApiWrapper {
       openai: { available: isSecure, secure: isSecure },
       perplexity: { available: isSecure, secure: isSecure },
       deepseek: { available: isSecure, secure: isSecure },
+      openrouter: { available: isSecure, secure: isSecure },
       drugbank: { available: isSecure, secure: isSecure },
       chemspider: { available: isSecure, secure: isSecure },
     };

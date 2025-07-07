@@ -166,7 +166,7 @@ export const searchMedicines = async (term: string, country?: string): Promise<M
 export { searchRxNorm } from "./api/rxnormApi";
 export { searchOpenFDA } from "./api/fdaApi";
 export { searchEMA } from "./api/emaApi";
-export { searchOpenAI, searchPerplexity, searchDeepSeek } from "./api/aiServices";
+export { searchOpenAI, searchPerplexity, searchDeepSeek, searchOpenRouter } from "./api/aiServices";
 export { searchWHO, searchClinicalTrials } from "./api/publicApis";
 export { performComprehensiveGlobalSearch } from "./api/comprehensiveSearch";
 export { enhanceMedicineData, findAlternativeNames } from "./api/medicineDataEnhancer";

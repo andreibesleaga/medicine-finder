@@ -3,7 +3,7 @@ import { MedicineResult } from "@/types/medicine";
 import { searchRxNorm } from "./rxnormApi";
 import { searchOpenFDA } from "./fdaApi";
 import { searchEMA } from "./emaApi";
-import { searchOpenAI, searchPerplexity, searchDeepSeek, queryDrugBankAPI, queryChemSpiderAPI } from "./aiServices";
+import { searchOpenAI, searchPerplexity, searchDeepSeek, searchOpenRouter, queryDrugBankAPI, queryChemSpiderAPI } from "./aiServices";
 import { searchWHO, searchClinicalTrials, queryPubChemAPI, queryWikidataAPI } from "./publicApis";
 import { performComprehensiveGlobalSearch } from "./comprehensiveSearch";
 import { getCachedResult, setCachedResult } from "./searchCache";
@@ -42,12 +42,14 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
       { name: "OpenAI (Secure)", fn: () => SecureApiWrapper.searchOpenAISecure(term, country), timeout: 10000 },
       { name: "Perplexity (Secure)", fn: () => SecureApiWrapper.searchPerplexitySecure(term, country), timeout: 10000 },
       { name: "DeepSeek (Secure)", fn: () => SecureApiWrapper.searchDeepSeekSecure(term, country), timeout: 10000 },
+      { name: "OpenRouter (Secure)", fn: () => SecureApiWrapper.searchOpenRouterSecure(term, country), timeout: 10000 },
       { name: "DrugBank (Secure)", fn: () => SecureApiWrapper.queryDrugBankSecure(term, country), timeout: 8000 },
       { name: "ChemSpider (Secure)", fn: () => SecureApiWrapper.queryChemSpiderSecure(term, country), timeout: 8000 }
     ] : [
       { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
       { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
       { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 10000 },
+      { name: "OpenRouter", fn: () => searchOpenRouter(term, country), timeout: 10000 },
       { name: "DrugBank", fn: () => queryDrugBankAPI(term), timeout: 8000 },
       { name: "ChemSpider", fn: () => queryChemSpiderAPI(term), timeout: 8000 }
     ];

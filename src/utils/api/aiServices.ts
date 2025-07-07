@@ -3,6 +3,7 @@ const PERPLEXITY_API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY;
 const DRUGBANK_API_KEY = import.meta.env.VITE_DRUGBANK_API_KEY;
 const CHEMSPIDER_API_KEY = import.meta.env.VITE_CHEMSPIDER_API_KEY;
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
 import { MedicineResult } from "@/types/medicine";
 
@@ -266,6 +267,90 @@ export const searchDeepSeek = async (term: string, country?: string): Promise<Me
 
   } catch (error) {
     console.error("DeepSeek API error:", error);
+    return [];
+  }
+};
+
+export const searchOpenRouter = async (term: string, country?: string): Promise<MedicineResult[]> => {
+  console.log("Searching OpenRouter AI for medicine brands:", term, "in", country || "worldwide");
+
+  if (!OPENROUTER_API_KEY) {
+    console.warn("OpenRouter API key not configured, skipping search");
+    return [];
+  }
+
+  try {
+    const countryFilter = country && country !== 'all' ? ` available in ${country}` : ' available worldwide';
+    const prompt = `List real brand names for the active pharmaceutical ingredient "${term}"${countryFilter}. 
+    Return ONLY a valid JSON array with objects containing exactly these fields:
+    - brandName (string): The commercial brand name
+    - country (string): Country where it's available
+    - manufacturer (string): Company that makes it
+    
+    Example format: [{"brandName":"Tylenol","country":"United States","manufacturer":"Johnson & Johnson"}]
+    
+    Limit to maximum 8 results. Return only real, existing medicines.`;
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a pharmaceutical database expert. Provide only factual, real medicine information in valid JSON format.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.1
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+
+    if (content) {
+      try {
+        // Clean the response to extract JSON
+        let jsonStr = content;
+        if (content.includes('```json')) {
+          jsonStr = content.split('```json')[1].split('```')[0].trim();
+        } else if (content.includes('```')) {
+          jsonStr = content.split('```')[1].trim();
+        }
+
+        const brands = JSON.parse(jsonStr);
+        
+        if (Array.isArray(brands)) {
+          return brands.map((brand: any, index: number) => ({
+            id: `openrouter-${term}-${index}-${Math.random().toString(36).substr(2, 6)}`,
+            brandName: brand.brandName || brand.name || 'Unknown',
+            activeIngredient: term,
+            country: brand.country || country || "Global",
+            manufacturer: brand.manufacturer || "Various",
+            source: 'ai' as const
+          })).filter(result => result.brandName !== 'Unknown');
+        }
+      } catch (parseError) {
+        console.error("Failed to parse OpenRouter response:", parseError, "Content:", content);
+      }
+    }
+
+    return [];
+
+  } catch (error) {
+    console.error("OpenRouter API error:", error);
     return [];
   }
 };
