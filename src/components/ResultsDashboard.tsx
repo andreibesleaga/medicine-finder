@@ -62,12 +62,6 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm, onReset }: Re
         </div>
         <div className="text-center mt-8">
           <p className="text-gray-600 flex items-center justify-center gap-2">
-            made with 
-            <img 
-              src="https://lovable.dev/favicon.ico" 
-              alt="Lovable" 
-              className="w-4 h-4" 
-            /> 
             by Andrei Besleaga Nicolae
           </p>
         </div>
@@ -171,12 +165,6 @@ export const ResultsDashboard = ({ results, isLoading, searchTerm, onReset }: Re
         </div>
         <div className="text-center mt-8">
           <p className="text-gray-600 flex items-center justify-center gap-2">
-            made with 
-            <img 
-              src="https://lovable.dev/favicon.ico" 
-              alt="Lovable" 
-              className="w-4 h-4" 
-            /> 
             by Andrei Besleaga Nicolae
           </p>
         </div>
