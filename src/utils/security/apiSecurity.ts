@@ -22,7 +22,7 @@ export class ApiSecurity {
     const windowMs = 60 * 1000; // 1 minute window
 
     const current = rateLimitStore.get(key);
-    
+
     if (!current || now > current.resetTime) {
       rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
       return true;
@@ -37,6 +37,7 @@ export class ApiSecurity {
     return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static sanitizeApiResponse(data: any): any {
     if (typeof data !== 'object' || data === null) {
       return data;
@@ -46,12 +47,14 @@ export class ApiSecurity {
     const sensitiveFields = ['password', 'token', 'key', 'secret', 'auth'];
     const cleaned = { ...data };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cleanObject = (obj: any): any => {
       if (Array.isArray(obj)) {
         return obj.map(cleanObject);
       }
-      
+
       if (typeof obj === 'object' && obj !== null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result: any = {};
         for (const [key, value] of Object.entries(obj)) {
           const keyLower = key.toLowerCase();
@@ -61,7 +64,7 @@ export class ApiSecurity {
         }
         return result;
       }
-      
+
       return obj;
     };
 
@@ -70,7 +73,7 @@ export class ApiSecurity {
 
   static async secureApiRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const endpoint = new URL(url).hostname;
-    
+
     // Check rate limit
     if (!this.checkRateLimit(endpoint)) {
       throw new Error('Rate limit exceeded. Please try again later.');
@@ -118,20 +121,21 @@ export class ApiSecurity {
     return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static logSecurityEvent(event: string, details: any): void {
     const timestamp = new Date().toISOString();
     console.warn(`[Security Event] ${timestamp}: ${event}`, details);
-    
+
     // In production, this would send to a logging service
     // For now, we'll store critical events in localStorage
     const securityLog = JSON.parse(localStorage.getItem('security-log') || '[]');
     securityLog.push({ timestamp, event, details });
-    
+
     // Keep only last 100 events
     if (securityLog.length > 100) {
       securityLog.shift();
     }
-    
+
     localStorage.setItem('security-log', JSON.stringify(securityLog));
   }
 }
@@ -156,7 +160,7 @@ export class ApiKeyManager {
     // In a secure implementation, this would fetch from Supabase Edge Functions
     // For now, we'll return null to force backend implementation
     ApiSecurity.logSecurityEvent('API_KEY_ACCESS_ATTEMPT', { service });
-    
+
     console.warn(`API key access for ${service} - should be handled by backend`);
     return null;
   }

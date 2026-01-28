@@ -20,8 +20,9 @@ export const searchWHO = async (term: string): Promise<MedicineResult[]> => {
 
     // Real WHO data processing - use country data to suggest medicine availability patterns
     if (data.value && Array.isArray(data.value)) {
-      const relevantCountries = data.value.filter((country: any) => 
-        country.Title && 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const relevantCountries = data.value.filter((country: any) =>
+        country.Title &&
         country.Title.length > 2 &&
         !country.Title.includes('(') // Filter out grouped entries
       ).slice(0, 15);
@@ -29,11 +30,11 @@ export const searchWHO = async (term: string): Promise<MedicineResult[]> => {
       // Create medicine results based on WHO country health data
       for (const country of relevantCountries) {
         const countryName = country.Title;
-        
+
         // Generate medicine availability based on country healthcare development
         const developedCountries = ['Germany', 'France', 'United Kingdom', 'Japan', 'Australia', 'Canada'];
         const isDeveloped = developedCountries.some(dev => countryName.includes(dev));
-        
+
         if (isDeveloped || Math.random() > 0.7) { // Higher chance for developed countries
           results.push({
             id: `who-${countryName.toLowerCase().replace(/\s+/g, '-')}-${term}`,
@@ -78,11 +79,11 @@ export const searchClinicalTrials = async (term: string): Promise<MedicineResult
             // Parse intervention names to extract medicine brands
             const interventionStr = String(intervention).toLowerCase();
             const termLower = term.toLowerCase();
-            
+
             if (interventionStr.includes(termLower) || termLower.includes(interventionStr)) {
               const countries = study.LocationCountry || ['Global'];
               const primaryCountry = Array.isArray(countries) ? countries[0] : countries;
-              
+
               results.push({
                 id: `clinicaltrials-${Math.random().toString(36).substr(2, 9)}`,
                 brandName: intervention,
@@ -99,7 +100,7 @@ export const searchClinicalTrials = async (term: string): Promise<MedicineResult
 
     // Remove duplicates and limit results
     const uniqueResults = results.filter((result, index, array) =>
-      array.findIndex(r => 
+      array.findIndex(r =>
         r.brandName.toLowerCase() === result.brandName.toLowerCase() &&
         r.country === result.country
       ) === index
@@ -190,7 +191,7 @@ export const queryWikidataAPI = async (term: string, country?: string): Promise<
         // Filter for medicine-related entities
         const description = entity.description?.toLowerCase() || '';
         const label = entity.label || '';
-        
+
         if (
           description.includes('medication') ||
           description.includes('drug') ||
@@ -227,22 +228,22 @@ export const getMedicinesByActiveIngredient = async (activeIngredient: string): 
     const response = await fetch(
       `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(activeIngredient)}/synonyms/JSON`
     );
-    
+
     if (response.ok) {
       const data = await response.json();
       const synonyms = data.InformationList?.Information?.[0]?.Synonym || [];
-      
+
       // Filter for brand-like names
-      return synonyms.filter((name: string) => 
-        /^[A-Z][a-zA-Z]+$/.test(name) && 
-        name.length >= 3 && 
+      return synonyms.filter((name: string) =>
+        /^[A-Z][a-zA-Z]+$/.test(name) &&
+        name.length >= 3 &&
         name.length <= 20
       ).slice(0, 10);
     }
   } catch (error) {
     console.error("Error getting medicine brands:", error);
   }
-  
+
   return [];
 };
 
@@ -253,7 +254,7 @@ export const checkMedicineAvailability = async (medicine: string, countryCode: s
     // For now, we'll simulate based on country development level
     const developedCountries = ['US', 'DE', 'FR', 'GB', 'JP', 'CA', 'AU', 'CH', 'SE', 'NO'];
     const emergingMarkets = ['IN', 'BR', 'CN', 'MX', 'RU', 'ZA'];
-    
+
     if (developedCountries.includes(countryCode)) {
       return Math.random() > 0.1; // 90% availability in developed countries
     } else if (emergingMarkets.includes(countryCode)) {

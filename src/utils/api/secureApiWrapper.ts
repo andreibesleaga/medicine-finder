@@ -5,16 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Secure API wrapper using Supabase Edge Functions
 export class SecureApiWrapper {
-  
+
   // Call Supabase Edge Functions securely
   static async callSecureEndpoint(
-    functionName: string, 
+    functionName: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     try {
-      ApiSecurity.logSecurityEvent('SECURE_ENDPOINT_CALL', { 
-        functionName, 
-        payload: JSON.stringify(payload).substring(0, 100) 
+      ApiSecurity.logSecurityEvent('SECURE_ENDPOINT_CALL', {
+        functionName,
+        payload: JSON.stringify(payload).substring(0, 100)
       });
 
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -27,9 +29,9 @@ export class SecureApiWrapper {
 
       return data;
     } catch (error) {
-      ApiSecurity.logSecurityEvent('SECURE_ENDPOINT_ERROR', { 
-        functionName, 
-        error: error?.toString() 
+      ApiSecurity.logSecurityEvent('SECURE_ENDPOINT_ERROR', {
+        functionName,
+        error: error?.toString()
       });
       throw error;
     }
@@ -97,14 +99,15 @@ export class SecureApiWrapper {
 
   // Method to check if secure APIs are available
   static isSecureApiAvailable(): boolean {
-    // Check if we have Supabase connection
-    return !!supabase;
+    // Return false to force client-side API usage for Railway deployment
+    // (Supabase functions code is preserved but not used in this configuration)
+    return false;
   }
 
   // Method to get API status for dashboard
   static getApiStatus(): Record<string, { available: boolean; secure: boolean }> {
     const isSecure = this.isSecureApiAvailable();
-    
+
     return {
       openai: { available: isSecure, secure: isSecure },
       perplexity: { available: isSecure, secure: isSecure },

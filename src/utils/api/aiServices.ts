@@ -68,8 +68,9 @@ export const searchOpenAI = async (term: string, country?: string): Promise<Medi
         }
 
         const brands = JSON.parse(jsonStr);
-        
+
         if (Array.isArray(brands)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return brands.map((brand: any, index: number) => ({
             id: `openai-${term}-${index}-${Math.random().toString(36).substr(2, 6)}`,
             brandName: brand.brandName || brand.name || 'Unknown',
@@ -139,9 +140,10 @@ export const searchPerplexity = async (term: string, country?: string): Promise<
     if (content) {
       try {
         // Try to extract JSON from the response
-        let jsonMatch = content.match(/\[[\s\S]*\]/);
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const brands = JSON.parse(jsonMatch[0]);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return brands.map((brand: any, index: number) => ({
             id: `perplexity-${term}-${index}-${Math.random().toString(36).substr(2, 6)}`,
             brandName: brand.brandName || brand.name,
@@ -149,12 +151,13 @@ export const searchPerplexity = async (term: string, country?: string): Promise<
             country: brand.country || country || "Global",
             manufacturer: brand.manufacturer || "Various",
             source: 'ai' as const
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           })).filter((result: any) => result.brandName);
         } else {
           // Parse structured text response
           const lines = content.split('\n').filter(line => line.trim());
           const results: MedicineResult[] = [];
-          
+
           for (const line of lines) {
             if (line.includes(':') || line.includes('-')) {
               const brandMatch = line.match(/([A-Z][a-zA-Z]+)/);
@@ -170,7 +173,7 @@ export const searchPerplexity = async (term: string, country?: string): Promise<
               }
             }
           }
-          
+
           return results.slice(0, 5);
         }
       } catch (parseError) {
@@ -247,8 +250,9 @@ export const searchDeepSeek = async (term: string, country?: string): Promise<Me
         }
 
         const brands = JSON.parse(jsonStr);
-        
+
         if (Array.isArray(brands)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return brands.map((brand: any, index: number) => ({
             id: `deepseek-${term}-${index}-${Math.random().toString(36).substr(2, 6)}`,
             brandName: brand.brandName || brand.name || 'Unknown',
@@ -332,8 +336,9 @@ export const searchOpenRouter = async (term: string, country?: string): Promise<
         }
 
         const brands = JSON.parse(jsonStr);
-        
+
         if (Array.isArray(brands)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return brands.map((brand: any, index: number) => ({
             id: `openrouter-${term}-${index}-${Math.random().toString(36).substr(2, 6)}`,
             brandName: brand.brandName || brand.name || 'Unknown',
@@ -389,10 +394,10 @@ export const queryDrugBankAPI = async (term: string, country?: string): Promise<
       for (const drug of data.slice(0, 10)) {
         // Parse drug information
         const brandName = drug.name || drug.brand_names?.[0] || drug.synonyms?.[0];
-        const manufacturer = drug.manufacturers?.[0]?.name || 
-                           drug.companies?.[0]?.name || 
-                           "Various";
-        
+        const manufacturer = drug.manufacturers?.[0]?.name ||
+          drug.companies?.[0]?.name ||
+          "Various";
+
         if (brandName && brandName.toLowerCase().includes(term.toLowerCase())) {
           results.push({
             id: `drugbank-${drug.drugbank_id || Math.random().toString(36).substr(2, 9)}`,
@@ -439,7 +444,7 @@ export const queryChemSpiderAPI = async (term: string, country?: string): Promis
     }
 
     const xmlText = await response.text();
-    
+
     // Parse XML response
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
@@ -464,7 +469,7 @@ export const queryChemSpiderAPI = async (term: string, country?: string): Promis
             const detailXml = await detailResponse.text();
             const detailDoc = parser.parseFromString(detailXml, 'text/xml');
             const commonName = detailDoc.getElementsByTagName('CommonName')[0]?.textContent;
-            
+
             if (commonName) {
               results.push({
                 id: `chemspider-${csid}`,

@@ -58,7 +58,7 @@ serve(async (req) => {
     let results = [];
     if (content) {
       try {
-        let jsonMatch = content.match(/\[[\s\S]*\]/);
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const brands = JSON.parse(jsonMatch[0]);
           results = brands.map((brand, index) => ({
