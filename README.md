@@ -13,13 +13,13 @@ The project is frontend only but would require some backend in a reliable, scala
 ## What technologies are used for this project?
 
 This project is built with:
-- Lovable (and more manual code editing)
+- Lovable (& manual code editing)
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
-- Supabase/Vercel/Openrouter.ai integrations
+- Supabase/Vercel/Openrouter.ai integrations (backend/frontend calls)
 
 
 
