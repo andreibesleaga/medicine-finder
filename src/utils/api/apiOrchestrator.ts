@@ -39,17 +39,17 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
     console.log("Using secure APIs:", useSecureApis);
 
     const aiServiceQueries = useSecureApis ? [
-      { name: "OpenAI (Secure)", fn: () => SecureApiWrapper.searchOpenAISecure(term, country), timeout: 10000 },
-      { name: "Perplexity (Secure)", fn: () => SecureApiWrapper.searchPerplexitySecure(term, country), timeout: 10000 },
-      { name: "DeepSeek (Secure)", fn: () => SecureApiWrapper.searchDeepSeekSecure(term, country), timeout: 10000 },
-      { name: "OpenRouter (Secure)", fn: () => SecureApiWrapper.searchOpenRouterSecure(term, country), timeout: 10000 },
+      { name: "OpenAI (Secure)", fn: () => SecureApiWrapper.searchOpenAISecure(term, country), timeout: 30000 },
+      { name: "Perplexity (Secure)", fn: () => SecureApiWrapper.searchPerplexitySecure(term, country), timeout: 30000 },
+      { name: "DeepSeek (Secure)", fn: () => SecureApiWrapper.searchDeepSeekSecure(term, country), timeout: 30000 },
+      { name: "OpenRouter (Secure)", fn: () => SecureApiWrapper.searchOpenRouterSecure(term, country), timeout: 30000 },
       { name: "DrugBank (Secure)", fn: () => SecureApiWrapper.queryDrugBankSecure(term, country), timeout: 8000 },
       { name: "ChemSpider (Secure)", fn: () => SecureApiWrapper.queryChemSpiderSecure(term, country), timeout: 8000 }
     ] : [
-      { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 10000 },
-      { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 10000 },
-      { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 10000 },
-      { name: "OpenRouter", fn: () => searchOpenRouter(term, country), timeout: 10000 },
+      { name: "OpenAI", fn: () => searchOpenAI(term, country), timeout: 30000 },
+      { name: "Perplexity", fn: () => searchPerplexity(term, country), timeout: 30000 },
+      { name: "DeepSeek", fn: () => searchDeepSeek(term, country), timeout: 30000 },
+      { name: "OpenRouter", fn: () => searchOpenRouter(term, country), timeout: 30000 },
       { name: "DrugBank", fn: () => queryDrugBankAPI(term), timeout: 8000 },
       { name: "ChemSpider", fn: () => queryChemSpiderAPI(term), timeout: 8000 }
     ];
@@ -59,7 +59,7 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
 
     // Execute queries with timeout and proper error handling
     const executeWithTimeout = async (query: typeof allQueries[0]) => {
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`Timeout after ${query.timeout}ms`)), query.timeout)
       );
 
@@ -102,16 +102,16 @@ export const queryAIEngines = async (term: string, country?: string): Promise<Me
     // Enhanced deduplication with better unique key generation
     const uniqueResults = results.filter((result, index, array) => {
       const key = `${result.brandName.toLowerCase().trim()}-${result.country.toLowerCase()}-${result.activeIngredient.toLowerCase()}`;
-      return array.findIndex(r => 
+      return array.findIndex(r =>
         `${r.brandName.toLowerCase().trim()}-${r.country.toLowerCase()}-${r.activeIngredient.toLowerCase()}` === key
       ) === index;
     });
 
     console.log("Total unique AI results:", uniqueResults.length);
-    
+
     // Cache the results with 1 hour expiry
     setCachedResult(cacheKey, uniqueResults);
-    
+
     return uniqueResults;
 
   } catch (error) {
