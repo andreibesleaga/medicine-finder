@@ -6,7 +6,7 @@ Medicine Finder uses several online free medicine APIs (in RxNorm international 
 The project is frontend only but would require some backend in a reliable, scalable version, and currently is only a proof-of-concept mvp.
 
 
-**Live Demo URL (without AI API, real DB, and other limitations)**: https://medicinefind.vercel.app/
+**Live Demo (without AI API, real DB, and other limitations)**
 
 
 
@@ -27,3 +27,4 @@ This project is built with:
 Note: Some APIs (RxNorm, OpenFDA, EMA, WHO, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys.
 DeepSeek offers a free tier with generous limits if you register to use it.
 The other APIs and/or engines might need either local setup or registering your API keys (locally in env and exposed, or as functions responses in Supabase/Vercel/etc.)
+
