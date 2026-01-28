@@ -25,6 +25,6 @@ This project is built with:
 
 ### .env API keys, for some searches to work - or securely add backend Supabase Edge Function for them (as in current implementation)
 Note: Some APIs (RxNorm, OpenFDA, EMA, WHO, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys.
-DeepSeek offers a free tier with generous limits if you register to use it.
-The other APIs and/or engines might need either local setup or registering your API keys (locally in env and exposed, or as functions responses in Supabase/Vercel/etc.)
+DeepSeek/OpenRouter offers a free tier with generous limits if you register to use it.
+APIs and/or engines might need either local setup or registering your API keys (locally in env and exposed, or as functions responses in supabase/deployment/etc.)
 
