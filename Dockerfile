@@ -26,18 +26,23 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Default port explicit
+ENV PORT=80
+
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add custom nginx config for SPA routing
+# Add custom nginx config template for SPA routing
+# Nginx docker image automatically enables envsubst for files in /etc/nginx/templates
+RUN mkdir -p /etc/nginx/templates
 RUN echo 'server { \
-    listen 80; \
+    listen ${PORT}; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
         try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf
+}' > /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 
