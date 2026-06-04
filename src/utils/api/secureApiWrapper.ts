@@ -97,11 +97,12 @@ export class SecureApiWrapper {
     }
   }
 
-  // Method to check if secure APIs are available
+  // Method to check if secure APIs are available.
+  // Opt-in via VITE_USE_SECURE_API=true to route AI calls through Supabase Edge
+  // Functions (keys stay server-side). Defaults to false to preserve the existing
+  // client-side Railway deployment behavior (keys read from VITE_* in the browser).
   static isSecureApiAvailable(): boolean {
-    // Return false to force client-side API usage for Railway deployment
-    // (Supabase functions code is preserved but not used in this configuration)
-    return false;
+    return import.meta.env.VITE_USE_SECURE_API === 'true';
   }
 
   // Method to get API status for dashboard
