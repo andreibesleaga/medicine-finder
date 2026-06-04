@@ -8,8 +8,12 @@ import { SecureApiWrapper } from "@/utils/api/secureApiWrapper";
 import { SECURITY_CONFIG } from "@/utils/security/securityConfig";
 
 export const SecurityDashboard = () => {
-  const [securityLog, setSecurityLog] = useState<any[]>([]);
-  const [apiStatus, setApiStatus] = useState<Record<string, any>>({});
+  const [securityLog, setSecurityLog] = useState<
+    Array<{ event: string; timestamp: string | number; details?: unknown }>
+  >([]);
+  const [apiStatus, setApiStatus] = useState<
+    ReturnType<typeof SecureApiWrapper.getApiStatus>
+  >({});
 
   useEffect(() => {
     // Load security log
@@ -151,7 +155,7 @@ export const SecurityDashboard = () => {
                         {new Date(event.timestamp).toLocaleTimeString()}
                       </Badge>
                     </div>
-                    {event.details && (
+                    {event.details != null && (
                       <pre className="text-xs text-gray-600 mt-1 overflow-x-auto">
                         {JSON.stringify(event.details, null, 2)}
                       </pre>
