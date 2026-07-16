@@ -26,7 +26,7 @@ ARG VITE_SUPABASE_ANON_KEY
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.31.2-alpine3.23-slim
 
 # Default port explicit
 ENV PORT=80
