@@ -1,0 +1,27 @@
+{
+  "updated": "2026-10-01T00:00:00Z",
+  "capabilities": "basic",
+  "provider": "Andrei Nicolae Besleaga (andrei.besleaga@ieee.org)",
+  "measurement-method": "third-party-modeled",
+  "methodology-uri": "https://andreibesleaga.com/sustainability-methodology.html",
+  "reporting-period": "2026-09",
+  "target": "medicine-finder.up.railway.app",
+  "target-type": "origin",
+  "energy-consumption": 0.09,
+  "energy-unit": "kWh",
+  "carbon-footprint": 44.5,
+  "carbon-unit": "gCO2e",
+  "carbon-accounting": "location-based",
+  "carbon-intensity-gCO2e-per-kWh": 494,
+  "scope-1": 0,
+  "scope-2": 0,
+  "scope-3": 44.5,
+  "estimated-annual-emissions-kgCO2e": 0.534,
+  "disclosure-uri": "https://andreibesleaga.com/disclosures.html",
+  "extensions": {
+    "https://andreibesleaga.com/sustainability/extensions/transferred-bytes": {
+      "data-transferred-gb": 0.3
+    }
+  },
+  "signed": "eyJhbGciOiJFZERTQSIsImN0eSI6InN1c3RhaW5hYmlsaXR5LWRhdGEranNvbiIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im5EQlZQanpsWmZiRVJQb3F0bUdjYmNOZ1Ffbmw5bl82cUNOenlWVjhoVlUiLCJraWQiOiJES0g4a0NiQTBEMXBqWnYxMnhxOGVHdWRxRUhQMmkwdHE0aF9STVlKeFdvIiwiYWxnIjoiRWREU0EiLCJ1c2UiOiJzaWcifX0.eyJ1cGRhdGVkIjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJjYXBhYmlsaXRpZXMiOiJiYXNpYyIsInByb3ZpZGVyIjoiQW5kcmVpIE5pY29sYWUgQmVzbGVhZ2EgKGFuZHJlaS5iZXNsZWFnYUBpZWVlLm9yZykiLCJtZWFzdXJlbWVudC1tZXRob2QiOiJ0aGlyZC1wYXJ0eS1tb2RlbGVkIiwibWV0aG9kb2xvZ3ktdXJpIjoiaHR0cHM6Ly9hbmRyZWliZXNsZWFnYS5jb20vc3VzdGFpbmFiaWxpdHktbWV0aG9kb2xvZ3kuaHRtbCIsInJlcG9ydGluZy1wZXJpb2QiOiIyMDI2LTA5IiwidGFyZ2V0IjoibWVkaWNpbmUtZmluZGVyLnVwLnJhaWx3YXkuYXBwIiwidGFyZ2V0LXR5cGUiOiJvcmlnaW4iLCJlbmVyZ3ktY29uc3VtcHRpb24iOjAuMDksImVuZXJneS11bml0Ijoia1doIiwiY2FyYm9uLWZvb3RwcmludCI6NDQuNSwiY2FyYm9uLXVuaXQiOiJnQ08yZSIsImNhcmJvbi1hY2NvdW50aW5nIjoibG9jYXRpb24tYmFzZWQiLCJjYXJib24taW50ZW5zaXR5LWdDTzJlLXBlci1rV2giOjQ5NCwic2NvcGUtMSI6MCwic2NvcGUtMiI6MCwic2NvcGUtMyI6NDQuNSwiZXN0aW1hdGVkLWFubnVhbC1lbWlzc2lvbnMta2dDTzJlIjowLjUzNCwiZGlzY2xvc3VyZS11cmkiOiJodHRwczovL2FuZHJlaWJlc2xlYWdhLmNvbS9kaXNjbG9zdXJlcy5odG1sIiwiZXh0ZW5zaW9ucyI6eyJodHRwczovL2FuZHJlaWJlc2xlYWdhLmNvbS9zdXN0YWluYWJpbGl0eS9leHRlbnNpb25zL3RyYW5zZmVycmVkLWJ5dGVzIjp7ImRhdGEtdHJhbnNmZXJyZWQtZ2IiOjAuM319fQ.JPO6bjijKvJs1teb7aFAK6xQyNyzSV90sbGWf6vBTmRQ8SKD7AlyqTGYf2vaKO5ukVBbMgxudf9TUgu3a-01Cw"
+}

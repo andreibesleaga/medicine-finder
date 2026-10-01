@@ -39,6 +39,18 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 RUN mkdir -p /etc/nginx/templates
 RUN echo 'server { \
     listen ${PORT}; \
+    location = /.well-known/sustainability-data { \
+        root /usr/share/nginx/html; \
+        default_type application/sustainability-data+json; \
+        add_header Access-Control-Allow-Origin "*" always; \
+        add_header Cache-Control "public, max-age=3600" always; \
+        add_header X-Content-Type-Options "nosniff" always; \
+        try_files $uri =404; \
+    } \
+    location /.well-known/ { \
+        root /usr/share/nginx/html; \
+        try_files $uri =404; \
+    } \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
