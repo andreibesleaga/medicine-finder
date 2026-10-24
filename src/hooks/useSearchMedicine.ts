@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { SearchOutcome, SourceRun } from "@/types/medicine";
-import { searchMedicines } from "@/lib/search/searchMedicines";
+import { addAiSuggestions, searchMedicines } from "@/lib/search/searchMedicines";
+import { cacheKey, readCached, saveCached } from "@/lib/search/resultCache";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseSearchMedicineProps {
@@ -13,41 +14,57 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: Use
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
+  // a newer search makes the AI answer of an older one irrelevant
+  const searchId = useRef(0);
   const { toast } = useToast();
 
-  const handleSearch = async () => {
-    const term = searchTerm.trim().replace(/\s+/g, " ");
+  /** `fresh` skips this browser's saved results. */
+  const handleSearch = async (fresh = false) => {
+    const term = searchTerm.trim().replace(/\s+/g, " ").toLowerCase();
     if (term.length < 2) {
-      toast({
-        title: "Search term required",
-        description: "Enter an active ingredient, for example ibuprofen.",
-        variant: "destructive",
-      });
+      toast({ title: "Search term required", description: "Enter an active ingredient, for example ibuprofen.", variant: "destructive" });
       return;
+    }
+    const id = ++searchId.current;
+    const selection = selectedCountry === "all" ? undefined : selectedCountry;
+    const key = cacheKey(term, selection);
+
+    if (!fresh) {
+      const saved = await readCached(key);
+      if (saved) {
+        onResult(saved);
+        return;
+      }
     }
 
     setIsLoading(true);
     onLoadingChange(true);
+    let outcome: SearchOutcome;
     try {
-      const country = selectedCountry === "all" ? undefined : selectedCountry;
-      const outcome = await searchMedicines(term.toLowerCase(), country, onProgress);
-      onResult(outcome);
-      if (outcome.results.length === 0) {
-        toast({
-          title: "No results found",
-          description: `Nothing found for "${term}"${country ? ` in ${country}` : ""}. Check the spelling or use the international (INN) name.`,
-        });
-      }
+      outcome = await searchMedicines(term, selection, onProgress);
     } catch (error) {
       toast({
         title: "Search failed",
         description: error instanceof Error ? error.message : "Unknown error. Please try again.",
         variant: "destructive",
       });
+      return;
     } finally {
       setIsLoading(false);
       onLoadingChange(false);
     }
+    if (id !== searchId.current) return;
+    onResult(outcome);
+    if (outcome.results.length === 0 && !outcome.aiPending) {
+      toast({ title: "No results found", description: `Nothing found for "${term}". Check the spelling or use the international (INN) name.` });
+    }
+    if (outcome.aiPending) {
+      const withAi = await addAiSuggestions(outcome);
+      if (id !== searchId.current) return;
+      onResult(withAi);
+      outcome = withAi;
+    }
+    void saveCached(key, outcome);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

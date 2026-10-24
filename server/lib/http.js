@@ -18,7 +18,18 @@ export async function fetchChecked(fetchImpl, url, { timeoutMs = 10000, headers 
     headers: { "User-Agent": USER_AGENT, ...headers },
     signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!res.ok) throw new UpstreamError(`HTTP ${res.status} from ${new URL(url).host}`, res.status);
+  if (!res.ok) {
+    // include the provider's own short error message when it sends one (never the request)
+    let reason = "";
+    try {
+      const body = await res.text();
+      const msg = JSON.parse(body)?.error?.message;
+      if (typeof msg === "string") reason = `: ${msg.replace(/\s+/g, " ").slice(0, 120)}`;
+    } catch {
+      // not JSON; the status is enough
+    }
+    throw new UpstreamError(`HTTP ${res.status} from ${new URL(url).host}${reason}`, res.status);
+  }
   return res;
 }
 

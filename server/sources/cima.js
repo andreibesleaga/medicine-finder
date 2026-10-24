@@ -2,6 +2,7 @@
 
 import { fetchJson } from "../lib/http.js";
 import { stems, splitProductName, tidyCase } from "../lib/text.js";
+import { withSynonyms } from "../datasets/common.js";
 
 const API = "https://cima.aemps.es/cima/rest/medicamentos";
 
@@ -33,10 +34,15 @@ export function createCimaSource({ fetch }) {
     enabled: () => true,
     status: () => ({ state: "live" }),
     async search(term) {
-      // CIMA matches the start of the Spanish substance name; the stem bridges English and Spanish spellings
-      const query = stems(term).join(" ");
-      const json = await fetchJson(fetch, `${API}?practiv1=${encodeURIComponent(query)}&comerc=1&pagina=1`, { timeoutMs: 12000 });
-      return mapCima(json, term);
+      // CIMA matches the start of the Spanish substance name; the stem bridges English and Spanish
+      // spellings, and the other international name (acetaminophen -> paracetamol) is tried too
+      const seen = new Map();
+      for (const name of withSynonyms(term)) {
+        const query = stems(name).join(" ");
+        const json = await fetchJson(fetch, `${API}?practiv1=${encodeURIComponent(query)}&comerc=1&pagina=1`, { timeoutMs: 12000 });
+        for (const r of mapCima(json, term)) if (!seen.has(r.url)) seen.set(r.url, r);
+      }
+      return [...seen.values()];
     },
   };
 }

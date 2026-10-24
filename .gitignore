@@ -30,3 +30,6 @@ dist-ssr
 *.sln
 *.sw?
 bun.lockb
+
+# local SQLite data (rebuilt from the official downloads)
+/data/

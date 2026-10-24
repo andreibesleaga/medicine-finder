@@ -31,9 +31,12 @@ export function createSearch({ sources, cacheTtlMs = 3600e3, aiDailyLimit = 500,
       const timeout = new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error(`no answer within ${sourceTimeoutMs / 1000} s`)), sourceTimeoutMs);
       });
-      const rows = await Promise.race([source.search(term, ctx), timeout]);
+      // a source returns either an array or { total, results } (the database counts brands)
+      const out = await Promise.race([source.search(term, ctx), timeout]);
+      const rows = Array.isArray(out) ? out : out.results;
+      const count = Array.isArray(out) ? out.length : out.total;
       const results = rows.slice(0, MAX_PER_SOURCE).map((r) => ({ ...r, sourceId: source.id, sourceName: source.name, kind: source.kind }));
-      return { ...base, state: "ok", count: rows.length, results, ms: now() - started };
+      return { ...base, state: "ok", count, results, ms: now() - started };
     } catch (err) {
       return { ...base, state: "error", count: 0, results: [], detail: err instanceof Error ? err.message : String(err), ms: now() - started };
     } finally {

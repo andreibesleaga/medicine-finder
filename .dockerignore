@@ -8,3 +8,4 @@ dist
 .github
 coverage
 *.log
+data

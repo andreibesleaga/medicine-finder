@@ -33,10 +33,14 @@ The server-side sources and their state.
 }
 ```
 
-`state` is `ready` / `loading` / `error` for downloaded datasets, `live` for live APIs (or `error`
+`state` is `ready` (with `rows` and `updatedAt`) / `loading` / `error` for downloaded datasets, `live` for live APIs (or `error`
 after a failed call), and `disabled` for an AI provider without a key.
 
-## `GET /api/search?q=<ingredient>[&country=<country>]`
+## `GET /api/search?q=<ingredient>[&country=<country>]` and `GET /api/ai?q=…`
+
+`/api/search` returns the official sources (the national datasets, Spain, Canada). `/api/ai`
+returns the AI providers only, in the same format; it is slower, cached for a day and limited to
+10 calls per minute per visitor.
 
 | Parameter | Rules |
 |---|---|
@@ -72,8 +76,9 @@ Response:
 
 - Result fields other than `brandName`, `activeIngredient`, `country`, `sourceId`, `sourceName` and
   `kind` are optional: `manufacturer`, `strength`, `dosageForm`, `status`, `url`.
-- `kind` is `official` or `ai` for server sources.
-- `count` is how many the source found; at most 60 per source are returned.
+- `kind` is `official` or `curated` for `/api/search`, `ai` for `/api/ai`.
+- `count` is how many the source found (brands, for the datasets); at most 60 per source are returned,
+  single-ingredient products first.
 - Source `state`: `ok`, `error` (with `detail`), `disabled` (no key) or `skipped` (daily AI limit).
 - `cached: true` appears when the answer came from the cache.
 

@@ -57,8 +57,20 @@ const SECURITY_HEADERS = {
 
 const COMPRESSIBLE = /^(text\/|application\/(json|javascript|xml)|image\/svg)/;
 
-export function createApp({ distDir, search, sources, version, allowedOrigins = [], rateLimit = { limit: 20, windowMs: 60e3 }, now = Date.now, log = () => {} }) {
+export function createApp({
+  distDir,
+  search,
+  aiSearch,
+  sources,
+  version,
+  allowedOrigins = [],
+  rateLimit = { limit: 20, windowMs: 60e3 },
+  aiRateLimit = { limit: 10, windowMs: 60e3 },
+  now = Date.now,
+  log = () => {},
+}) {
   const limiter = new RateLimiter({ ...rateLimit, now });
+  const aiLimiter = new RateLimiter({ ...aiRateLimit, now });
   const fileCache = new Map();
   const startedAt = now();
   const csp = contentSecurityPolicy();
@@ -98,17 +110,19 @@ export function createApp({ distDir, search, sources, version, allowedOrigins = 
       }));
       return sendJson(res, 200, { sources: list }, cors);
     }
-    if (url.pathname === "/api/search") {
+    // /api/search: official databases (fast); /api/ai: AI suggestions (slow, separately limited)
+    if (url.pathname === "/api/search" || url.pathname === "/api/ai") {
       const term = validateTerm(url.searchParams.get("q"));
       if (!term) return sendJson(res, 400, { error: "Give an ingredient name of 2 to 80 letters, digits or spaces in ?q=" }, cors);
       const countryRaw = (url.searchParams.get("country") || "").trim();
       const country = countryRaw && countryRaw !== "all" ? validateTerm(countryRaw) : null;
       if (countryRaw && countryRaw !== "all" && !country) return sendJson(res, 400, { error: "Invalid country" }, cors);
-      const quota = limiter.take(clientKey(req));
+      const isAi = url.pathname === "/api/ai";
+      const quota = (isAi ? aiLimiter : limiter).take(clientKey(req));
       if (!quota.ok) {
         return sendJson(res, 429, { error: "Too many searches; try again shortly" }, { ...cors, "Retry-After": String(quota.retryAfterSec) });
       }
-      const body = await search(term, { country: country || undefined });
+      const body = await (isAi ? aiSearch : search)(term, { country: country || undefined });
       return sendJson(res, 200, body, { ...cors, "X-RateLimit-Remaining": String(quota.remaining) });
     }
     return sendJson(res, 404, { error: "Not found" }, cors);

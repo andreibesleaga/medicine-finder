@@ -1,0 +1,20 @@
+{
+  "note": "International (INN) and US (USAN) names of the same ingredient, so either name finds both.",
+  "pairs": [
+    ["paracetamol", "acetaminophen"],
+    ["acetylsalicylic acid", "aspirin"],
+    ["salbutamol", "albuterol"],
+    ["adrenaline", "epinephrine"],
+    ["noradrenaline", "norepinephrine"],
+    ["lidocaine", "lignocaine"],
+    ["glyceryl trinitrate", "nitroglycerin"],
+    ["ciclosporin", "cyclosporine"],
+    ["rifampicin", "rifampin"],
+    ["furosemide", "frusemide"],
+    ["levothyroxine", "thyroxine"],
+    ["metamizole", "dipyrone"],
+    ["pethidine", "meperidine"],
+    ["orciprenaline", "metaproterenol"],
+    ["colecalciferol", "cholecalciferol"]
+  ]
+}

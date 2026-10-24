@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { fetchServerSources, type ServerSourceInfo } from "@/lib/search/serverApi";
-import { CURATED_LISTS } from "@/lib/search/curatedLists";
 import { KIND_CLASS, KIND_LABEL, STATE_LABEL } from "@/components/sourceLabels";
 import { Disclaimer } from "@/components/Disclaimer";
 import type { SourceKind } from "@/types/medicine";
@@ -23,13 +22,6 @@ const BROWSER_ROWS: Row[] = [
   { name: "Wikidata", kind: "reference", coverage: "Any country; items with this active ingredient", homepage: "https://www.wikidata.org/wiki/Property:P3781", where: "your browser" },
   { name: "PubChem synonyms (US NIH)", kind: "reference", coverage: "Names recorded for the substance; some are brands", homepage: "https://pubchem.ncbi.nlm.nih.gov/", where: "your browser" },
   { name: "ClinicalTrials.gov", kind: "reference", coverage: "Number of registered studies (shown above the results)", homepage: "https://clinicaltrials.gov/", where: "your browser" },
-  {
-    name: "Curated sample lists",
-    kind: "curated",
-    coverage: `Static lists for ${CURATED_LISTS.map((l) => l.country).join(", ")}; a few common ingredients only`,
-    homepage: "https://github.com/andreibesleaga/medicine-finder/blob/main/src/lib/search/curatedLists.ts",
-    where: "built into the app",
-  },
 ];
 
 const Sources = () => {
@@ -48,9 +40,22 @@ const Sources = () => {
       kind: s.kind,
       coverage: s.coverage,
       homepage: s.homepage,
-      where: "search server",
+      where:
+        s.kind === "ai"
+          ? "search server (key on server)"
+          : s.kind === "curated"
+            ? "search server (built-in list)"
+            : s.id === "cima" || s.id === "health-canada"
+              ? "search server (live API)"
+              : "search server (database, daily)",
       state: s.state,
-      detail: s.detail ?? (s.updatedAt ? `data from ${new Date(s.updatedAt).toLocaleString("en-GB")}` : undefined),
+      detail: [
+        s.rows ? `${s.rows.toLocaleString("en")} products` : "",
+        s.updatedAt ? `updated ${new Date(s.updatedAt).toLocaleString("en-GB")}` : "",
+        s.detail ?? "",
+      ]
+        .filter(Boolean)
+        .join("; "),
     })),
     ...BROWSER_ROWS,
   ];

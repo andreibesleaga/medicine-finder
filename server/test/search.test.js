@@ -46,6 +46,13 @@ describe("server search", () => {
     expect(body.sources[0].count).toBe(75);
   });
 
+  it("accepts { total, results } from database sources", async () => {
+    const db = source("db", "official", async () => ({ total: 120, results: [{ brandName: "A", activeIngredient: "x", country: "Italy" }] }));
+    const body = await createSearch({ sources: [db], now: fixedClock() })("x");
+    expect(body.sources[0].count).toBe(120);
+    expect(body.results).toHaveLength(1);
+  });
+
   it("times out a slow source", async () => {
     const slow = source("s", "official", () => new Promise(() => {}));
     const body = await createSearch({ sources: [slow], sourceTimeoutMs: 20, now: fixedClock() })("x");

@@ -1,5 +1,5 @@
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe } from "lucide-react";
 import { countries } from "@/constants/countries";
 
@@ -11,6 +11,7 @@ interface CountrySelectorProps {
 
 export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelectorProps) => {
   const allOption = countries.find(country => country.value === "all");
+  const regions = countries.filter(country => country.isRegion);
   const countriesOnly = countries.filter(country => !country.isRegion && country.value !== "all");
 
   return (
@@ -28,12 +29,24 @@ export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelec
             </SelectItem>
           )}
 
-          {/* Individual Countries */}
-          {countriesOnly.map((country) => (
-            <SelectItem key={country.value} value={country.value}>
-              {country.label}
-            </SelectItem>
-          ))}
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>Regions</SelectLabel>
+            {regions.map((region) => (
+              <SelectItem key={region.value} value={region.value}>
+                {region.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>Countries</SelectLabel>
+            {countriesOnly.map((country) => (
+              <SelectItem key={country.value} value={country.value}>
+                {country.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </div>

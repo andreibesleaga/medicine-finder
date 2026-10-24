@@ -21,7 +21,7 @@ Since version 2.0 the project has a small backend: a Node server that serves the
 for the official databases and AI engines a browser cannot call directly. It is still a
 proof-of-concept MVP, not a production medical service.
 
-**Live demo:** deployed on Railway. Official EU, French, Spanish and Canadian data and the open US
+**Live demo:** deployed on Railway. Official data from the EU and 8 countries and the open US
 references work without keys. AI suggestions appear when a provider key is set on the server; keys
 never reach the browser.
 
@@ -29,12 +29,19 @@ never reach the browser.
 
 | Type | Sources | Countries |
 |---|---|---|
-| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) medicines data, France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Spain [CIMA](https://cima.aemps.es/) (AEMPS), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/) | EU, France, Spain, Canada |
+| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) (EU), France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Italy [AIFA](https://www.aifa.gov.it/liste-dei-farmaci), Poland [URPL](https://rejestry.ezdrowie.gov.pl/rpl/search/public), Netherlands [CBG](https://www.geneesmiddeleninformatiebank.nl/), Ireland [HPRA](https://www.hpra.ie/find-a-medicine), Switzerland [Swissmedic](https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html), Spain [CIMA](https://cima.aemps.es/), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/) | EU, FR, IT, PL, NL, IE, CH, ES, CA |
 | **Open reference** | [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/), [openFDA](https://open.fda.gov/) drug labels, [Wikidata](https://www.wikidata.org/), [PubChem](https://pubchem.ncbi.nlm.nih.gov/) synonyms; [ClinicalTrials.gov](https://clinicaltrials.gov/) study count | US, any |
 | **Curated sample** | static lists for a few common ingredients, typed into the app; not from a regulator | EU, DE, FR, IT, ES, NL, UK, IN |
 | **AI suggestion** | OpenAI, Perplexity, DeepSeek, OpenRouter, each only if its key is set; unverified | any |
 
-The **Data sources** page (`/sources`) shows each source's live status.
+The **Data sources** page (`/sources`) shows each source's live status. Results are ordered by
+reliability: official data first, then open references, curated samples and AI; single-ingredient
+products before combinations; brands listed by several sources first ("Listed by N sources").
+
+**Country or region:** choose one and you get that country's data, then EU-wide authorisations (EU
+and EEA members) and worldwide references. If there is no data for it yet, the app shows the same
+region, or all countries, and says so. "Acetaminophen" and "paracetamol" (and other INN/US name
+pairs) find each other.
 
 ## How it works
 
@@ -42,13 +49,15 @@ The **Data sources** page (`/sources`) shows each source's live status.
 flowchart LR
   U[Browser: React app] -->|/api/search| S[Node server]
   U --> O[RxNorm, openFDA, Wikidata,<br/>PubChem, ClinicalTrials.gov]
-  S --> E[(EMA, France BDPM:<br/>daily downloads)]
+  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, daily downloads)]
   S --> L[Spain CIMA, Health Canada:<br/>live APIs]
   S --> A[AI providers:<br/>keys on the server]
 ```
 
-All sources run in parallel, each with a time limit. The app merges the answers into one card per
-brand and country, preferring official data. The details are in
+All sources run in parallel, each with a time limit. Official results appear within seconds; AI
+suggestions follow from a separate endpoint. The last 50 searches are kept in the browser for a
+day. The app merges the answers into one card per brand and country, preferring official data. A summary for AI tools is in
+[public/llms.txt](public/llms.txt) (served at `/llms.txt`). The details are in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and the API in [docs/API.md](docs/API.md).
 
 ## What technologies are used for this project?
@@ -60,15 +69,15 @@ This project is automatically and manually built with:
 - Vite
 - shadcn-ui
 - Tailwind CSS
-- Node.js 22 server (no runtime dependencies), Docker
+- Node.js 22 server (no runtime dependencies), SQLite (built into Node), Docker
 - Railway (default deployment), Vercel (optional, off by default)
 - OpenAI, Perplexity, DeepSeek and OpenRouter.ai integrations (optional)
 
 
 ## API keys
 
-Some APIs (RxNorm, OpenFDA, EMA, BDPM, CIMA, Health Canada, ClinicalTrials, PubChem, Wikidata) are
-free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
+All data sources (RxNorm, OpenFDA, EMA, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, CIMA, Health
+Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
 register to use it.
 
 AI keys are **server variables** (`OPENAI_API_KEY`, `PERPLEXITY_API_KEY`, `DEEPSEEK_API_KEY`,
@@ -107,3 +116,8 @@ docker build -t medicine-finder . && docker run --rm -p 8080:8080 medicine-finde
 
 See [SECURITY.md](SECURITY.md). In short: keys stay on the server; searches are validated,
 rate-limited and cached; AI use has a daily cap; pages send a strict Content Security Policy.
+
+## Licence
+
+GNU General Public License v3.0 or later, see [LICENSE](LICENSE). Data-source terms and the NLM
+attribution are in [NOTICE.md](NOTICE.md).
