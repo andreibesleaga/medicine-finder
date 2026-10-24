@@ -12,6 +12,8 @@ export interface ServerSourceInfo {
   kind: SourceKind;
   coverage: string;
   homepage: string;
+  /** the source's licence or terms of use (shown on the Sources page as its attribution) */
+  terms?: string;
   enabled: boolean;
   state: string;
   detail?: string;

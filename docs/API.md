@@ -24,6 +24,7 @@ The server-side sources and their state.
       "kind": "official",
       "coverage": "European Union, centrally authorised medicines",
       "homepage": "https://www.ema.europa.eu/en/medicines/download-medicine-data",
+      "terms": "https://www.ema.europa.eu/en/about-us/legal-notice",
       "enabled": true,
       "state": "ready",
       "updatedAt": "2026-10-24T13:18:16.000Z"

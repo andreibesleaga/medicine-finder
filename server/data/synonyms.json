@@ -1,7 +1,7 @@
 {
-  "note": "International (INN) and US (USAN) names of the same ingredient, so either name finds both.",
-  "pairs": [
-    ["paracetamol", "acetaminophen"],
+  "note": "Names of the same ingredient in different conventions (INN, US/USAN, Latin American Spanish), so any name finds all of them.",
+  "groups": [
+    ["paracetamol", "acetaminophen", "acetaminofen"],
     ["acetylsalicylic acid", "aspirin"],
     ["salbutamol", "albuterol"],
     ["adrenaline", "epinephrine"],

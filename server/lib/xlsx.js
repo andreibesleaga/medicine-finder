@@ -43,7 +43,8 @@ const decodeXml = (s) =>
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&amp;/g, "&");
 
-const textOf = (xml) => decodeXml([...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map((m) => m[1]).join(""));
+// tags may carry a namespace prefix (<x:row>, <x:c>, ...), as in files written by some .NET tools
+const textOf = (xml) => decodeXml([...xml.matchAll(/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>/g)].map((m) => m[1]).join(""));
 
 /** Column letters to a 0-based index: "A" -> 0, "AB" -> 27. */
 export function columnIndex(ref) {
@@ -58,17 +59,17 @@ export function readFirstSheet(buf) {
   const sheet = files["xl/worksheets/sheet1.xml"];
   if (!sheet) throw new Error("no first worksheet");
   const shared = files["xl/sharedStrings.xml"]
-    ? [...files["xl/sharedStrings.xml"].toString("utf8").matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => textOf(m[1]))
+    ? [...files["xl/sharedStrings.xml"].toString("utf8").matchAll(/<(?:\w+:)?si>([\s\S]*?)<\/(?:\w+:)?si>/g)].map((m) => textOf(m[1]))
     : [];
   const rows = [];
-  for (const rm of sheet.toString("utf8").matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+  for (const rm of sheet.toString("utf8").matchAll(/<(?:\w+:)?row\b[^>]*>([\s\S]*?)<\/(?:\w+:)?row>/g)) {
     const row = [];
-    for (const cm of rm[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+    for (const cm of rm[1].matchAll(/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g)) {
       const attrs = cm[1];
       const ref = /\br="([A-Z]+\d+)"/.exec(attrs)?.[1];
       const type = /\bt="(\w+)"/.exec(attrs)?.[1];
       const inner = cm[2] ?? "";
-      const v = /<v>([\s\S]*?)<\/v>/.exec(inner)?.[1];
+      const v = /<(?:\w+:)?v>([\s\S]*?)<\/(?:\w+:)?v>/.exec(inner)?.[1];
       let value = "";
       if (type === "s" && v !== undefined) value = shared[Number(v)] ?? "";
       else if (type === "inlineStr") value = textOf(inner);

@@ -11,6 +11,7 @@ interface Row {
   kind: SourceKind;
   coverage: string;
   homepage: string;
+  terms?: string;
   where: string;
   state?: string;
   detail?: string;
@@ -40,6 +41,7 @@ const Sources = () => {
       kind: s.kind,
       coverage: s.coverage,
       homepage: s.homepage,
+      terms: s.terms,
       where:
         s.kind === "ai"
           ? "search server (key on server)"
@@ -106,6 +108,11 @@ const Sources = () => {
                       <ExternalLink className="w-3 h-3 shrink-0" aria-hidden="true" />
                       <span className="sr-only">(opens in a new tab)</span>
                     </a>
+                    {r.terms && (
+                      <a href={r.terms} target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-600 hover:underline mt-1">
+                        Terms of use<span className="sr-only"> of {r.name} (opens in a new tab)</span>
+                      </a>
+                    )}
                   </td>
                   <td className="p-3">
                     <span className={`rounded border px-2 py-0.5 text-xs whitespace-nowrap ${KIND_CLASS[r.kind]}`}>{KIND_LABEL[r.kind]}</span>

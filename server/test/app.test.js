@@ -27,7 +27,7 @@ beforeAll(async () => {
     allowedOrigins: ["https://medicine-finder.vercel.app"],
     rateLimit: { limit: 3, windowMs: 60e3 },
     now: fixedClock(),
-    sources: [{ id: "ema", name: "EMA", kind: "official", coverage: "EU", homepage: "https://ema", enabled: () => true, status: () => ({ state: "ready" }) }],
+    sources: [{ id: "ema", name: "EMA", kind: "official", coverage: "EU", homepage: "https://ema", terms: "https://ema/terms", enabled: () => true, status: () => ({ state: "ready" }) }],
     search: async (term, opts) => {
       searches.push([term, opts]);
       return { term, results: [], sources: [] };
@@ -106,7 +106,7 @@ describe("api", () => {
   it("reports health and sources", async () => {
     expect(await (await get("/api/health")).json()).toEqual({ status: "ok", version: "9.9.9", uptimeSec: 0 });
     const { sources } = await (await get("/api/sources")).json();
-    expect(sources).toEqual([{ id: "ema", name: "EMA", kind: "official", coverage: "EU", homepage: "https://ema", enabled: true, state: "ready" }]);
+    expect(sources).toEqual([{ id: "ema", name: "EMA", kind: "official", coverage: "EU", homepage: "https://ema", terms: "https://ema/terms", enabled: true, state: "ready" }]);
   });
 
   it("validates the search term and country", async () => {

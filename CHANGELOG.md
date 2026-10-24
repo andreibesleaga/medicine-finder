@@ -5,6 +5,26 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-24
+
+### Added
+- Nine more official registers, each downloaded into the database: Sweden (Läkemedelsverket,
+  13,540 products), Lithuania (VVKT, 7,586), Ukraine (State Register, 12,183), Malta (Medicines
+  Authority, 5,448), United States (FDA NDC Directory, 87,903), Colombia (INVIMA, 9,362), Taiwan
+  (TFDA, 22,938), Singapore (HSA, 5,511), New Zealand (Pharmac Schedule, funded medicines, 2,361).
+- Finland (Fimea, 11,704) from a file imported by hand into `DATA_DIR/imports` (fimea.fi blocks
+  scripts); reloaded whenever a newer file is uploaded. Datasets can now be "off" until their
+  source is available, and reload when it changes.
+- `docs/DATA-SOURCES.md`: every register in use and every other national register checked (about
+  60), with how it could be imported and why it is not used yet.
+- The Data sources page links each dataset's terms of use.
+
+### Changed
+- Ingredient names come in groups (`server/data/synonyms.json`): paracetamol, acetaminophen and the
+  Latin American acetaminofén now find each other (Colombia lists paracetamol as acetaminofén).
+- Lithuania's download is tried a second time after a 502 from the portal.
+- The XLSX reader accepts namespace-prefixed sheets (`<x:row>`), as written by some .NET tools.
+
 ## [2.2.0] - 2026-10-24
 
 ### Added

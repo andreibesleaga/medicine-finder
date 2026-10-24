@@ -53,6 +53,24 @@ railway up --detach                                     # deploy the local tree 
 railway logs                                            # "AI providers: ..." shows which keys are active
 ```
 
+### Finland (imported file)
+
+fimea.fi answers scripts with a browser check, so the server cannot download Finland's register.
+It is imported by hand, about once a month (Fimea updates it nightly):
+
+1. In a browser, open https://fimea.fi/en/databases_and_registers/basic-register-xml and download
+   the basic register XML (`Perusrekisteri.xml`, about 200 MB; unzip it if it comes zipped).
+2. Upload it to the volume, replacing the previous one. Railway's volume file commands use SSH, so
+   the first time register a key with Railway (`ssh-keygen -t ed25519`, then `railway ssh keys add`):
+
+   ```bash
+   railway volume files --volume medicine-finder-data upload --overwrite ./Perusrekisteri.xml /imports/Perusrekisteri.xml
+   ```
+
+The server checks every hour and reloads Finland when the file is newer than its data (about
+10 s). Until the first upload the source shows "off". Locally, put the file in
+`data/imports/Perusrekisteri.xml` (Docker: the `/app/data/imports` folder of the volume).
+
 ### Checks after a deploy
 
 ```bash
