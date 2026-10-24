@@ -5,6 +5,27 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-24
+
+### Added
+- SQLite database on the server (built-in `node:sqlite`) with official national data, loaded in the
+  background and refreshed daily: EMA, France, **Italy (AIFA), Poland (URPL), Netherlands (CBG),
+  Ireland (HPRA), Switzerland (Swissmedic)**; the curated samples moved into it.
+- Country and region choice with fallbacks: country, then EU-wide (EU/EEA), then worldwide
+  references; same region or all countries when there is no data, with a note. Regions selectable.
+- INN/US name pairs (`server/data/synonyms.json`): "acetaminophen" also finds paracetamol, etc.
+- Ranking: official first, more reliable references first, single-ingredient before combinations,
+  "Listed by N sources" for brands several sources agree on.
+- AI suggestions on their own endpoint (`/api/ai`), shown after the official results; reasoning off
+  for OpenRouter, 45 s limit, 24 h cache, 10 requests/min per visitor; provider error messages shown.
+- Browser cache of the last 50 searches (IndexedDB, 24 h) with "Search again".
+- `/llms.txt` summary for AI tools; GPL-3.0-or-later `LICENSE`, `NOTICE.md` (data-source terms, NLM attribution), issue and PR
+  templates. 74 tests.
+
+### Changed
+- OpenRouter default model `openrouter/free` (the fixed free models were often rate-limited).
+- Docker image keeps the database in `/app/data` (`DATA_DIR`); runs as `node`.
+
 ## [2.0.0] - 2026-10-24
 
 ### Added

@@ -3,6 +3,8 @@
 
 import { fetchJson } from "../lib/http.js";
 
+export const AI_TIMEOUT_MS = 45000;
+
 export const PROVIDERS = [
   {
     id: "openai",
@@ -36,13 +38,15 @@ export const PROVIDERS = [
     name: "OpenRouter",
     keyVar: "OPENROUTER_API_KEY",
     modelVar: "OPENROUTER_MODEL",
-    // free models change often; OpenRouter tries the next one when a model is unavailable
-    defaultModel: "google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,nvidia/nemotron-3-super-120b-a12b:free",
+    // "openrouter/free" routes to whichever free model is available; a comma-separated list
+    // in OPENROUTER_MODEL is sent as fallbacks instead
+    defaultModel: "openrouter/free",
     url: "https://openrouter.ai/api/v1/chat/completions",
     headers: { "HTTP-Referer": "https://medicine-finder.up.railway.app", "X-Title": "Medicine Brand Finder" },
     body: (model, messages) => {
       const models = model.split(",").map((m) => m.trim()).filter(Boolean);
-      return { ...(models.length > 1 ? { models } : { model: models[0] }), messages, max_tokens: 1500, temperature: 0.1 };
+      // no "thinking" step: free reasoning models otherwise take 20-30 s for a short list
+      return { ...(models.length > 1 ? { models } : { model: models[0] }), messages, max_tokens: 900, temperature: 0.1, reasoning: { enabled: false } };
     },
   },
 ];
@@ -102,7 +106,7 @@ export function createAiSources({ fetch, env }) {
       async search(term, { country } = {}) {
         const json = await fetchJson(fetch, p.url, {
           method: "POST",
-          timeoutMs: 30000,
+          timeoutMs: AI_TIMEOUT_MS,
           headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json", ...p.headers },
           body: JSON.stringify(p.body(model(), buildMessages(term, country))),
         });

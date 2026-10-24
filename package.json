@@ -1,13 +1,13 @@
 {
   "name": "medicine-finder",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "node --watch server/index.js",
+    "dev:server": "node --disable-warning=ExperimentalWarning --watch server/index.js",
     "build": "vite build",
-    "start": "node server/index.js",
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
@@ -88,5 +88,11 @@
   "description": "Find the brand names of a medicine active ingredient worldwide, from official databases, open references and optional AI.",
   "engines": {
     "node": ">=22"
-  }
+  },
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreibesleaga/medicine-finder.git"
+  },
+  "homepage": "https://medicine-finder.up.railway.app/"
 }

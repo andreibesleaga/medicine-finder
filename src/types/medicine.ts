@@ -46,8 +46,15 @@ export interface TrialsInfo {
 
 export interface SearchOutcome {
   term: string;
+  /** the country or region chosen ("region:Asia"), if any */
   country?: string;
   results: MedicineResult[];
   sources: SourceRun[];
   trials?: TrialsInfo;
+  /** set when results come from a wider area than the one chosen */
+  note?: string;
+  /** true while AI suggestions are still on their way */
+  aiPending?: boolean;
+  /** when the outcome was read from this browser's cache: the time it was saved */
+  savedAt?: number;
 }

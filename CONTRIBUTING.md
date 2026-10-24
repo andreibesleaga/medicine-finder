@@ -21,6 +21,16 @@ npm test
 - Never add generated or invented data: every result must come from a named source.
 - Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm audit` before a PR.
 
+## Adding a data source
+
+A national dataset is one file in `server/datasets/` exporting `{ id, name, kind, coverage,
+homepage, refreshMs, load(fetch) }` where `load` returns rows `{ brand, ingredient, country,
+holder?, strength?, form?, status?, url? }`; add it to `DATASETS` in `server/datasets/index.js`,
+with a parser test in `server/test/datasets.test.js` and its terms in `NOTICE.md`. Only official,
+free, publicly downloadable data.
+
+By contributing you agree that your contribution is licensed under GPL-3.0-or-later.
+
 ## Reporting issues
 
 Use GitHub issues for bugs and feature ideas. For security reports, see

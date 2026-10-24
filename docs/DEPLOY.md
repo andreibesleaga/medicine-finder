@@ -20,13 +20,20 @@ Set them in the Railway dashboard (service → Variables) or with the CLI. None 
 | `DEEPSEEK_API_KEY` | turns on DeepSeek suggestions | off |
 | `OPENROUTER_API_KEY` | turns on OpenRouter suggestions | off |
 | `OPENAI_MODEL`, `PERPLEXITY_MODEL`, `DEEPSEEK_MODEL` | model per provider | `gpt-5-mini`, `sonar`, `deepseek-chat` |
-| `OPENROUTER_MODEL` | model, or a comma-separated list tried in order | three free models |
+| `OPENROUTER_MODEL` | model, or a comma-separated list tried in order | `openrouter/free` (any available free model; slower and less steady than a paid model) |
 | `AI_DAILY_LIMIT` | AI calls per day (UTC) for all visitors together | `500` |
+| `AI_RATE_LIMIT` | AI requests per minute per visitor | `10` |
+| `AI_CACHE_SECONDS` | how long an AI answer is cached | `86400` |
+| `DATA_DIR` | where the SQLite database is kept | `/app/data` in the image |
 | `SEARCH_RATE_LIMIT` | searches per minute per visitor | `20` |
 | `SEARCH_CACHE_SECONDS` | how long an answer is cached | `3600` |
 | `ALLOWED_ORIGINS` | other sites allowed to call `/api` (the Vercel copy) | none |
 
 `PORT` is provided by Railway.
+
+**Optional volume:** mount a Railway volume at `/app/data` (service → Settings → Volumes) so the
+national datasets survive deploys. Without it they are downloaded again after each deploy, which
+takes about 3 minutes in the background; meanwhile those sources show "loading".
 
 ```bash
 railway link --project medicine-finder --service medicine-finder --environment production

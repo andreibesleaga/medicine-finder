@@ -32,6 +32,8 @@ beforeAll(async () => {
       searches.push([term, opts]);
       return { term, results: [], sources: [] };
     },
+    aiSearch: async (term) => ({ term, results: [{ brandName: "AI" }], sources: [] }),
+    aiRateLimit: { limit: 1, windowMs: 60e3 },
   });
   server = http.createServer(handler);
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -125,6 +127,14 @@ describe("api", () => {
     expect(limited.status).toBe(429);
     expect(limited.headers.get("retry-after")).toBe("60");
     expect((await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "198.51.100.1" })).status).toBe(200);
+  });
+
+  it("serves AI suggestions on their own endpoint with their own limit", async () => {
+    const res = await get("/api/ai?q=ibuprofen", { "X-Forwarded-For": "192.0.2.7" });
+    expect((await res.json()).results).toEqual([{ brandName: "AI" }]);
+    expect((await get("/api/ai?q=ibuprofen", { "X-Forwarded-For": "192.0.2.7" })).status).toBe(429);
+    expect((await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "192.0.2.7" })).status).toBe(200);
+    expect((await get("/api/ai?q=%3C")).status).toBe(400);
   });
 
   it("allows cross-origin calls only from configured origins", async () => {

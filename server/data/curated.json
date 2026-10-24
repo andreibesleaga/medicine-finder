@@ -1,0 +1,475 @@
+{
+  "note": "Static brand lists typed into the app for a few common ingredients. Not from a regulator; may be incomplete or out of date. Always shown as \"Curated sample\".",
+  "synonyms": {
+    "acetaminophen": "paracetamol",
+    "acetylsalicylic acid": "aspirin"
+  },
+  "lists": [
+    {
+      "id": "eu",
+      "country": "European Union",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Nurofen",
+            "manufacturer": "Reckitt Benckiser"
+          },
+          {
+            "brand": "Brufen",
+            "manufacturer": "Abbott"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Panadol",
+            "manufacturer": "GSK"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Losec",
+            "manufacturer": "AstraZeneca"
+          }
+        ],
+        "atorvastatin": [
+          {
+            "brand": "Lipitor",
+            "manufacturer": "Pfizer"
+          }
+        ],
+        "amoxicillin": [
+          {
+            "brand": "Amoxil",
+            "manufacturer": "GSK"
+          }
+        ]
+      }
+    },
+    {
+      "id": "germany",
+      "country": "Germany",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Dolgit",
+            "manufacturer": "Dolorgiet"
+          },
+          {
+            "brand": "IBU-ratiopharm"
+          },
+          {
+            "brand": "Nurofen"
+          },
+          {
+            "brand": "Brufen"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "ben-u-ron"
+          },
+          {
+            "brand": "Paracetamol-ratiopharm"
+          },
+          {
+            "brand": "Tylenol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Aspirin"
+          },
+          {
+            "brand": "ASS-ratiopharm"
+          },
+          {
+            "brand": "Godamed"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Antra",
+            "manufacturer": "AstraZeneca"
+          },
+          {
+            "brand": "Omep"
+          },
+          {
+            "brand": "Gastracid"
+          }
+        ],
+        "diclofenac": [
+          {
+            "brand": "Voltaren"
+          },
+          {
+            "brand": "Diclac"
+          },
+          {
+            "brand": "Diclo-ratiopharm"
+          }
+        ],
+        "atorvastatin": [
+          {
+            "brand": "Sortis",
+            "manufacturer": "Pfizer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "france",
+      "country": "France",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Advil"
+          },
+          {
+            "brand": "Nurofen"
+          },
+          {
+            "brand": "Spedifen"
+          },
+          {
+            "brand": "Antarène"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Doliprane",
+            "manufacturer": "Sanofi"
+          },
+          {
+            "brand": "Efferalgan",
+            "manufacturer": "Bristol Myers Squibb"
+          },
+          {
+            "brand": "Dafalgan"
+          },
+          {
+            "brand": "Panadol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Aspégic"
+          },
+          {
+            "brand": "Kardégic"
+          },
+          {
+            "brand": "Aspirin UPSA"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Mopral",
+            "manufacturer": "AstraZeneca"
+          },
+          {
+            "brand": "Zoltum"
+          }
+        ],
+        "amoxicillin": [
+          {
+            "brand": "Clamoxyl",
+            "manufacturer": "GSK"
+          },
+          {
+            "brand": "Bristamox"
+          }
+        ]
+      }
+    },
+    {
+      "id": "italy",
+      "country": "Italy",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Moment",
+            "manufacturer": "Angelini"
+          },
+          {
+            "brand": "Brufen"
+          },
+          {
+            "brand": "Nurofen"
+          },
+          {
+            "brand": "Cibalgina"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Tachipirina",
+            "manufacturer": "Angelini"
+          },
+          {
+            "brand": "Efferalgan"
+          },
+          {
+            "brand": "Panadol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Aspirina"
+          },
+          {
+            "brand": "Cardioaspirin"
+          },
+          {
+            "brand": "Aspirin C"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Antra"
+          },
+          {
+            "brand": "Mepral"
+          },
+          {
+            "brand": "Omeprazen"
+          }
+        ],
+        "diclofenac": [
+          {
+            "brand": "Voltaren"
+          },
+          {
+            "brand": "Dicloreum"
+          },
+          {
+            "brand": "Flector"
+          }
+        ]
+      }
+    },
+    {
+      "id": "spain",
+      "country": "Spain",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Espidifen"
+          },
+          {
+            "brand": "Neobrufen"
+          },
+          {
+            "brand": "Dalsy"
+          },
+          {
+            "brand": "Junifen"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Gelocatil"
+          },
+          {
+            "brand": "Apiretal"
+          },
+          {
+            "brand": "Panadol"
+          },
+          {
+            "brand": "Tempra"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Adiro"
+          },
+          {
+            "brand": "Aspirina"
+          },
+          {
+            "brand": "AAS"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Losec"
+          },
+          {
+            "brand": "Prilosec"
+          },
+          {
+            "brand": "Ulceral"
+          }
+        ],
+        "diclofenac": [
+          {
+            "brand": "Voltarén"
+          },
+          {
+            "brand": "Artrotec",
+            "ingredients": "diclofenac + misoprostol"
+          }
+        ],
+        "atorvastatin": [
+          {
+            "brand": "Cardyl",
+            "manufacturer": "Pfizer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "netherlands",
+      "country": "Netherlands",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Brufen"
+          },
+          {
+            "brand": "Nurofen"
+          },
+          {
+            "brand": "Advil"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Panadol"
+          },
+          {
+            "brand": "Tylenol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Aspirine"
+          },
+          {
+            "brand": "Ascal"
+          },
+          {
+            "brand": "Carbasalaat"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Losec"
+          }
+        ],
+        "amoxicillin": [
+          {
+            "brand": "Flemoxin",
+            "manufacturer": "Astellas"
+          },
+          {
+            "brand": "Clamoxyl"
+          }
+        ]
+      }
+    },
+    {
+      "id": "united-kingdom",
+      "country": "United Kingdom",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Nurofen"
+          },
+          {
+            "brand": "Brufen"
+          },
+          {
+            "brand": "Calprofen"
+          },
+          {
+            "brand": "Cuprofen"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Panadol"
+          },
+          {
+            "brand": "Calpol"
+          },
+          {
+            "brand": "Lemsip"
+          },
+          {
+            "brand": "Tylenol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Aspirin"
+          },
+          {
+            "brand": "Disprin"
+          },
+          {
+            "brand": "Nu-Seals"
+          }
+        ],
+        "omeprazole": [
+          {
+            "brand": "Losec"
+          },
+          {
+            "brand": "Prilosec"
+          }
+        ],
+        "diclofenac": [
+          {
+            "brand": "Voltarol"
+          },
+          {
+            "brand": "Diclomax"
+          },
+          {
+            "brand": "Motifene"
+          }
+        ]
+      }
+    },
+    {
+      "id": "india",
+      "country": "India",
+      "brands": {
+        "ibuprofen": [
+          {
+            "brand": "Brufen",
+            "manufacturer": "Abbott India"
+          },
+          {
+            "brand": "Combiflam",
+            "manufacturer": "Sanofi India",
+            "ingredients": "ibuprofen + paracetamol"
+          }
+        ],
+        "paracetamol": [
+          {
+            "brand": "Crocin",
+            "manufacturer": "GSK Pharma"
+          },
+          {
+            "brand": "Dolo",
+            "manufacturer": "Micro Labs"
+          },
+          {
+            "brand": "Combiflam",
+            "manufacturer": "Sanofi India",
+            "ingredients": "ibuprofen + paracetamol"
+          }
+        ],
+        "aspirin": [
+          {
+            "brand": "Disprin",
+            "manufacturer": "Reckitt Benckiser"
+          }
+        ]
+      }
+    }
+  ]
+}

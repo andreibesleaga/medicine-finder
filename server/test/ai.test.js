@@ -47,9 +47,22 @@ describe("AI providers", () => {
     expect(rows).toEqual([{ brandName: "Nurofen", activeIngredient: "ibuprofen", country: "United Kingdom", manufacturer: undefined }]);
     const { init } = fetch.calls[0];
     expect(init.headers.Authorization).toBe("Bearer secret");
-    const body = JSON.parse(init.body);
-    expect(body.models.length).toBeGreaterThan(1);
+    expect(JSON.parse(init.body).model).toBe("openrouter/free");
+  });
+
+  it("sends a comma-separated OpenRouter model list as fallbacks", async () => {
+    const fetch = stubFetch([["openrouter.ai", () => answer("[]")]]);
+    const [, , , openrouter] = createAiSources({ fetch, env: { OPENROUTER_API_KEY: "k", OPENROUTER_MODEL: "a/x:free, b/y:free" } });
+    await openrouter.search("ibuprofen");
+    const body = JSON.parse(fetch.calls[0].init.body);
+    expect(body.models).toEqual(["a/x:free", "b/y:free"]);
     expect(body.model).toBeUndefined();
+  });
+
+  it("reports the provider's error message", async () => {
+    const fetch = stubFetch([["openrouter.ai", () => jsonResponse({ error: { message: "No endpoints found" } }, { status: 404 })]]);
+    const [, , , openrouter] = createAiSources({ fetch, env: { OPENROUTER_API_KEY: "k" } });
+    await expect(openrouter.search("ibuprofen")).rejects.toThrow("HTTP 404 from openrouter.ai: No endpoints found");
   });
 
   it("uses a single model when one is configured", async () => {

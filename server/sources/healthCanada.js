@@ -3,6 +3,7 @@
 
 import { fetchJson, mapLimit } from "../lib/http.js";
 import { tidyCase } from "../lib/text.js";
+import { withSynonyms } from "../datasets/common.js";
 
 const API = "https://health-products.canada.ca/api/drug";
 const MAX_PRODUCTS = 40;
@@ -19,12 +20,16 @@ export function createHealthCanadaSource({ fetch }) {
     status: () => (lastError ? { state: "error", detail: lastError } : { state: "live" }),
     async search(term) {
       try {
-        const ingredients = await fetchJson(
-          fetch,
-          `${API}/activeingredient/?lang=en&type=json&ingredientname=${encodeURIComponent(term)}`,
-          { timeoutMs: 10000 },
-        );
-        const codes = [...new Set((Array.isArray(ingredients) ? ingredients : []).map((i) => i.drug_code))].slice(0, MAX_PRODUCTS);
+        const found = [];
+        for (const name of withSynonyms(term)) {
+          const list = await fetchJson(
+            fetch,
+            `${API}/activeingredient/?lang=en&type=json&ingredientname=${encodeURIComponent(name)}`,
+            { timeoutMs: 10000 },
+          );
+          if (Array.isArray(list)) found.push(...list);
+        }
+        const codes = [...new Set(found.map((i) => i.drug_code))].slice(0, MAX_PRODUCTS);
         const products = await mapLimit(codes, 6, async (code) => {
           try {
             const p = await fetchJson(fetch, `${API}/drugproduct/?lang=en&type=json&id=${code}`, { timeoutMs: 10000 });

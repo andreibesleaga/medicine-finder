@@ -1,19 +1,21 @@
 import type { SearchOutcome, SourceKind } from "@/types/medicine";
 import { MedicineCard } from "./MedicineCard";
-import { Loader2, Package, RotateCcw, FlaskConical } from "lucide-react";
+import { Loader2, Package, RotateCcw, FlaskConical, Info } from "lucide-react";
 import { KIND_CLASS, KIND_LABEL, STATE_LABEL } from "./sourceLabels";
 
 interface ResultsDashboardProps {
   outcome: SearchOutcome | null;
   isLoading: boolean;
   onReset?: () => void;
+  /** searches again without this browser's saved copy */
+  onRefresh?: () => void;
 }
 
 const KINDS: SourceKind[] = ["official", "reference", "curated", "ai"];
 
 const Byline = () => <p className="text-gray-600 text-sm mt-8">by Andrei Besleaga Nicolae</p>;
 
-export const ResultsDashboard = ({ outcome, isLoading, onReset }: ResultsDashboardProps) => {
+export const ResultsDashboard = ({ outcome, isLoading, onReset, onRefresh }: ResultsDashboardProps) => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-4" role="status">
@@ -38,13 +40,13 @@ export const ResultsDashboard = ({ outcome, isLoading, onReset }: ResultsDashboa
     );
   }
 
-  const { results, sources, trials, term } = outcome;
+  const { results, sources, trials, term, note, aiPending, savedAt } = outcome;
   const countries = new Set(results.map((r) => r.country).filter((c) => c !== "Not stated")).size;
   const failed = sources.filter((s) => s.state === "error" || s.state === "unavailable");
 
   return (
     <div className="max-w-6xl mx-auto">
-      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8" aria-labelledby="summary">
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-8 [overflow-wrap:anywhere]" aria-labelledby="summary">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
           <div>
             <h2 id="summary" className="text-2xl font-bold text-gray-900 mb-2">
@@ -88,6 +90,28 @@ export const ResultsDashboard = ({ outcome, isLoading, onReset }: ResultsDashboa
             </ul>
           </details>
         </div>
+        {note && (
+          <p className="mt-3 flex items-start gap-1 text-sm text-blue-950 bg-blue-50 rounded p-2">
+            <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            {note}
+          </p>
+        )}
+        {aiPending && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-purple-900" role="status">
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+            Asking AI providers for more suggestions…
+          </p>
+        )}
+        {savedAt && (
+          <p className="mt-3 text-sm text-gray-700">
+            Saved in this browser at {new Date(savedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}.{" "}
+            {onRefresh && (
+              <button onClick={onRefresh} className="text-blue-700 underline">
+                Search again
+              </button>
+            )}
+          </p>
+        )}
         {failed.length > 0 && (
           <p className="mt-3 text-xs text-amber-900">
             Not reached this time: {failed.map((s) => s.name).join(", ")}. Results may be incomplete.

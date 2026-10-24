@@ -1,0 +1,4 @@
+- [ ] `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` pass
+- [ ] Every new result comes from a named source; nothing is generated or guessed
+- [ ] No keys or `.env` files; new settings are documented in `.env.example` and `docs/DEPLOY.md`
+- [ ] Docs updated (README, `docs/`, CHANGELOG)

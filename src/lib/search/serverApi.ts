@@ -1,5 +1,5 @@
 import type { MedicineResult, SourceKind, SourceRun } from "@/types/medicine";
-import { API_BASE, SERVER_TIMEOUT_MS } from "./config";
+import { AI_TIMEOUT_MS, API_BASE, SERVER_TIMEOUT_MS } from "./config";
 
 export interface ServerSearchBody {
   results: Omit<MedicineResult, "id">[];
@@ -16,6 +16,7 @@ export interface ServerSourceInfo {
   state: string;
   detail?: string;
   updatedAt?: string;
+  rows?: number;
 }
 
 async function getJson<T>(path: string, fetchImpl: typeof fetch, timeoutMs: number): Promise<T> {
@@ -27,10 +28,16 @@ async function getJson<T>(path: string, fetchImpl: typeof fetch, timeoutMs: numb
   return body as T;
 }
 
-/** Official databases and AI providers, queried by the server. */
+/** Official national databases, queried by the server. */
 export function searchServer(term: string, country: string | undefined, fetchImpl: typeof fetch = fetch) {
   const qs = new URLSearchParams({ q: term, ...(country ? { country } : {}) });
   return getJson<ServerSearchBody>(`/api/search?${qs}`, fetchImpl, SERVER_TIMEOUT_MS);
+}
+
+/** AI suggestions (only providers with a key on the server answer; the others report "off"). */
+export function searchAi(term: string, country: string | undefined, fetchImpl: typeof fetch = fetch) {
+  const qs = new URLSearchParams({ q: term, ...(country ? { country } : {}) });
+  return getJson<ServerSearchBody>(`/api/ai?${qs}`, fetchImpl, AI_TIMEOUT_MS);
 }
 
 export function fetchServerSources(fetchImpl: typeof fetch = fetch) {

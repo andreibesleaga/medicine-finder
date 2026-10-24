@@ -3,12 +3,21 @@ import { SearchInput } from "@/components/SearchInput";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { SearchProgressComponent } from "@/components/SearchProgress";
 import { Disclaimer } from "@/components/Disclaimer";
+import { useSearchMedicine } from "@/hooks/useSearchMedicine";
 import type { SearchOutcome, SourceRun } from "@/types/medicine";
 
 const Index = () => {
   const [outcome, setOutcome] = useState<SearchOutcome | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<SourceRun[]>([]);
+  const search = useSearchMedicine({
+    onResult: setOutcome,
+    onLoadingChange: (loading) => {
+      setIsLoading(loading);
+      if (loading) setProgress([]);
+    },
+    onProgress: setProgress,
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
@@ -28,15 +37,21 @@ const Index = () => {
         </header>
 
         <SearchInput
-          onResult={setOutcome}
-          onLoadingChange={(loading) => {
-            setIsLoading(loading);
-            if (loading) setProgress([]);
-          }}
-          onProgress={setProgress}
+          searchTerm={search.searchTerm}
+          onTermChange={search.setSearchTerm}
+          selectedCountry={search.selectedCountry}
+          onCountryChange={search.setSelectedCountry}
+          isLoading={search.isLoading}
+          onSearch={() => search.handleSearch()}
+          onKeyDown={search.handleKeyDown}
         />
         <SearchProgressComponent isSearching={isLoading} sources={progress} />
-        <ResultsDashboard outcome={outcome} isLoading={isLoading} onReset={() => setOutcome(null)} />
+        <ResultsDashboard
+          outcome={outcome}
+          isLoading={isLoading}
+          onReset={() => setOutcome(null)}
+          onRefresh={() => search.handleSearch(true)}
+        />
       </main>
     </div>
   );

@@ -1,15 +1,15 @@
 
 export const countries = [
   { value: "all", label: "All Countries" },
-  // Regions
-  { value: "EU", label: "🇪🇺 European Union", isRegion: true },
-  { value: "USA", label: "🇺🇸 United States", isRegion: true },
-  { value: "North America", label: "🌎 North America", isRegion: true },
-  { value: "South America", label: "🌎 South America", isRegion: true },
-  { value: "Asia", label: "🌏 Asia", isRegion: true },
-  { value: "Africa", label: "🌍 Africa", isRegion: true },
-  { value: "Oceania", label: "🌏 Oceania", isRegion: true },
-  { value: "Middle East", label: "🌍 Middle East", isRegion: true },
+  // Regions (values start with "region:" so they cannot clash with a country name)
+  { value: "region:EU", label: "🇪🇺 European Union", isRegion: true },
+  { value: "region:Europe", label: "🌍 Europe", isRegion: true },
+  { value: "region:North America", label: "🌎 North America", isRegion: true },
+  { value: "region:South America", label: "🌎 South America", isRegion: true },
+  { value: "region:Asia", label: "🌏 Asia", isRegion: true },
+  { value: "region:Middle East", label: "🌍 Middle East", isRegion: true },
+  { value: "region:Africa", label: "🌍 Africa", isRegion: true },
+  { value: "region:Oceania", label: "🌏 Oceania", isRegion: true },
   // Countries with region information
   { value: "Afghanistan", label: "Afghanistan", region: "Asia" },
   { value: "Albania", label: "Albania", region: "Europe" },
