@@ -13,7 +13,7 @@ interface ResultsDashboardProps {
 
 const KINDS: SourceKind[] = ["official", "reference", "curated", "ai"];
 
-const Byline = () => <p className="text-gray-600 text-sm mt-8">by Andrei Besleaga Nicolae</p>;
+const Byline = () => <p className="text-gray-600 text-sm mt-8">by Andrei N. Besleaga</p>;
 
 export const ResultsDashboard = ({ outcome, isLoading, onReset, onRefresh }: ResultsDashboardProps) => {
   if (isLoading) {
@@ -52,7 +52,7 @@ export const ResultsDashboard = ({ outcome, isLoading, onReset, onRefresh }: Res
             <h2 id="summary" className="text-2xl font-bold text-gray-900 mb-2">
               Results for "{term}"
             </h2>
-            <p className="text-gray-700 mb-3">
+            <p className="text-gray-700 mb-3" role="status">
               {results.length} brand {results.length === 1 ? "name" : "names"} in {countries}{" "}
               {countries === 1 ? "country" : "countries"}
             </p>

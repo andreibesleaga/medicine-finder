@@ -64,32 +64,33 @@ generated when a source has no data: an unknown ingredient returns no results.
 The national datasets are downloaded by `server/datasets/*.js` into SQLite (`server/db/store.js`,
 Node's built-in `node:sqlite`): one dataset at a time in the background at start, then whenever a
 dataset is older than its refresh interval (a day, or a week for files published monthly or
-large ones; checked hourly). A failed download keeps the previous data and is
-retried after an hour; an empty download never replaces good data. On Railway a volume at
+large ones; checked hourly). Imported files (Finland) are reloaded when the file is newer than the
+data. A failed download keeps the previous data and is retried after an hour (an imported file at
+once, when a newer one is put in place); an empty download never replaces good data. On Railway a volume at
 `DATA_DIR` (`/app/data`) keeps the database across deploys; without one it is rebuilt after each
 deploy (about 3 minutes; sources show "loading").
 
 | Dataset | File | Rows (Oct 2026) |
 |---|---|---|
-| EMA (EU) | `medicines-output-medicines_json-report_en.json`, authorised human medicines | 1,566 |
+| EMA (EU) | `medicines-output-medicines_json-report_en.json`, authorised human medicines; `;`-separated substances joined with ` + ` | 1,566 |
 | France BDPM | `CIS_bdpm.txt` + `CIS_COMPO_bdpm.txt` (ISO-8859-1), marketed, active authorisation | 13,648 |
 | Italy AIFA | `confezioni.csv` (`;`), authorised, merged per medicine and strength | 23,464 |
 | Poland URPL | public register CSV (`;`), human products, Latin INN | 20,289 |
-| Netherlands CBG | `metadata.csv` (`|`), no homeopathics | 18,141 |
+| Netherlands CBG | `metadata.csv` (pipe-separated), no homeopathics | 18,141 |
 | Ireland HPRA | `latestHMlist.xml`, not those marked not marketed | 8,242 |
 | Switzerland | Swissmedic "Zugelassene Packungen" `.xlsx` (read by `server/lib/xlsx.js`) | 10,303 |
-| Czech Republic SÚKL | monthly DLP zip (`;`, windows-1250), linked from the open-data catalogue page; registered products, English substance names | 11,881 |
-| Denmark DKMA | list of authorised medicines `.xlsx` (daily), no parallel imports, natural medicines or vitamins | 13,960 |
+| Czech Republic SÚKL | monthly DLP zip (`;`, windows-1250), linked from the open-data catalogue page; registered products, English substance names; no homeopathics or parallel imports | 11,701 |
+| Denmark DKMA | list of authorised medicines `.xlsx` (daily), no parallel imports, natural medicines, vitamins or veterinary products (ATC Q) | 12,242 |
 | Sweden Läkemedelsverket | `Lakemedelsprodukter.xlsx` (daily), human, approved or registered, no parallel imports or homeopathics | 13,540 |
-| Finland Fimea | `Perusrekisteri.xml` imported by hand into `DATA_DIR/imports` (fimea.fi blocks scripts), reloaded when the file is newer; human, current authorisation or registration, no parallel imports; substances joined through the packages | 11,704 |
-| Lithuania VVKT | data.gov.lt CSV (one row per package), registered or re-registered, grouped per product | 7,586 |
-| Ukraine | State Register `reestr.csv` (windows-1251), not terminated early, no substances or homeopathics; INN as ingredient | 12,183 |
-| Malta Medicines Authority | national products `.xlsx` (daily), authorised | 5,448 |
+| Finland Fimea | `Perusrekisteri.xml` imported by hand into `DATA_DIR/imports` (fimea.fi blocks scripts), reloaded when the file is newer; human, current authorisation or registration, no parallel imports; substances joined through the packages; duplicates dropped | 11,673 |
+| Lithuania VVKT | data.gov.lt CSV (one row per package), registered or re-registered, no parallel imports or distribution, grouped per product; English ATC substance name for 7-character codes, else the Lithuanian substances | 4,458 |
+| Ukraine | State Register `reestr.csv` (windows-1251), not terminated early, no substances or homeopathics; INN as ingredient (no "combinations" parts); short form and strength | 10,945 |
+| Malta Medicines Authority | national products `.xlsx` (daily), authorised; brand cut back from form and strength text | 5,360 |
 | Canada (Health Canada) | DPD data extract `allfiles.zip` (marketed products), human medicines whose current status is MARKETED | 11,463 |
-| United States FDA | NDC Directory `ndctext.zip` → `product.txt`, human Rx/OTC, still marketed, not excluded | 87,903 |
-| Colombia INVIMA | CUM on datos.gov.co, filtered by the portal (`$where` current + active), grouped per registration | 9,362 |
-| Taiwan TFDA | open data set 36 (zip with one 79 MB JSON), licences not cancelled, finished products and biologics | 22,938 |
-| Singapore HSA | data.gov.sg CSV (a signed link requested each time) | 5,511 |
+| United States FDA | NDC Directory `ndctext.zip` → `product.txt`, human Rx/OTC, still marketed (no end date, or a future one), not excluded; no homeopathics, medical gases, or generics whose brand is the generic name | 45,943 |
+| Colombia INVIMA | CUM on datos.gov.co, filtered by the portal (`$where` current + active), grouped per registration; brands and substances cut back from form, strength and "equivalente" text | 9,343 |
+| Taiwan TFDA | open data set 36 (zip with one 79 MB JSON), licences not cancelled or expired, finished products and biologics; brands without form, strength or maker tag | 18,305 |
+| Singapore HSA | data.gov.sg CSV (a signed link requested each time); brands and substances cut back from form and strength text | 5,475 |
 | New Zealand Pharmac | monthly Pharmaceutical Schedule XML, funded medicines only | 2,361 |
 | Curated sample | `server/data/curated.json` | 104 |
 
@@ -116,7 +117,9 @@ by ingredient and country.
   browser) so one slow source never blocks the answer. OpenRouter is called with reasoning off.
 - Static responses carry a Content Security Policy (scripts from the same origin only; network
   access only to the listed sources), `X-Frame-Options: DENY`, `nosniff`, HSTS and a referrer policy.
-- The container runs as the unprivileged `node` user.
+- The image runs as the unprivileged `node` user (on Railway as root, so it can write the volume; see
+  SECURITY.md).
+- Search answers over 1 KB are sent gzip-compressed; downloads are capped at 300 MB.
 
 ## Files
 
@@ -129,8 +132,9 @@ server/            search server (plain JavaScript, ES modules)
   datasets/        one loader per national dataset + the background runner (index.js)
   data/            curated.json (static samples), synonyms.json (other names of an ingredient)
   sources/         live sources: cima.js, healthCanada.js (+ the HEALTH_CANADA switch), ai.js
-  lib/             text matching, CSV and XLSX readers, HTTP helpers, cache, rate limiter
-  test/            server tests (Vitest)
+  lib/             text matching, other names (synonyms.js), CSV and XLSX readers, HTTP helpers,
+                   cache, rate limiter
+  test/            server tests (Vitest): parsers (datasets.test.js), downloads (loaders.test.js), ...
 src/
   lib/search/      browser sources, server client, merging and ranking, country scope, browser cache
   pages/           Index (search), Sources (data sources and their status), NotFound
@@ -147,7 +151,7 @@ tests/             browser-side tests (Vitest)
 | Live server sources (Spain, Canada API, AI) | `server/sources/` |
 | Canada: extract, live API or both (`HEALTH_CANADA`) | `server/datasets/dpd.js`, `server/sources/healthCanada.js`, wired in `server/index.js` |
 | Routes, headers, static files | `server/app.js`; settings and wiring in `server/index.js` |
-| Name matching, other names of an ingredient | `server/lib/text.js`, `server/data/synonyms.json` |
+| Name matching, other names of an ingredient | `server/lib/text.js`, `server/lib/synonyms.js`, `server/data/synonyms.json` |
 | Browser sources | `src/lib/search/browserSources.ts` |
 | Merging, ranking, AI phase | `src/lib/search/searchMedicines.ts` |
 | Country and region fallbacks | `src/lib/search/countryScope.ts` |
@@ -155,5 +159,5 @@ tests/             browser-side tests (Vitest)
 | Railway build, health check, volume | `.railway/railway.ts`; preview with `railway config plan` |
 
 Rules: never invent data (every result keeps its source and `kind`); keys only in server
-variables; tests stub `fetch` and use fixed clocks; a new source needs a parser test, its terms in
-`NOTICE.md` and a line in the README table.
+variables; tests stub `fetch` and use fixed clocks; a new source needs a parser test and a download test, its
+terms in `NOTICE.md` and a line in the README table.

@@ -68,6 +68,23 @@ export function buildMessages(term, country) {
   ];
 }
 
+// other names models use for countries, mapped to the names in the app's country list
+const COUNTRY_ALIASES = {
+  usa: "United States", us: "United States", "u.s.": "United States", "u.s.a.": "United States",
+  "united states of america": "United States", america: "United States",
+  uk: "United Kingdom", "u.k.": "United Kingdom", "great britain": "United Kingdom", britain: "United Kingdom",
+  england: "United Kingdom", scotland: "United Kingdom", wales: "United Kingdom",
+  czechia: "Czech Republic", holland: "Netherlands", "the netherlands": "Netherlands",
+  korea: "South Korea", "republic of korea": "South Korea", "korea, republic of": "South Korea",
+  "russian federation": "Russia", "türkiye": "Turkey", turkiye: "Turkey", "viet nam": "Vietnam",
+  uae: "United Arab Emirates", "côte d'ivoire": "Ivory Coast", "cote d'ivoire": "Ivory Coast",
+  "cape verde": "Cabo Verde", swaziland: "Eswatini", burma: "Myanmar", macedonia: "North Macedonia",
+  eu: "European Union",
+};
+
+/** "USA" -> "United States"; other names are kept as the model wrote them. */
+export const normalizeCountry = (name) => COUNTRY_ALIASES[name.toLowerCase()] ?? name;
+
 /** Extracts the first JSON array from a model answer (handles ```json fences and surrounding text). */
 export function parseBrandList(content) {
   if (typeof content !== "string") return [];
@@ -86,7 +103,7 @@ export function parseBrandList(content) {
     .slice(0, 10)
     .map((i) => ({
       brandName: i.brandName.trim(),
-      country: typeof i.country === "string" && i.country.trim() ? i.country.trim().slice(0, 60) : "Not stated",
+      country: typeof i.country === "string" && i.country.trim() ? normalizeCountry(i.country.trim().slice(0, 60)) : "Not stated",
       manufacturer: typeof i.manufacturer === "string" && i.manufacturer.trim() ? i.manufacturer.trim().slice(0, 80) : undefined,
     }));
 }

@@ -5,6 +5,73 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-24
+
+### Fixed
+- A request whose path is not a valid URL (for example `//[`) answered nothing and stopped the
+  server; it now gets HTTP 400.
+- Search terms with punctuation (`paracetamol (acetaminophen)`, `St. John's wort`) found nothing in
+  the national datasets: terms are now split into words the same way the database indexes them.
+- An AI answer skipped by the daily limit was cached for a day, past the daily reset; it is now kept
+  for 5 minutes, like failed answers.
+- Spain (CIMA): when one of an ingredient's names fails, the others are still shown, and the count
+  is CIMA's own total instead of the first page.
+- The browser no longer keeps a search in which a source failed, so the next search tries again;
+  "New search" now also stops a running AI phase from bringing old results back.
+- A newer Finland file uploaded after a failed load is loaded at the next check instead of an hour
+  later.
+
+### Data quality
+- English ingredient names now also find the national spellings that the word stems miss: 15 new
+  name groups (for example acetylsalicylic acid finds Swedish "acetylsalicylsyra", Danish
+  "acetylsalicylsyre", Dutch "acetylsalicylzuur" and Italian "acido acetilsalicilico";
+  hydrochlorothiazide, sodium and potassium chloride, folic and ascorbic acid, ethinylestradiol,
+  morphine, azithromycin and others likewise). Accents in the search term no longer matter.
+- One- and two-letter words are matched whole: "vitamin d" finds vitamin D, not every vitamin.
+- United States: no homeopathics, medical gases, or generics whose brand is just the generic name
+  (87,903 to 45,943 rows); products with a future end-of-marketing date are kept.
+- Lithuania: no parallel imports or distribution, and ATC group names are no longer shown as
+  ingredients (7,586 to 4,458).
+- Denmark: no veterinary products, and substance names with commas stay whole (13,960 to 12,242).
+- Czech Republic: no homeopathics or parallel imports; every holder kept; units in lower case.
+- Ukraine: short dosage form and strength instead of the pack text; "combinations" no longer an
+  ingredient.
+- Colombia, Taiwan, Singapore and Malta: brands and substances cut back from dosage form, strength,
+  "equivalente" and maker-tag text (one shared helper, `cutProductTitle` in `server/lib/text.js`);
+  Taiwan also drops expired licences; duplicate rows dropped.
+- EMA: `;`-separated substances joined with " + "; Finland: duplicates dropped, all-caps brands tidied.
+- Each dataset is reloaded once after this deploy (`DATA_FORMAT` in `server/datasets/index.js`), so
+  the changes apply without waiting for the next refresh.
+
+### Security
+- AI providers' messages for key, billing and permission errors (which can quote part of the key)
+  are no longer shown to visitors; key-like strings are hidden in other messages.
+- National downloads are capped at 300 MB and zip entries at 1 GB unpacked.
+- Record links are opened only when they are `http` or `https` addresses.
+- `SECURITY.md` and `docs/DEPLOY.md` now say that the app runs as root on Railway (to write the
+  volume) and that the per-visitor limits rely on the proxy's `X-Forwarded-For`.
+
+### Changed
+- Search answers over 1 KB are gzip-compressed (about ten times smaller).
+- AI country names such as "USA", "UK" or "Czechia" are mapped to the app's country list, so the
+  country filter and counts include them.
+- Removed 41 unused UI component files and the 33 npm packages only they used; one XML entity decoder
+  (`decodeXml` in `server/lib/text.js`) instead of four; ingredient synonyms moved to
+  `server/lib/synonyms.js`; the outbound User-Agent no longer carries an old version number.
+- The dev server's security headers now come from the server's own policy.
+- Dependabot proposes same-major updates only, and also watches the Docker base image; Node 22.13 or
+  later (`.nvmrc`); tests are left out of the Docker image.
+
+### Tests
+- A stubbed-download test for each of the 14 loaders that had none (`loaders.test.js`), data-quality
+  tests per loader (`registers`, `europe`, `names`), name-group tests (`synonyms`), unit tests for the rate limiter
+  and the cache, and tests for the fixes above (179 tests in all, up from 99).
+
+### Docs
+- API states (`unavailable`, `disabled` for a missing imported file), the dataset contract in
+  `CONTRIBUTING.md`, Railway sleep and the CI/deploy order in `docs/DEPLOY.md`, `.env.example` AI
+  limits, a broken table row in `docs/ARCHITECTURE.md`.
+
 ## [2.3.0] - 2026-10-24
 
 ### Added

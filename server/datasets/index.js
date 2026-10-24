@@ -2,7 +2,8 @@
 // one as a search source.
 
 import { stems } from "../lib/text.js";
-import { withSynonyms } from "./common.js";
+import { MAX_PER_SOURCE } from "../search.js";
+import { withSynonyms } from "../lib/synonyms.js";
 import { ema } from "./ema.js";
 import { bdpm } from "./bdpm.js";
 import { aifa } from "./aifa.js";
@@ -33,9 +34,14 @@ export const DATASETS = [
   curated,
 ];
 
+const RETRY_AFTER_MS = 3600e3;
+// Raise by one when a loader's output or the word index changes: every dataset saved with an older
+// format is then reloaded once after the deploy (its old rows are served until then).
+export const DATA_FORMAT = 2;
+
 // A dataset may also define available(ctx) (false: shown as off, not loaded; e.g. a file imported by
 // hand that is not there yet) and modifiedAt(ctx) (reload when its source is newer than the data).
-export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = 60, importDir }) {
+export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = MAX_PER_SOURCE, importDir }) {
   const ctx = { importDir };
   const available = (d) => !d.available || d.available(ctx);
   const loading = new Set();
@@ -83,17 +89,20 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
     for (const d of datasets) {
       const info = store.info(d.id);
       if (!available(d)) continue;
-      const newerSource = Boolean(info?.loaded_at) && d.modifiedAt?.(ctx) > info.loaded_at;
-      const fresh = d.refreshMs === 0 ? loadedThisRun.has(d.id) : Boolean(info?.loaded_at) && now() - info.loaded_at < d.refreshMs && !newerSource;
+      const modified = d.modifiedAt?.(ctx);
+      const newerSource = Boolean(info?.loaded_at) && modified > info.loaded_at;
+      const current = Boolean(info?.loaded_at) && info.format === DATA_FORMAT;
+      const fresh = d.refreshMs === 0 ? loadedThisRun.has(d.id) : current && now() - info.loaded_at < d.refreshMs && !newerSource;
       if (fresh || loading.has(d.id)) continue;
-      // after a failed download, wait an hour before trying again
-      if (info?.error && info.attempted_at && now() - info.attempted_at < 3600e3) continue;
+      // after a failed download, wait an hour before trying again (at once if a newer file was imported)
+      const retryLater = info?.error && info.attempted_at && now() - info.attempted_at < RETRY_AFTER_MS;
+      if (retryLater && !(modified > info.attempted_at)) continue;
       loading.add(d.id);
       const started = now();
       try {
         const rows = await d.load(fetch, ctx);
         if (!rows.length) throw new Error("the download contained no usable rows");
-        store.replace(d.id, rows, now());
+        store.replace(d.id, rows, now(), DATA_FORMAT);
         loadedThisRun.add(d.id);
         log(`dataset ${d.id}: ${rows.length} rows in ${Math.round((now() - started) / 1000)} s`);
       } catch (err) {

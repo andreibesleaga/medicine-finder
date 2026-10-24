@@ -10,3 +10,4 @@ coverage
 *.log
 data
 .railway
+server/test

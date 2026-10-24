@@ -19,13 +19,13 @@ import { parseTfda } from "../datasets/tfda.js";
 import { parseHsa, hsa, HSA_POLL_URL } from "../datasets/hsa.js";
 import { parsePharmac, pharmac, PHARMAC_INDEX } from "../datasets/pharmac.js";
 import { parseFimea, fimea, FIMEA_FILE } from "../datasets/fimea.js";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { curatedRows } from "../datasets/curated.js";
-import { withSynonyms } from "../datasets/common.js";
+import { withSynonyms } from "../lib/synonyms.js";
 import { openStore, ingredientWords } from "../db/store.js";
-import { createDatasetSources } from "../datasets/index.js";
+import { createDatasetSources, DATA_FORMAT } from "../datasets/index.js";
 import { stems } from "../lib/text.js";
 import { fixedClock, stubFetch } from "./helpers.js";
 import { makeZip } from "./zipfixture.js";
@@ -202,7 +202,7 @@ describe("national dataset parsers", () => {
       ],
     };
     expect(parseSukl(files)).toEqual([
-      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Vitabalans Oy", strength: "200MG", form: "Film-coated tablet", status: "Registered" },
+      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Vitabalans Oy", strength: "200 mg", form: "Film-coated tablet", status: "Registered" },
       { brand: "Paralen Plus", ingredient: "Paracetamol + Coffeinum", country: "Czech Republic", holder: "Opella Healthcare Czech s.r.o.", strength: undefined, form: "Tablet", status: "Registered" },
     ]);
   });
@@ -247,7 +247,7 @@ describe("national dataset parsers", () => {
   });
 
   it("Lithuania: one row per product, supplied when any package is, deregistered left out", () => {
-    const pack = (vid, name, stadija, supply, substance = "Ibuprofen") => ({ vid, preparato_pav: name, veikl_angl_pavad: substance, stiprumas: "400 mg", farmacine_forma_lt: "tabletės", stadija, pak_tiekimo_busena: supply, registruotojas: "Reckitt" });
+    const pack = (vid, name, stadija, supply, substance = "Ibuprofen") => ({ vid, preparato_pav: name, atc_kodas: "M01AE01", veikl_angl_pavad: substance, stiprumas: "400 mg", farmacine_forma_lt: "tabletės", stadija, pak_tiekimo_busena: supply, registruotojas: "Reckitt" });
     expect(
       parseVvkt([
         pack("1", "Nurofen", "Registruotas", "Netiekiama"),
@@ -276,7 +276,7 @@ describe("national dataset parsers", () => {
       ]).map((r) => [r.brand, r.ingredient, r.form, r.strength]),
     ).toEqual([
       ["Апірол", "Ibuprofen", "розчин для інфузій", "400 мг/100 мл"],
-      ["Аффида", "Ibuprofen", "таблетки", undefined],
+      ["Аффида", "Ibuprofen", "таблетки, вкриті плівковою оболонкою", undefined],
     ]);
   });
 
@@ -362,6 +362,7 @@ describe("national dataset parsers", () => {
   });
 
   it("Finland: current human authorisations joined to their substances through the packages", () => {
+    // left out: REL3 withdrawn, REL4 parallel import, REL5 veterinary, REL6 no name, REL7 no packages
     const xml = `<Perusrekisteri>
       <Pakkaus Laakevalmiste-ref="REL1"><Kaupanolo><Kaupan>0</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
       <Pakkaus Laakevalmiste-ref="REL1"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
@@ -376,6 +377,14 @@ describe("national dataset parsers", () => {
         <Myyntilupa><Tila listname="Authorisation Status" id="6" value="Myyntilupa peruuntunut"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
       <Laakevalmiste id="REL4"><Kauppanimi>Imported</Kauppanimi><HUM>1</HUM>
         <Myyntilupa><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>1</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Pakkaus Laakevalmiste-ref="REL5"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Pakkaus Laakevalmiste-ref="REL6"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Laakevalmiste id="REL5"><Kauppanimi>Veterinary</Kauppanimi><HUM>0</HUM>
+        <Myyntilupa><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakevalmiste id="REL6"><Kauppanimi></Kauppanimi><HUM>1</HUM>
+        <Myyntilupa><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakevalmiste id="REL7"><Kauppanimi>No packages</Kauppanimi><HUM>1</HUM>
+        <Myyntilupa><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
       <Laakeaine id="RES1"><VaikuttavaAine><Aine listname="Substance" id="1" value="Ibuprofen"/></VaikuttavaAine></Laakeaine>
       <Laakeaine id="RES2"><VaikuttavaAine><Aine listname="Substance" id="1" value="Ibuprofen"/></VaikuttavaAine><VaikuttavaAine><Aine listname="Substance" id="2" value="Ascorbic acid"/></VaikuttavaAine></Laakeaine>
     </Perusrekisteri>`;
@@ -385,12 +394,46 @@ describe("national dataset parsers", () => {
     ]);
   });
 
-  it("Finland: available only once the file is in the imports folder", () => {
+  it("Finland: loads the imported file, reloads a newer one, and does not wait after a failed load", async () => {
     const importDir = mkdtempSync(path.join(tmpdir(), "mf-imports-"));
-    expect(fimea.available({ importDir })).toBe(false);
-    expect(fimea.available({})).toBe(false);
-    writeFileSync(path.join(importDir, FIMEA_FILE), "<Perusrekisteri/>");
-    expect(fimea.available({ importDir })).toBe(true);
+    try {
+      const file = path.join(importDir, FIMEA_FILE);
+      const sample = (brand) => `<Perusrekisteri>
+        <Pakkaus Laakevalmiste-ref="REL1"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+        <Laakevalmiste id="REL1"><Kauppanimi>${brand}</Kauppanimi><HUM>1</HUM>
+          <Myyntilupa><Tila listname="Authorisation Status" id="5" value="x"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+        <Laakeaine id="RES1"><VaikuttavaAine><Aine listname="Substance" id="1" value="Ibuprofen"/></VaikuttavaAine></Laakeaine>
+      </Perusrekisteri>`;
+      const put = (text, atMs) => {
+        writeFileSync(file, text);
+        utimesSync(file, atMs / 1000, atMs / 1000);
+      };
+      expect(fimea.available({})).toBe(false);
+      const now = fixedClock();
+      const store = openStore(":memory:");
+      const { sources, refreshDue } = createDatasetSources({ store, datasets: [fimea], now, importDir });
+      await refreshDue();
+      expect(sources[0].status()).toEqual({ state: "disabled", detail: fimea.unavailableDetail });
+
+      put("<Perusrekisteri/>", now()); // a broken upload: no rows
+      now.advance(60e3);
+      await refreshDue();
+      expect(sources[0].status().state).toBe("error");
+
+      now.advance(60e3);
+      put(sample("Burana"), now()); // fixed at once, well inside the hour of back-off
+      await refreshDue();
+      expect((await sources[0].search("ibuprofen")).results.map((r) => r.brandName)).toEqual(["Burana"]);
+
+      now.advance(60e3);
+      await refreshDue(); // same file: not reloaded
+      put(sample("Burana Forte"), now());
+      now.advance(60e3);
+      await refreshDue();
+      expect((await sources[0].search("ibuprofen")).results.map((r) => r.brandName)).toEqual(["Burana Forte"]);
+    } finally {
+      rmSync(importDir, { recursive: true, force: true });
+    }
   });
 
   it("curated lists keep the other name of the ingredient searchable", () => {
@@ -435,7 +478,22 @@ describe("SQLite store", () => {
     expect(store.search("x", stems("ibuprofen")).results.map((r) => r.brandName)).toEqual(["Brufen", "Actisinu"]);
     expect(store.search("bdpm", stems("xyzfoo"))).toEqual({ total: 0, results: [] });
     expect(store.search("other", stems("ibuprofen")).total).toBe(0);
-    expect(store.info("bdpm")).toEqual({ loaded_at: 1000, rows: 4, error: null, attempted_at: 1000 });
+    expect(store.info("bdpm")).toEqual({ loaded_at: 1000, rows: 4, error: null, attempted_at: 1000, format: null });
+  });
+
+  it("matches a one- or two-character word whole, and punctuation in the term is ignored", () => {
+    const store = openStore(":memory:");
+    store.replace("v", [
+      { brand: "Vigantol", ingredient: "Vitamin D3", country: "Germany" },
+      { brand: "Dekristol", ingredient: "Vitamin D", country: "Germany" },
+      { brand: "Neurobion", ingredient: "Vitamin B12 + Vitamin B6 + Dexpanthenol", country: "Germany" },
+      { brand: "Jarsin", ingredient: "Hypericum perforatum (St. John's wort)", country: "Germany" },
+    ], 1);
+    const brands = (term) => store.search("v", stems(term)).results.map((r) => r.brandName);
+    expect(brands("vitamin d")).toEqual(["Dekristol"]);
+    expect(brands("vitamin d3")).toEqual(["Vigantol"]);
+    expect(brands("vitamin b12")).toEqual(["Neurobion"]);
+    expect(brands("St. John's wort")).toEqual(["Jarsin"]);
   });
 
   it("replaces a source atomically and keeps the error of a failed refresh", () => {
@@ -444,7 +502,7 @@ describe("SQLite store", () => {
     store.replace("bdpm", rows.slice(3), 2000);
     expect(store.search("bdpm", stems("ibuprofen")).total).toBe(0);
     store.markError("bdpm", "HTTP 503", 3000);
-    expect(store.info("bdpm")).toEqual({ loaded_at: 2000, rows: 1, error: "HTTP 503", attempted_at: 3000 });
+    expect(store.info("bdpm")).toEqual({ loaded_at: 2000, rows: 1, error: "HTTP 503", attempted_at: 3000, format: null });
   });
 });
 
@@ -513,6 +571,24 @@ describe("dataset loading", () => {
     expect(loads).toBe(2);
   });
 
+  it("reloads, once, a dataset saved with an older data format, serving the old rows meanwhile", async () => {
+    const now = fixedClock();
+    const store = openStore(":memory:");
+    store.replace("d", [{ brand: "Old", ingredient: "Ibuprofen", country: "France" }], now(), DATA_FORMAT - 1);
+    let loads = 0;
+    const d = dataset("d", async () => {
+      loads += 1;
+      return [{ brand: "New", ingredient: "Ibuprofen", country: "France" }];
+    });
+    const { sources, refreshDue } = createDatasetSources({ store, datasets: [d], now });
+    expect((await sources[0].search("ibuprofen")).results[0].brandName).toBe("Old");
+    await refreshDue();
+    await refreshDue();
+    expect(loads).toBe(1);
+    expect(store.info("d").format).toBe(DATA_FORMAT);
+    expect((await sources[0].search("ibuprofen")).results[0].brandName).toBe("New");
+  });
+
   it("rejects an empty download instead of wiping good data", async () => {
     const now = fixedClock();
     const store = openStore(":memory:");
@@ -569,7 +645,7 @@ describe("zip downloads", () => {
       [zipUrl, () => binary(zip)],
     ]);
     expect(await sukl.load(fetch)).toEqual([
-      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Léčiva Zentiva", strength: "200MG", form: "Tablet", status: "Registered" },
+      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Léčiva Zentiva", strength: "200 mg", form: "Tablet", status: "Registered" },
     ]);
     const noLink = stubFetch([[SUKL_PAGE, () => new Response("<p>maintenance</p>")]]);
     await expect(sukl.load(noLink)).rejects.toThrow("link to the current DLP zip not found");
@@ -577,7 +653,7 @@ describe("zip downloads", () => {
 
   it("Lithuania: tries again once after a 502 from the portal", async () => {
     let calls = 0;
-    const csv = "vid,preparato_pav,veikl_angl_pavad,stadija,pak_tiekimo_busena\n1,Nurofen,Ibuprofen,Registruotas,Tiekiama\n";
+    const csv = "vid,preparato_pav,atc_kodas,veikl_angl_pavad,stadija,pak_tiekimo_busena\n1,Nurofen,M01AE01,Ibuprofen,Registruotas,Tiekiama\n";
     const fetch = stubFetch([[VVKT_URL, () => (++calls === 1 ? new Response("Bad Gateway", { status: 502 }) : new Response(csv))]]);
     expect((await vvkt.load(fetch)).map((r) => r.brand)).toEqual(["Nurofen"]);
     expect(calls).toBe(2);

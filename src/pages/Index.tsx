@@ -49,7 +49,10 @@ const Index = () => {
         <ResultsDashboard
           outcome={outcome}
           isLoading={isLoading}
-          onReset={() => setOutcome(null)}
+          onReset={() => {
+            search.reset();
+            setOutcome(null);
+          }}
           onRefresh={() => search.handleSearch(true)}
         />
       </main>

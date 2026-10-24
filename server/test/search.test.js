@@ -101,4 +101,16 @@ describe("server search", () => {
     expect((await search("d")).sources[0].state).toBe("ok");
     expect(ai.calls).toBe(3);
   });
+
+  it("does not keep a skipped AI answer past the daily reset", async () => {
+    const now = fixedClock(Date.parse("2026-01-15T23:58:00Z"));
+    const ai = source("ai", "ai", async () => []);
+    const search = createSearch({ sources: [ai], aiDailyLimit: 1, cacheTtlMs: 24 * 3600e3, now });
+    await search("a");
+    expect((await search("b")).sources[0].state).toBe("skipped");
+    now.advance(5 * 60e3 + 1);
+    const next = await search("b");
+    expect(next.cached).toBeUndefined();
+    expect(next.sources[0].state).toBe("ok");
+  });
 });

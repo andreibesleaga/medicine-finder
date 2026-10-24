@@ -1,7 +1,7 @@
 // European Medicines Agency: centrally authorised human medicines (official JSON report).
 
 import { fetchJson } from "../lib/http.js";
-import { DAY_MS } from "./common.js";
+import { DAY_MS, joinSubstances } from "./common.js";
 
 export const EMA_URL = "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json";
 
@@ -11,7 +11,7 @@ export function parseEma(json) {
     .filter((r) => r.category === "Human" && r.medicine_status === "Authorised" && r.name_of_medicine)
     .map((r) => ({
       brand: r.name_of_medicine.trim(),
-      ingredient: r.active_substance || r.international_non_proprietary_name_common_name || "",
+      ingredient: joinSubstances((r.active_substance ?? "").split(";")) || r.international_non_proprietary_name_common_name || "",
       country: "European Union",
       holder: r.marketing_authorisation_developer_applicant_holder || undefined,
       status: "Authorised",

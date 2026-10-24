@@ -10,6 +10,11 @@ describe("AI answer parsing", () => {
     expect(parseBrandList(text)).toEqual([{ brandName: "Advil", country: "United States", manufacturer: "Haleon" }]);
   });
 
+  it("maps other country names to the app's list", () => {
+    const items = ["USA", "UK", "Czechia", "Türkiye", "France"].map((country) => ({ brandName: "X", country }));
+    expect(parseBrandList(JSON.stringify(items)).map((i) => i.country)).toEqual(["United States", "United Kingdom", "Czech Republic", "Turkey", "France"]);
+  });
+
   it("drops malformed items and caps the list", () => {
     const items = [{ brandName: "" }, { name: "x" }, ...Array.from({ length: 12 }, (_, i) => ({ brandName: `B${i}` }))];
     const out = parseBrandList(JSON.stringify(items));
@@ -63,6 +68,17 @@ describe("AI providers", () => {
     const fetch = stubFetch([["openrouter.ai", () => jsonResponse({ error: { message: "No endpoints found" } }, { status: 404 })]]);
     const [, , , openrouter] = createAiSources({ fetch, env: { OPENROUTER_API_KEY: "k" } });
     await expect(openrouter.search("ibuprofen")).rejects.toThrow("HTTP 404 from openrouter.ai: No endpoints found");
+  });
+
+  it("never shows the provider's text for key or billing errors, and hides key-like strings", async () => {
+    const leaky = { error: { message: "Incorrect API key provided: sk-proj-ab********************wxyz." } };
+    const fetch = stubFetch([
+      ["openai.com", () => jsonResponse(leaky, { status: 401 })],
+      ["openrouter.ai", () => jsonResponse({ error: { message: "Model busy for key sk-or-v1-abc123" } }, { status: 429 })],
+    ]);
+    const [openai, , , openrouter] = createAiSources({ fetch, env: { OPENAI_API_KEY: "k", OPENROUTER_API_KEY: "k" } });
+    await expect(openai.search("ibuprofen")).rejects.toThrow(/^HTTP 401 from api\.openai\.com$/);
+    await expect(openrouter.search("ibuprofen")).rejects.toThrow("HTTP 429 from openrouter.ai: Model busy for key [key]");
   });
 
   it("uses a single model when one is configured", async () => {

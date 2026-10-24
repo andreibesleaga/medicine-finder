@@ -30,7 +30,7 @@ jobs:
       - run: npm run build
       - run: npm audit --audit-level=high
       - name: Generate CycloneDX SBOM
-        run: npx --yes @cyclonedx/cyclonedx-npm --output-format JSON --output-file sbom.cdx.json
+        run: npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --output-format JSON --output-file sbom.cdx.json
       - uses: actions/upload-artifact@v7
         with:
           name: sbom

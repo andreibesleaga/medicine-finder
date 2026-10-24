@@ -1,11 +1,10 @@
 // Ireland: HPRA list of authorised human medicines (XML).
 
-import { splitProductName } from "../lib/text.js";
+import { decodeXml as decode, splitProductName } from "../lib/text.js";
 import { DAY_MS, downloadText, joinSubstances } from "./common.js";
 
 export const HPRA_URL = "https://www.hpra.ie/img/uploaded/swedocuments/latestHMlist.xml";
 
-const decode = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const tag = (xml, name) => {
   const m = new RegExp(`<(?:\\w+:)?${name}>([\\s\\S]*?)</(?:\\w+:)?${name}>`).exec(xml);
   return m ? decode(m[1].trim()) : "";

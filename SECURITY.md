@@ -21,8 +21,15 @@ disclosure window.
 - `/api/search` validates input (2–80 safe characters), is rate-limited per visitor
   (`SEARCH_RATE_LIMIT`, default 20/min) and AI calls are capped per day (`AI_DAILY_LIMIT`, default 500).
 - Pages are served with a Content Security Policy (same-origin scripts, network access only to the
-  listed data sources), `X-Frame-Options: DENY`, `nosniff`, HSTS and a referrer policy. The container
-  runs as an unprivileged user.
+  listed data sources), `X-Frame-Options: DENY`, `nosniff`, HSTS and a referrer policy. The image runs
+  as the unprivileged `node` user. On Railway it runs as root (`RAILWAY_RUN_UID=0`) because Railway
+  mounts the data volume as root; this is accepted for the demo: the server has no runtime npm
+  dependencies, only `GET` endpoints, and the volume holds public data only.
+- Per-visitor limits trust the first `X-Forwarded-For` address, which Railway's proxy sets; behind no
+  proxy that header can be forged (see [docs/DEPLOY.md](docs/DEPLOY.md#variables)).
+- Downloads of national files are capped at 300 MB, and zip entries at 1 GB unpacked.
+- AI providers' messages for key, billing or permission errors are never passed to visitors, and
+  anything that looks like an API key is hidden in other messages.
 - CI runs `npm audit --audit-level=high`, builds and smoke-tests the Docker image, and weekly runs
   OSV-Scanner and Trivy.
 

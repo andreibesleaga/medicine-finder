@@ -31,6 +31,7 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: Use
 
     if (!fresh) {
       const saved = await readCached(key);
+      if (id !== searchId.current) return;
       if (saved) {
         onResult(saved);
         return;
@@ -64,12 +65,18 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: Use
       onResult(withAi);
       outcome = withAi;
     }
-    void saveCached(key, outcome);
+    // an answer with a failed or unreachable source is not kept: the next search tries again
+    if (!outcome.sources.some((s) => s.state === "error" || s.state === "unavailable")) void saveCached(key, outcome);
+  };
+
+  /** Forgets the running search, so a late AI answer does not bring its results back. */
+  const reset = () => {
+    searchId.current += 1;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !isLoading && searchTerm.trim()) handleSearch();
   };
 
-  return { searchTerm, setSearchTerm, selectedCountry, setSelectedCountry, isLoading, handleSearch, handleKeyDown };
+  return { searchTerm, setSearchTerm, selectedCountry, setSelectedCountry, isLoading, handleSearch, handleKeyDown, reset };
 };

@@ -81,7 +81,14 @@ export function createApp({
   }
 
   function sendJson(res, status, data, headers = {}) {
-    send(res, status, JSON.stringify(data), { "Content-Type": MIME[".json"], "Cache-Control": "no-store", ...headers });
+    const body = JSON.stringify(data);
+    const vary = [headers.Vary, "Accept-Encoding"].filter(Boolean).join(", ");
+    const h = { "Content-Type": MIME[".json"], "Cache-Control": "no-store", ...headers, Vary: vary };
+    // search answers are a few hundred KB; gzip makes them about ten times smaller
+    if (body.length > 1024 && /\bgzip\b/.test(res.req.headers["accept-encoding"] || "")) {
+      return send(res, status, gzipSync(body, { level: 6 }), { ...h, "Content-Encoding": "gzip" });
+    }
+    send(res, status, body, h);
   }
 
   function corsHeaders(req) {
@@ -191,7 +198,13 @@ export function createApp({
 
   return async function handler(req, res) {
     const started = now();
-    const url = new URL(req.url || "/", "http://localhost");
+    let url;
+    try {
+      url = new URL(req.url || "/", "http://localhost");
+    } catch {
+      // a request-target such as "//[" is not a valid URL
+      return send(res, 400, "Bad request", { "Content-Type": MIME[".txt"] });
+    }
     try {
       const isApi = url.pathname === "/api" || url.pathname.startsWith("/api/");
       if (!["GET", "HEAD"].includes(req.method) && !(isApi && req.method === "OPTIONS")) {

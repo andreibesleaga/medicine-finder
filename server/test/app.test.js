@@ -30,7 +30,8 @@ beforeAll(async () => {
     sources: [{ id: "ema", name: "EMA", kind: "official", coverage: "EU", homepage: "https://ema", terms: "https://ema/terms", enabled: () => true, status: () => ({ state: "ready" }) }],
     search: async (term, opts) => {
       searches.push([term, opts]);
-      return { term, results: [], sources: [] };
+      const results = term === "bigresult" ? Array.from({ length: 200 }, (_, i) => ({ brandName: `Brand ${i}` })) : [];
+      return { term, results, sources: [] };
     },
     aiSearch: async (term) => ({ term, results: [{ brandName: "AI" }], sources: [] }),
     aiRateLimit: { limit: 1, windowMs: 60e3 },
@@ -93,8 +94,17 @@ describe("static files", () => {
     const res = await new Promise((resolve) => {
       http.get({ host: "127.0.0.1", port: new URL(base).port, path: "/../secret.txt" }, resolve);
     });
-    expect(res.statusCode).not.toBe(200);
+    // path.normalize already clamps "/../" to "/"; the dist-folder check stays as a second guard
+    expect(res.statusCode).toBe(404);
     expect((await get("/%2e%2e/secret.txt")).status).toBe(404);
+  });
+
+  it("answers 400 to a request-target that is not a valid URL, and keeps running", async () => {
+    const res = await new Promise((resolve) => {
+      http.get({ host: "127.0.0.1", port: new URL(base).port, path: "//[" }, resolve);
+    });
+    expect(res.statusCode).toBe(400);
+    expect((await get("/api/health")).status).toBe(200);
   });
 
   it("rejects other methods", async () => {
@@ -127,6 +137,19 @@ describe("api", () => {
     expect(limited.status).toBe(429);
     expect(limited.headers.get("retry-after")).toBe("60");
     expect((await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "198.51.100.1" })).status).toBe(200);
+  });
+
+  it("compresses large search answers", async () => {
+    const raw = await new Promise((resolve) => {
+      http.get(base + "/api/search?q=bigresult", { headers: { "Accept-Encoding": "gzip", "X-Forwarded-For": "192.0.2.50" } }, (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => resolve({ enc: res.headers["content-encoding"], vary: res.headers.vary, body: Buffer.concat(chunks) }));
+      });
+    });
+    expect(raw.enc).toBe("gzip");
+    expect(raw.vary).toBe("Accept-Encoding");
+    expect(JSON.parse(gunzipSync(raw.body).toString()).results).toHaveLength(200);
   });
 
   it("serves AI suggestions on their own endpoint with their own limit", async () => {

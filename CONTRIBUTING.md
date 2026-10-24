@@ -20,13 +20,18 @@ npm test
   so never put a secret in one.
 - Never add generated or invented data: every result must come from a named source.
 - Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm audit` before a PR.
+- Tests cover the server and the search logic in `src/lib`; the React pages and components have no
+  automated tests, so check a change to them in the browser (`npm run build && npm start`).
 
 ## Adding a data source
 
 A national dataset is one file in `server/datasets/` exporting `{ id, name, kind, coverage,
-homepage, refreshMs, load(fetch) }` where `load` returns rows `{ brand, ingredient, country,
-holder?, strength?, form?, status?, url? }`; add it to `DATASETS` in `server/datasets/index.js`,
-with a parser test in `server/test/datasets.test.js`, its terms in `NOTICE.md` (and a `terms`
+homepage, terms, refreshMs, load(fetch, ctx) }` where `load` returns rows `{ brand, ingredient,
+country, holder?, strength?, form?, status?, url? }`. A file imported by hand also defines
+`available(ctx)`, `unavailableDetail` and `modifiedAt(ctx)`, with `ctx.importDir` the imports
+folder; see `server/datasets/fimea.js`. Add it to `DATASETS` in `server/datasets/index.js`, with a
+parser test in `server/test/datasets.test.js` and a stubbed-download test in
+`server/test/loaders.test.js`, its terms in `NOTICE.md` (and a `terms`
 link on the dataset), and a row in [docs/DATA-SOURCES.md](docs/DATA-SOURCES.md). Only official,
 free, publicly downloadable data whose terms allow reuse; that page lists the registers already
 checked and why the others are not used.
