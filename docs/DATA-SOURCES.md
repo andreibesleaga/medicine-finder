@@ -10,6 +10,8 @@ How a register can be used:
 - **Bulk file** — downloaded on a schedule into the server's SQLite database
   (`server/datasets/<name>.js`). Preferred: fast searches, no load on the regulator per search.
 - **Live API** — queried on each search (`server/sources/<name>.js`). Used when there is no file.
+- **Imported file** — downloaded by hand and placed in `DATA_DIR/imports` on the server, when the
+  register blocks scripts but allows reuse; reloaded whenever a newer file is put there.
 - **Account** — needs a registration or key. Possible for a private deployment that sets its own key
   in a server variable; not used in the public demo.
 
@@ -31,6 +33,7 @@ Terms for each source are in [NOTICE.md](../NOTICE.md); row counts and file deta
 | Europe | Czech Republic | SÚKL DLP | bulk zip, monthly | free reuse naming SÚKL |
 | Europe | Denmark | Danish Medicines Agency | bulk XLSX, daily | free reuse naming the agency |
 | Europe | Sweden | Läkemedelsverket | bulk XLSX, daily | CC BY 4.0 |
+| Europe | Finland | Fimea basic register (`Perusrekisteri.xml`) | imported file (fimea.fi blocks scripts); see [DEPLOY.md](DEPLOY.md#finland-imported-file) | CC BY 4.0 |
 | Europe | Lithuania | VVKT (data.gov.lt) | bulk CSV, daily | CC BY 4.0 |
 | Europe | Ukraine | State Register of Medicinal Products | bulk CSV | CC BY |
 | Europe | Malta | Medicines Authority | bulk XLSX, daily | reuse with reference, not commercial |
@@ -51,7 +54,6 @@ scripts; **No data** = no file or API found, only a search page.
 
 | Country | Register | How it could be imported | Why it is not in use |
 |---|---|---|---|
-| Finland | Fimea basic register (XML) | bulk XML, daily | Blocked: every fimea.fi address answers a browser check. Licence CC BY 4.0. |
 | Estonia | Ravimiregister | bulk downloads page | Blocked: browser check on all Estonian medicines sites. |
 | Latvia | ZVA medicinal product register (data.gov.lv) | bulk XML/CSV/JSON | Possible: CC0, but the server refused connections from the test machine; re-test from the deployment. |
 | Norway | DMP FEST (SOAP service) | bulk XML, about 95 MB a day | Possible: NLOD 2.0 open licence; large download and a multi-part XML to join. |

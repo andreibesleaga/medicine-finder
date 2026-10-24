@@ -18,6 +18,10 @@ import { parseInvima } from "../datasets/invima.js";
 import { parseTfda } from "../datasets/tfda.js";
 import { parseHsa, hsa, HSA_POLL_URL } from "../datasets/hsa.js";
 import { parsePharmac, pharmac, PHARMAC_INDEX } from "../datasets/pharmac.js";
+import { parseFimea, fimea, FIMEA_FILE } from "../datasets/fimea.js";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { curatedRows } from "../datasets/curated.js";
 import { withSynonyms } from "../datasets/common.js";
 import { openStore, ingredientWords } from "../db/store.js";
@@ -357,6 +361,38 @@ describe("national dataset parsers", () => {
     ]);
   });
 
+  it("Finland: current human authorisations joined to their substances through the packages", () => {
+    const xml = `<Perusrekisteri>
+      <Pakkaus Laakevalmiste-ref="REL1"><Kaupanolo><Kaupan>0</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Pakkaus Laakevalmiste-ref="REL1"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Pakkaus Laakevalmiste-ref="REL2"><Kaupanolo><Kaupan>0</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES2"/></Pakkaus>
+      <Pakkaus Laakevalmiste-ref="REL3"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Pakkaus Laakevalmiste-ref="REL4"><Kaupanolo><Kaupan>1</Kaupan></Kaupanolo><Pakkaus_Laakeaine Laakeaine-ref="RES1"/></Pakkaus>
+      <Laakevalmiste id="REL1"><Kauppanimi>Burana</Kauppanimi><Vahvuus>400 mg</Vahvuus><Laakemuoto listname="DosageForm" id="235" value="tabletti, kalvopäällysteinen"/><HUM>1</HUM>
+        <Myyntilupa><Haltija>Orion Corporation</Haltija><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakevalmiste id="REL2"><Kauppanimi>Burana-C</Kauppanimi><HUM>1</HUM>
+        <Myyntilupa><Haltija>Orion &amp; Co</Haltija><Tila listname="Authorisation Status" id="18" value="Rekisteröinti myönnetty"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakevalmiste id="REL3"><Kauppanimi>Old</Kauppanimi><HUM>1</HUM>
+        <Myyntilupa><Tila listname="Authorisation Status" id="6" value="Myyntilupa peruuntunut"/><RinnakkaisTuonti>0</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakevalmiste id="REL4"><Kauppanimi>Imported</Kauppanimi><HUM>1</HUM>
+        <Myyntilupa><Tila listname="Authorisation Status" id="5" value="Myyntilupa myönnetty"/><RinnakkaisTuonti>1</RinnakkaisTuonti></Myyntilupa></Laakevalmiste>
+      <Laakeaine id="RES1"><VaikuttavaAine><Aine listname="Substance" id="1" value="Ibuprofen"/></VaikuttavaAine></Laakeaine>
+      <Laakeaine id="RES2"><VaikuttavaAine><Aine listname="Substance" id="1" value="Ibuprofen"/></VaikuttavaAine><VaikuttavaAine><Aine listname="Substance" id="2" value="Ascorbic acid"/></VaikuttavaAine></Laakeaine>
+    </Perusrekisteri>`;
+    expect(parseFimea(xml)).toEqual([
+      { brand: "Burana", ingredient: "Ibuprofen", country: "Finland", holder: "Orion Corporation", strength: "400 mg", form: "tabletti, kalvopäällysteinen", status: "Authorised, marketed" },
+      { brand: "Burana-C", ingredient: "Ibuprofen + Ascorbic acid", country: "Finland", holder: "Orion & Co", strength: undefined, form: undefined, status: "Authorised" },
+    ]);
+  });
+
+  it("Finland: available only once the file is in the imports folder", () => {
+    const importDir = mkdtempSync(path.join(tmpdir(), "mf-imports-"));
+    expect(fimea.available({ importDir })).toBe(false);
+    expect(fimea.available({})).toBe(false);
+    writeFileSync(path.join(importDir, FIMEA_FILE), "<Perusrekisteri/>");
+    expect(fimea.available({ importDir })).toBe(true);
+  });
+
   it("curated lists keep the other name of the ingredient searchable", () => {
     const rows = curatedRows();
     expect(rows.find((r) => r.brand === "Doliprane")).toMatchObject({ ingredient: "paracetamol (acetaminophen)", country: "France" });
@@ -438,6 +474,43 @@ describe("dataset loading", () => {
     now.advance(31 * 60e3);
     await refreshDue();
     expect(sources[1].status()).toMatchObject({ state: "ready", rows: 1 });
+  });
+
+  it("leaves an unavailable dataset off, then loads it, and reloads it when its file is newer", async () => {
+    const now = fixedClock();
+    const store = openStore(":memory:");
+    let present = false;
+    let fileTime = 0;
+    let loads = 0;
+    const imported = {
+      ...dataset("imported", async (_fetch, ctx) => {
+        loads += 1;
+        expect(ctx).toEqual({ importDir: "/data/imports" });
+        return [{ brand: "Burana", ingredient: "Ibuprofen", country: "Finland" }];
+      }, 30 * 24 * 3600e3),
+      available: () => present,
+      unavailableDetail: "no file imported yet",
+      modifiedAt: () => fileTime,
+    };
+    const { sources, refreshDue } = createDatasetSources({ store, datasets: [imported], now, importDir: "/data/imports" });
+    await refreshDue();
+    expect(loads).toBe(0);
+    expect(sources[0].enabled()).toBe(false);
+    expect(sources[0].status()).toEqual({ state: "disabled", detail: "no file imported yet" });
+
+    present = true;
+    fileTime = now();
+    now.advance(60e3);
+    await refreshDue();
+    await refreshDue();
+    expect(loads).toBe(1);
+    expect(sources[0].status()).toMatchObject({ state: "ready", rows: 1 });
+
+    now.advance(60e3);
+    fileTime = now();
+    now.advance(60e3);
+    await refreshDue();
+    expect(loads).toBe(2);
   });
 
   it("rejects an empty download instead of wiping good data", async () => {

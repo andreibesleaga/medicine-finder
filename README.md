@@ -21,7 +21,7 @@ Since version 2.0 the project has a small backend: a Node server that serves the
 for the official databases and AI engines a browser cannot call directly. It is still a
 proof-of-concept MVP, not a production medical service.
 
-**Live demo:** deployed on Railway. Official data from the EU and 19 countries and the open US
+**Live demo:** deployed on Railway. Official data from the EU and 20 countries and the open US
 references work without keys. AI suggestions appear when a provider key is set on the server; keys
 never reach the browser.
 
@@ -29,7 +29,7 @@ never reach the browser.
 
 | Type | Sources | Countries |
 |---|---|---|
-| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) (EU), France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Italy [AIFA](https://www.aifa.gov.it/liste-dei-farmaci), Poland [URPL](https://rejestry.ezdrowie.gov.pl/rpl/search/public), Netherlands [CBG](https://www.geneesmiddeleninformatiebank.nl/), Ireland [HPRA](https://www.hpra.ie/find-a-medicine), Switzerland [Swissmedic](https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html), Czech Republic [SÚKL](https://prehledy.sukl.cz/prehled_leciv.html), Denmark [DKMA](https://laegemiddelstyrelsen.dk/en/licensing/licensing-of-medicines/lists-of-authorised-and-deregistered-medicines/), Sweden [Läkemedelsverket](https://www.lakemedelsverket.se/), Lithuania [VVKT](https://data.gov.lt/datasets/2853/), Ukraine [State Register](https://data.gov.ua/dataset/fded13b8-4e2c-4c48-bf14-65d0e3106463), Malta [Medicines Authority](https://medicinesauthority.gov.mt/advanced-search), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/), US [FDA NDC Directory](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory), Colombia [INVIMA](https://www.datos.gov.co/Salud-y-Protecci-n-Social/C-digo-nico-de-Medicamentos-Vigentes/i7cb-raxc), Taiwan [TFDA](https://data.gov.tw/dataset/9122), Singapore [HSA](https://data.gov.sg/datasets/d_767279312753558cbf19d48344577084/view), New Zealand [Pharmac](https://schedule.pharmac.govt.nz/) (funded medicines), Spain [CIMA](https://cima.aemps.es/) | EU, FR, IT, PL, NL, IE, CH, CZ, DK, SE, LT, UA, MT, CA, US, CO, TW, SG, NZ, ES |
+| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) (EU), France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Italy [AIFA](https://www.aifa.gov.it/liste-dei-farmaci), Poland [URPL](https://rejestry.ezdrowie.gov.pl/rpl/search/public), Netherlands [CBG](https://www.geneesmiddeleninformatiebank.nl/), Ireland [HPRA](https://www.hpra.ie/find-a-medicine), Switzerland [Swissmedic](https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html), Czech Republic [SÚKL](https://prehledy.sukl.cz/prehled_leciv.html), Denmark [DKMA](https://laegemiddelstyrelsen.dk/en/licensing/licensing-of-medicines/lists-of-authorised-and-deregistered-medicines/), Sweden [Läkemedelsverket](https://www.lakemedelsverket.se/), Finland [Fimea](https://fimea.fi/en/databases_and_registers/basic-register-xml) (imported file), Lithuania [VVKT](https://data.gov.lt/datasets/2853/), Ukraine [State Register](https://data.gov.ua/dataset/fded13b8-4e2c-4c48-bf14-65d0e3106463), Malta [Medicines Authority](https://medicinesauthority.gov.mt/advanced-search), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/), US [FDA NDC Directory](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory), Colombia [INVIMA](https://www.datos.gov.co/Salud-y-Protecci-n-Social/C-digo-nico-de-Medicamentos-Vigentes/i7cb-raxc), Taiwan [TFDA](https://data.gov.tw/dataset/9122), Singapore [HSA](https://data.gov.sg/datasets/d_767279312753558cbf19d48344577084/view), New Zealand [Pharmac](https://schedule.pharmac.govt.nz/) (funded medicines), Spain [CIMA](https://cima.aemps.es/) | EU, FR, IT, PL, NL, IE, CH, CZ, DK, SE, FI, LT, UA, MT, CA, US, CO, TW, SG, NZ, ES |
 | **Open reference** | [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/), [openFDA](https://open.fda.gov/) drug labels, [Wikidata](https://www.wikidata.org/), [PubChem](https://pubchem.ncbi.nlm.nih.gov/) synonyms; [ClinicalTrials.gov](https://clinicaltrials.gov/) study count | US, any |
 | **Curated sample** | static lists for a few common ingredients, typed into the app; not from a regulator | EU, DE, FR, IT, ES, NL, UK, IN |
 | **AI suggestion** | OpenAI, Perplexity, DeepSeek, OpenRouter, each only if its key is set; unverified | any |
@@ -51,7 +51,7 @@ other names of the same ingredient) find each other.
 flowchart LR
   U[Browser: React app] -->|/api/search| S[Node server]
   U --> O[RxNorm, openFDA, Wikidata,<br/>PubChem, ClinicalTrials.gov]
-  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, CZ, DK, SE, LT, UA, MT,<br/>CA, US, CO, TW, SG, NZ:<br/>downloaded files)]
+  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, CZ, DK, SE, FI, LT, UA, MT,<br/>CA, US, CO, TW, SG, NZ:<br/>downloaded files)]
   S --> L[Spain CIMA:<br/>live API]
   S --> A[AI providers:<br/>keys on the server]
 ```
@@ -78,7 +78,7 @@ This project is automatically and manually built with:
 
 ## API keys
 
-All data sources (RxNorm, OpenFDA, EMA, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, SÚKL, DKMA, Läkemedelsverket, VVKT, Ukraine's register, Malta's Medicines
+All data sources (RxNorm, OpenFDA, EMA, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, SÚKL, DKMA, Läkemedelsverket, Fimea, VVKT, Ukraine's register, Malta's Medicines
 Authority, FDA NDC, INVIMA, TFDA, HSA, Pharmac, CIMA,
 Health Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
 register to use it.

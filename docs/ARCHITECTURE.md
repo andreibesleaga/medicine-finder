@@ -18,7 +18,7 @@ flowchart LR
   U -->|direct| T[ClinicalTrials.gov count]
   U -.->|GET /api/ai, after| AI2[AI suggestions]
   U --- C[(Last 50 searches<br/>IndexedDB, 24 h)]
-  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Sweden, Lithuania,<br/>Ukraine, Malta, Canada, US,<br/>Colombia, Taiwan, Singapore,<br/>New Zealand, curated lists)]
+  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Sweden, Finland,<br/>Lithuania, Ukraine, Malta, Canada, US,<br/>Colombia, Taiwan, Singapore,<br/>New Zealand, curated lists)]
   S -->|live| ES[Spain CIMA API]
   S -.->|live, if HEALTH_CANADA=live or both| HC[Health Canada DPD API]
   S -->|key on server| AI[OpenAI / Perplexity /<br/>DeepSeek / OpenRouter]
@@ -51,7 +51,7 @@ flowchart LR
 
 | Type | Meaning | Sources |
 |---|---|---|
-| Official database | a regulator's or ministry's public data EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark, Sweden, Lithuania, Ukraine, Malta, Canada, the United States, Colombia, Taiwan, Singapore and New Zealand, CIMA (Spain) |
+| Official database | a regulator's or ministry's public data | EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, the United States, Colombia, Taiwan, Singapore and New Zealand, CIMA (Spain) |
 | Open reference | open public reference data, good but not a register of marketed products | RxNorm, openFDA labels, Wikidata, PubChem synonyms |
 | Curated sample | static lists typed into the app for a few common ingredients | `server/data/curated.json` |
 | AI suggestion | a language model's answer, never verified | OpenAI, Perplexity, DeepSeek, OpenRouter (each only when its key is set) |
@@ -81,6 +81,7 @@ deploy (about 3 minutes; sources show "loading").
 | Czech Republic SÚKL | monthly DLP zip (`;`, windows-1250), linked from the open-data catalogue page; registered products, English substance names | 11,881 |
 | Denmark DKMA | list of authorised medicines `.xlsx` (daily), no parallel imports, natural medicines or vitamins | 13,960 |
 | Sweden Läkemedelsverket | `Lakemedelsprodukter.xlsx` (daily), human, approved or registered, no parallel imports or homeopathics | 13,540 |
+| Finland Fimea | `Perusrekisteri.xml` imported by hand into `DATA_DIR/imports` (fimea.fi blocks scripts), reloaded when the file is newer; human, current authorisation or registration, no parallel imports; substances joined through the packages | 11,704 |
 | Lithuania VVKT | data.gov.lt CSV (one row per package), registered or re-registered, grouped per product | 7,586 |
 | Ukraine | State Register `reestr.csv` (windows-1251), not terminated early, no substances or homeopathics; INN as ingredient | 12,183 |
 | Malta Medicines Authority | national products `.xlsx` (daily), authorised | 5,448 |

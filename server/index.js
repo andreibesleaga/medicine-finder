@@ -43,6 +43,8 @@ const canada = healthCanadaMode(env.HEALTH_CANADA, log);
 const datasets = createDatasetSources({
   store,
   datasets: DATASETS.filter((d) => d.id !== "health-canada" || canada.dataset),
+  // files imported by hand (e.g. Finland's Perusrekisteri.xml) go in DATA_DIR/imports
+  importDir: path.join(dataDir, "imports"),
   fetch: globalThis.fetch,
   log,
 });

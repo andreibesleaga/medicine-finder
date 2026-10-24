@@ -22,6 +22,7 @@ the source has one.
 | Authorised packs, human medicines | Swissmedic | https://www.swissmedic.ch/swissmedic/en/home/services/legal-notices.html |
 | List of authorised medicines | Danish Medicines Agency (Lægemiddelstyrelsen); source: Danish Medicines Agency | https://laegemiddelstyrelsen.dk/en/about/copyright-and-logo/ |
 | List of all medicinal products | Läkemedelsverket (Sweden), CC BY 4.0 | https://creativecommons.org/licenses/by/4.0/ |
+| Basic register of medicinal products | Fimea (Finland), CC BY 4.0 | https://avoindata.suomi.fi/data/en/dataset/fimea-avoin-data |
 | Registered medicinal products | VVKT (Lithuania), via data.gov.lt, CC BY 4.0 | https://data.gov.lt/datasets/2853/ |
 | State Register of Medicinal Products | Ministry of Health of Ukraine, via data.gov.ua, CC BY | https://data.gov.ua/dataset/fded13b8-4e2c-4c48-bf14-65d0e3106463 |
 | National products list | Medicines Authority (Malta); reproduced with reference to the source, not for commercial or marketing use | https://medicinesauthority.gov.mt/copyright |

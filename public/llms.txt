@@ -1,6 +1,6 @@
 # Medicine Brand Finder
 
-> Find the brand names of a medicine's active ingredient in other countries. Results come from official medicines databases (EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Sweden, Lithuania, Ukraine, Malta, Canada, United States, Colombia, Taiwan, Singapore, New Zealand, Spain), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
+> Find the brand names of a medicine's active ingredient in other countries. Results come from official medicines databases (EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, United States, Colombia, Taiwan, Singapore, New Zealand, Spain), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
 
 - Live: https://medicine-finder.up.railway.app/
 - Source: https://github.com/andreibesleaga/medicine-finder

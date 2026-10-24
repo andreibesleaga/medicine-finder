@@ -22,22 +22,28 @@ import { invima } from "./invima.js";
 import { tfda } from "./tfda.js";
 import { hsa } from "./hsa.js";
 import { pharmac } from "./pharmac.js";
+import { fimea } from "./fimea.js";
 import { curated } from "./curated.js";
 
 // loaded in this order after a start: Europe, then the Americas, then Asia-Pacific
 export const DATASETS = [
-  ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, sukl, dkma, mpa, vvkt, drlz, maltama,
+  ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, sukl, dkma, mpa, vvkt, drlz, maltama, fimea,
   dpd, usfda, invima,
   tfda, hsa, pharmac,
   curated,
 ];
 
-export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = 60 }) {
+// A dataset may also define available(ctx) (false: shown as off, not loaded; e.g. a file imported by
+// hand that is not there yet) and modifiedAt(ctx) (reload when its source is newer than the data).
+export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = 60, importDir }) {
+  const ctx = { importDir };
+  const available = (d) => !d.available || d.available(ctx);
   const loading = new Set();
   // datasets with refreshMs 0 (built-in data) are reloaded once per start, so edits apply on deploy
   const loadedThisRun = new Set();
 
   function status(d) {
+    if (!available(d)) return { state: "disabled", detail: d.unavailableDetail };
     const info = store.info(d.id);
     const base = info?.loaded_at
       ? { state: "ready", rows: info.rows, updatedAt: new Date(info.loaded_at).toISOString() }
@@ -54,7 +60,7 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
     coverage: d.coverage,
     homepage: d.homepage,
     terms: d.terms,
-    enabled: () => true,
+    enabled: () => available(d),
     status: () => status(d),
     async search(term) {
       if (!store.info(d.id)?.loaded_at) {
@@ -76,14 +82,16 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
   async function refreshDue() {
     for (const d of datasets) {
       const info = store.info(d.id);
-      const fresh = d.refreshMs === 0 ? loadedThisRun.has(d.id) : Boolean(info?.loaded_at) && now() - info.loaded_at < d.refreshMs;
+      if (!available(d)) continue;
+      const newerSource = Boolean(info?.loaded_at) && d.modifiedAt?.(ctx) > info.loaded_at;
+      const fresh = d.refreshMs === 0 ? loadedThisRun.has(d.id) : Boolean(info?.loaded_at) && now() - info.loaded_at < d.refreshMs && !newerSource;
       if (fresh || loading.has(d.id)) continue;
       // after a failed download, wait an hour before trying again
       if (info?.error && info.attempted_at && now() - info.attempted_at < 3600e3) continue;
       loading.add(d.id);
       const started = now();
       try {
-        const rows = await d.load(fetch);
+        const rows = await d.load(fetch, ctx);
         if (!rows.length) throw new Error("the download contained no usable rows");
         store.replace(d.id, rows, now());
         loadedThisRun.add(d.id);
