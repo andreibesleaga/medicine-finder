@@ -2,6 +2,10 @@
 // sheets such as Swissmedic's lists. Built on node:zlib; no npm package.
 
 import { inflateRawSync } from "node:zlib";
+import { decodeXml } from "./text.js";
+
+// a zip entry that inflates beyond this is refused (a broken file or a zip bomb)
+const MAX_ENTRY_BYTES = 1024 * 1024 * 1024;
 
 /** Reads the zip central directory and returns { name -> Buffer } for the requested entries. */
 export function unzip(buf, wanted) {
@@ -25,23 +29,13 @@ export function unzip(buf, wanted) {
       const lextraLen = buf.readUInt16LE(localOffset + 28);
       const start = localOffset + 30 + lnameLen + lextraLen;
       const data = buf.subarray(start, start + compSize);
-      out[name] = method === 0 ? data : method === 8 ? inflateRawSync(data) : null;
+      out[name] = method === 0 ? data : method === 8 ? inflateRawSync(data, { maxOutputLength: MAX_ENTRY_BYTES }) : null;
       if (!out[name]) throw new Error(`unsupported zip compression ${method}`);
     }
     p += 46 + nameLen + extraLen + commentLen;
   }
   return out;
 }
-
-const decodeXml = (s) =>
-  s
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&amp;/g, "&");
 
 // tags may carry a namespace prefix (<x:row>, <x:c>, ...), as in files written by some .NET tools
 const textOf = (xml) => decodeXml([...xml.matchAll(/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>/g)].map((m) => m[1]).join(""));

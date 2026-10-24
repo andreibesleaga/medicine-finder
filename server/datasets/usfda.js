@@ -1,5 +1,6 @@
 // United States: FDA National Drug Code (NDC) Directory, finished products (ndctext.zip, updated
 // daily; tab-separated product.txt with a header row). Public domain (openFDA: CC0).
+// Left out: homeopathics and medical gases, and ANDA generics sold under their generic name.
 
 import { unzip } from "../lib/xlsx.js";
 import { tidyCase } from "../lib/text.js";
@@ -7,9 +8,19 @@ import { DAY_MS, downloadBuffer, joinSubstances } from "./common.js";
 
 export const NDC_URL = "https://www.accessdata.fda.gov/cder/ndctext.zip";
 const HUMAN = new Set(["HUMAN PRESCRIPTION DRUG", "HUMAN OTC DRUG"]);
+const NOT_BRANDS = new Set(["UNAPPROVED HOMEOPATHIC", "UNAPPROVED MEDICAL GAS"]);
 
-/** Human prescription and OTC products still marketed and not excluded from the directory. */
-export function parseNdcProducts(text) {
+const plain = (s) => (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const ymd = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
+
+// ENDMARKETINGDATE is YYYYMMDD; a date in the future is still on the market
+const ended = (date, today) => Boolean(date) && date <= ymd(today);
+
+// ANDA generics named after their own substance ("Flecainide Acetate") are not brands
+const genericNamed = (f, col, brand) => f[col.MARKETINGCATEGORYNAME] === "ANDA" && plain(brand) === plain(f[col.NONPROPRIETARYNAME]);
+
+/** Human prescription and OTC brand products still marketed and not excluded from the directory. */
+export function parseNdcProducts(text, today = new Date()) {
   const [header, ...lines] = text.split(/\r?\n/);
   const col = Object.fromEntries(header.split("\t").map((name, i) => [name, i]));
   const seen = new Set();
@@ -19,7 +30,8 @@ export function parseNdcProducts(text) {
     const brand = f[col.PROPRIETARYNAME]?.trim();
     const substances = f[col.SUBSTANCENAME]?.trim();
     if (!brand || !substances || !HUMAN.has(f[col.PRODUCTTYPENAME])) continue;
-    if (f[col.NDC_EXCLUDE_FLAG] !== "N" || f[col.ENDMARKETINGDATE]) continue;
+    if (f[col.NDC_EXCLUDE_FLAG] !== "N" || ended(f[col.ENDMARKETINGDATE], today)) continue;
+    if (NOT_BRANDS.has(f[col.MARKETINGCATEGORYNAME]) || genericNamed(f, col, brand)) continue;
     const holder = f[col.LABELERNAME]?.trim();
     const strengths = f[col.ACTIVE_NUMERATOR_STRENGTH].split(";").map((s) => s.trim());
     const units = f[col.ACTIVE_INGRED_UNIT].split(";").map((s) => s.trim());
@@ -45,7 +57,7 @@ export const usfda = {
   id: "us-fda-ndc",
   name: "United States, FDA National Drug Code Directory",
   kind: "official",
-  coverage: "United States, marketed human prescription and OTC drugs (finished products)",
+  coverage: "United States, marketed human prescription and OTC drugs (no homeopathics or generics sold under the generic name)",
   homepage: "https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory",
   terms: "https://open.fda.gov/terms/",
   refreshMs: DAY_MS,

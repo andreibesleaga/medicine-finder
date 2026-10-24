@@ -1,8 +1,8 @@
 {
-  "note": "Names of the same ingredient in different conventions (INN, US/USAN, Latin American Spanish), so any name finds all of them.",
+  "note": "Names of the same ingredient in different conventions (INN, US/USAN, British, Latin American Spanish) and the national spellings that the word stems do not reach (Swedish, Danish, Dutch, Italian, Spanish, French, Latin), so any name finds all of them. A word of one or two letters (\"c\" in \"vitamin c\") must appear as a whole word in the data.",
   "groups": [
     ["paracetamol", "acetaminophen", "acetaminofen"],
-    ["acetylsalicylic acid", "aspirin"],
+    ["acetylsalicylic acid", "aspirin", "acetylsalicylsyra", "acetylsalicylsyre", "acetylsalicylzuur", "acido acetilsalicilico"],
     ["salbutamol", "albuterol"],
     ["adrenaline", "epinephrine"],
     ["noradrenaline", "norepinephrine"],
@@ -11,10 +11,24 @@
     ["ciclosporin", "cyclosporine"],
     ["rifampicin", "rifampin"],
     ["furosemide", "frusemide"],
-    ["levothyroxine", "thyroxine"],
+    ["levothyroxine", "thyroxine", "levotyroxin", "levotiroxina"],
     ["metamizole", "dipyrone"],
     ["pethidine", "meperidine"],
     ["orciprenaline", "metaproterenol"],
-    ["colecalciferol", "cholecalciferol"]
+    ["colecalciferol", "cholecalciferol", "kolekalciferol"],
+    ["hydrochlorothiazide", "hydroklortiazid", "hydrochlorthiazid", "hydrochloorthiazide", "idroclorotiazide", "hidroclorotiazida"],
+    ["ethinylestradiol", "ethinyl estradiol", "ethinyloestradiol", "etinylestradiol", "etinilestradiol"],
+    ["estradiol", "oestradiol"],
+    ["ascorbic acid", "vitamin c", "ascorbinsyra", "ascorbinsyre", "ascorbinezuur", "acido ascorbico"],
+    ["folic acid", "folsyra", "folsyre", "foliumzuur", "acido folico", "acide folique"],
+    ["sodium chloride", "natriumklorid", "natriumchlorid", "sodio cloruro", "chlorure de sodium", "natrii chloridum", "natrium chloratum"],
+    ["potassium chloride", "kaliumklorid", "kaliumchlorid", "potassio cloruro", "cloruro de potasio", "chlorure de potassium", "kalii chloridum"],
+    ["codeine", "kodein"],
+    ["morphine", "morfin", "morfina", "morfine"],
+    ["diclofenac", "diklofenak"],
+    ["azithromycin", "azitromycin", "azitromicina"],
+    ["clopidogrel", "klopidogrel"],
+    ["glucose", "glukos"],
+    ["caffeine", "koffein", "cafeina", "cafeine"]
   ]
 }

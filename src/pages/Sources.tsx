@@ -86,7 +86,7 @@ const Sources = () => {
             be used.
           </p>
         )}
-        {!server && !serverError && <p className="mb-4 text-sm text-gray-700">Loading server status…</p>}
+        {!server && !serverError && <p className="mb-4 text-sm text-gray-700" role="status">Loading server status…</p>}
 
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-sm">

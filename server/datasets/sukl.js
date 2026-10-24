@@ -15,6 +15,10 @@ export const SUKL_PAGE = "https://opendata.sukl.gov.cz/katalog-otevrenych-dat/da
 const ZIP_LINK = /https:\/\/opendata\.sukl\.gov\.cz\/soubory\/SOD\d{8}\/DLP\d{8}\.zip/;
 // registration states kept (dlp_stavyreg.csv): R registered, B registered after a change
 const REGISTERED = new Set(["R", "B"]);
+// pack types left out: homeopathics (TYP_LP "HO"); packs with SDOV set are parallel or direct imports
+const HOMEOPATHIC = "HO";
+// "450MG/50MG" -> "450 mg/50 mg" (only the common mass and volume units)
+const tidyStrength = (s) => s.replace(/(\d\s*|\/)(MG|MCG|G|ML)\b/g, (_, p, u) => `${p === "/" ? p : `${p.trim()} `}${u.toLowerCase()}`);
 const FILES = {
   products: "dlp_lecivepripravky.csv",
   composition: "dlp_slozeni.csv",
@@ -23,7 +27,7 @@ const FILES = {
   forms: "dlp_formy.csv",
 };
 
-/** Registered medicines, one row per name, strength and form. Takes the five files as records. */
+/** Registered medicines, one row per name, strength, form and holder; no homeopathics or parallel imports. Takes the five files as records. */
 export function parseSukl({ products, composition, substances, organisations, forms }) {
   const substanceName = new Map(substances.map((s) => [s.KOD_LATKY, s.NAZEV_EN || s.NAZEV_INN]));
   const actives = new Map();
@@ -40,15 +44,16 @@ export function parseSukl({ products, composition, substances, organisations, fo
   const rows = [];
   for (const p of products) {
     const names = actives.get(p.KOD_SUKL);
-    const key = `${p.NAZEV}|${p.SILA}|${p.FORMA}`;
-    if (!REGISTERED.has(p.REG) || !p.NAZEV || !names || seen.has(key)) continue;
+    if (!REGISTERED.has(p.REG) || !p.NAZEV || !names || p.TYP_LP === HOMEOPATHIC || p.SDOV) continue;
+    const key = `${p.NAZEV}|${p.SILA}|${p.FORMA}|${p.DRZ}|${p.ZEMDRZ}`;
+    if (seen.has(key)) continue;
     seen.add(key);
     rows.push({
       brand: tidyCase(p.NAZEV),
       ingredient: joinSubstances(names.map(tidyCase)),
       country: "Czech Republic",
       holder: holder.get(`${p.DRZ}|${p.ZEMDRZ}`) || undefined,
-      strength: p.SILA || undefined,
+      strength: p.SILA ? tidyStrength(p.SILA) : undefined,
       form: formName.get(p.FORMA) || undefined,
       status: "Registered",
     });
@@ -60,7 +65,7 @@ export const sukl = {
   id: "sukl",
   name: "Czech Republic, SÚKL medicinal products database",
   kind: "official",
-  coverage: "Czech Republic, registered human medicinal products",
+  coverage: "Czech Republic, registered human medicinal products (no homeopathics or parallel imports)",
   homepage: "https://prehledy.sukl.cz/prehled_leciv.html",
   terms: "https://opendata.sukl.gov.cz/podminky-uziti-otevrenych-dat",
   // SÚKL publishes a new zip each month

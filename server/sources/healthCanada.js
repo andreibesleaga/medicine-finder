@@ -5,7 +5,7 @@
 
 import { fetchJson, mapLimit, UpstreamError } from "../lib/http.js";
 import { tidyCase } from "../lib/text.js";
-import { withSynonyms } from "../datasets/common.js";
+import { withSynonyms } from "../lib/synonyms.js";
 
 const API = "https://health-products.canada.ca/api/drug";
 const MAX_PRODUCTS = 40;

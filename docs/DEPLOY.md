@@ -8,8 +8,13 @@ Railway server for `/api`.
 
 The service builds from `Dockerfile`, as set in `.railway/railway.ts` (Railway's infrastructure
 as code; it replaced `railway.json`), with the health check on `/api/health` and the volume at
-`/app/data`. Railway deploys every push to `main`. To change these settings, edit the file, then
-`railway config plan` (preview) and `railway config apply`.
+`/app/data`. Railway deploys every push to `main` on its own, without waiting for CI (merge to
+`main` only when CI is green). To change these settings, edit the file, then `railway config plan`
+(preview) and `railway config apply`.
+
+The service sleeps when it has had no traffic for a while (`sleepApplication`), and the first
+request wakes it in a few seconds. The hourly dataset check only runs while it is awake; on waking
+it checks every dataset at once and reloads the stale ones in the background.
 
 ### Variables
 
@@ -32,14 +37,20 @@ Set them in the Railway dashboard (service → Variables) or with the CLI. None 
 | `SEARCH_RATE_LIMIT` | searches per minute per visitor | `20` |
 | `SEARCH_CACHE_SECONDS` | how long an answer is cached | `3600` |
 | `ALLOWED_ORIGINS` | other sites allowed to call `/api` (the Vercel copy) | none |
+| `DIST_DIR` | folder of the built app (for tests and unusual layouts) | `dist` |
 
 `PORT` is provided by Railway.
+
+The per-visitor limits count by the first address in `X-Forwarded-For`, which Railway's proxy sets.
+Run the image behind a proxy that sets that header too; without one, a visitor can send any value
+and get round the per-visitor limits (the daily AI cap still holds).
 
 **Volume:** a Railway volume is mounted at `/app/data`, so the national datasets survive deploys
 and searches are complete right after a deploy. Without it they are downloaded again after each
 deploy, which takes about 3 minutes in the background; meanwhile those sources show "loading".
 Railway mounts volumes as root, so `RAILWAY_RUN_UID=0` is set; without it SQLite cannot write
-there and the service fails to start. To create both on a new service:
+there and the service fails to start. The app therefore runs as root on Railway (see
+[SECURITY.md](../SECURITY.md)); the image itself runs as `node` everywhere else. To create both on a new service:
 
 ```bash
 railway volume add --mount-path /app/data
@@ -68,7 +79,8 @@ It is imported by hand, about once a month (Fimea updates it nightly):
    ```
 
 The server checks every hour and reloads Finland when the file is newer than its data (about
-10 s). Until the first upload the source shows "off". Locally, put the file in
+10 s); a file put there after a failed load is tried at the next check, without the usual hour's
+wait. Until the first upload the source shows "off". Locally, put the file in
 `data/imports/Perusrekisteri.xml` (Docker: the `/app/data/imports` folder of the volume).
 
 ### Checks after a deploy
@@ -112,7 +124,7 @@ The results then say the search server is not available.
 
 ```bash
 npm ci
-npm run dev                  # app only, http://localhost:8080 (no /api: official EU/FR/ES/CA data is skipped)
+npm run dev                  # app only, http://localhost:8080 (no /api: the national registers, Spain, the curated lists and AI are skipped)
 npm run build && npm start   # app + /api on http://localhost:8080
 cp .env.example .env && npm run build && node --env-file=.env server/index.js   # with AI keys
 docker build -t medicine-finder . && docker run --rm -p 8080:8080 --env-file .env medicine-finder

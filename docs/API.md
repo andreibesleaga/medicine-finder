@@ -6,7 +6,7 @@ allowed only from the origins in `ALLOWED_ORIGINS`.
 ## `GET /api/health`
 
 ```json
-{ "status": "ok", "version": "2.0.0", "uptimeSec": 42 }
+{ "status": "ok", "version": "2.3.1", "uptimeSec": 42 }
 ```
 
 Used by the Railway health check.
@@ -35,7 +35,9 @@ The server-side sources and their state.
 ```
 
 `state` is `ready` (with `rows` and `updatedAt`) / `loading` / `error` for downloaded datasets, `live` for live APIs (or `error`
-after a failed call), and `disabled` for an AI provider without a key.
+after a failed call; `unavailable` when Health Canada's live API is down), and `disabled` for an AI
+provider without a key or a dataset whose imported file is not there yet (Finland before the first
+upload).
 
 ## `GET /api/search?q=<ingredient>[&country=<country>]` and `GET /api/ai?q=…`
 
@@ -78,9 +80,12 @@ Response:
 - Result fields other than `brandName`, `activeIngredient`, `country`, `sourceId`, `sourceName` and
   `kind` are optional: `manufacturer`, `strength`, `dosageForm`, `status`, `url`.
 - `kind` is `official` or `curated` for `/api/search`, `ai` for `/api/ai`.
-- `count` is how many the source found (brands, for the datasets); at most 60 per source are returned,
-  single-ingredient products first.
-- Source `state`: `ok`, `error` (with `detail`), `disabled` (no key) or `skipped` (daily AI limit).
+- `count` is how many the source found (brands, for the datasets; CIMA's own total for Spain); at
+  most 60 per source are returned, single-ingredient products first.
+- Source `state`: `ok`, `error` (with `detail`), `unavailable` (the provider itself is down, with
+  `detail`), `disabled` (no key, or no imported file) or `skipped` (daily AI limit). An answer with
+  `error`, `unavailable` or `skipped` is cached for 5 minutes only.
+- Answers over 1 KB are gzip-compressed when the request accepts it.
 - `cached: true` appears when the answer came from the cache.
 
 Errors: `400` invalid `q` or `country`; `429` too many searches (see `Retry-After`); `404` unknown

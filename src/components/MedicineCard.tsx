@@ -2,6 +2,7 @@ import type { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Building, Pill, FlaskConical, ExternalLink, AlertTriangle } from "lucide-react";
 import { getRegionForCountry } from "@/constants/countries";
+import { webUrl } from "@/lib/utils";
 import { KIND_CLASS, KIND_LABEL } from "./sourceLabels";
 
 interface MedicineCardProps {
@@ -11,6 +12,7 @@ interface MedicineCardProps {
 export const MedicineCard = ({ medicine: m }: MedicineCardProps) => {
   const region = m.country === "Not stated" || m.country === "European Union" ? "" : getRegionForCountry(m.country);
   // a curated or AI name also found in a database (not just another AI answer) needs no warning
+  const recordUrl = webUrl(m.url);
   const confirmedByData = (m.alsoIn ?? []).some((name) => !name.startsWith("AI suggestion"));
 
   return (
@@ -67,9 +69,9 @@ export const MedicineCard = ({ medicine: m }: MedicineCardProps) => {
         )}
 
         <div className="mt-auto pt-3">
-          {m.url && (
+          {recordUrl && (
             <a
-              href={m.url}
+              href={recordUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 hover:bg-blue-50"

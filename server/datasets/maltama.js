@@ -3,13 +3,17 @@
 // or marketing purposes (https://medicinesauthority.gov.mt/copyright).
 
 import { readFirstSheet } from "../lib/xlsx.js";
-import { splitProductName, tidyCase } from "../lib/text.js";
+import { cutProductTitle, splitProductName, tidyCase, uniqueRows } from "../lib/text.js";
 import { DAY_MS, downloadBuffer, joinSubstances } from "./common.js";
 
 export const MALTA_URL = "https://medicinesauthority.gov.mt/Exports/Local/AdvancedSearchResultsLocal.xls";
 
 // cells look like " 'Efudix, cream 50 mg/g'" and headers like " [Status]"
 const clean = (v) => String(v ?? "").trim().replace(/^'(.*)'$/s, "$1").trim();
+
+// "GLICLAZIDE 80 milligram(s)" and "GLICLAZIDE  milligram(s)" -> "Gliclazide"
+const UNIT_WORD = /\s+(?:(?:milli|micro)?gram|millilitre|(?:international )?unit|IU)(?:s|\(s\))?(?=[\s/]|$).*$/i;
+const ingredientName = (s) => tidyCase(s.replace(/\s+\d.*$/, "").replace(UNIT_WORD, ""));
 
 /** Authorised products. Ingredients come as "VALSARTAN 160 milligram(s) | ..." */
 export function parseMaltaRows(rows) {
@@ -24,8 +28,8 @@ export function parseMaltaRows(rows) {
     if (!name || !substances || at(r, "Status") !== "Authorised") continue;
     const { brand, strength } = splitProductName(name);
     out.push({
-      brand,
-      ingredient: joinSubstances(substances.split(" | ").map((s) => tidyCase(s.replace(/\s+\d.*$/, "")))),
+      brand: cutProductTitle(brand),
+      ingredient: joinSubstances(substances.split(" | ").map(ingredientName)),
       country: "Malta",
       holder: at(r, "Authorization Holder") || undefined,
       strength,
@@ -33,7 +37,7 @@ export function parseMaltaRows(rows) {
       status: "Authorised",
     });
   }
-  return out;
+  return uniqueRows(out);
 }
 
 export const maltama = {

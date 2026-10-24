@@ -3,6 +3,8 @@
 import { TtlCache } from "./lib/cache.js";
 
 export const MAX_PER_SOURCE = 60;
+const RETRY_SOON = new Set(["error", "unavailable", "skipped"]);
+const RETRY_SOON_MS = 5 * 60e3;
 
 export function createSearch({ sources, cacheTtlMs = 3600e3, aiDailyLimit = 500, now = Date.now, sourceTimeoutMs = 35000 }) {
   const cache = new TtlCache({ ttlMs: cacheTtlMs, maxEntries: 1000, now });
@@ -57,8 +59,9 @@ export function createSearch({ sources, cacheTtlMs = 3600e3, aiDailyLimit = 500,
       results: runs.flatMap((r) => r.results),
       sources: runs.map((r) => ({ ...r, results: undefined })),
     };
-    // a failed source is retried after a few minutes instead of the full hour
-    cache.set(key, body, runs.some((r) => r.state === "error" || r.state === "unavailable") ? Math.min(cacheTtlMs, 5 * 60e3) : cacheTtlMs);
+    // a failed source (or an AI call skipped by the daily limit) is retried after a few minutes
+    const retrySoon = runs.some((r) => RETRY_SOON.has(r.state));
+    cache.set(key, body, retrySoon ? Math.min(cacheTtlMs, RETRY_SOON_MS) : cacheTtlMs);
     return body;
   };
 }

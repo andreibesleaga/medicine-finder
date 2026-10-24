@@ -2,7 +2,7 @@
 
 import { fetchJson } from "../lib/http.js";
 import { stems, splitProductName, tidyCase } from "../lib/text.js";
-import { withSynonyms } from "../datasets/common.js";
+import { withSynonyms } from "../lib/synonyms.js";
 
 const API = "https://cima.aemps.es/cima/rest/medicamentos";
 
@@ -36,13 +36,21 @@ export function createCimaSource({ fetch }) {
     async search(term) {
       // CIMA matches the start of the Spanish substance name; the stem bridges English and Spanish
       // spellings, and the other international name (acetaminophen -> paracetamol) is tried too
+      const pages = await Promise.allSettled(
+        withSynonyms(term).map((name) =>
+          fetchJson(fetch, `${API}?practiv1=${encodeURIComponent(stems(name).join(" "))}&comerc=1&pagina=1`, { timeoutMs: 12000 }),
+        ),
+      );
+      const answered = pages.filter((p) => p.status === "fulfilled").map((p) => p.value);
+      if (!answered.length) throw pages[0].reason;
+      // the first page of each name is shown; totalFilas says how many CIMA has in all
       const seen = new Map();
-      for (const name of withSynonyms(term)) {
-        const query = stems(name).join(" ");
-        const json = await fetchJson(fetch, `${API}?practiv1=${encodeURIComponent(query)}&comerc=1&pagina=1`, { timeoutMs: 12000 });
+      let total = 0;
+      for (const json of answered) {
+        total = Math.max(total, Number(json?.totalFilas) || 0);
         for (const r of mapCima(json, term)) if (!seen.has(r.url)) seen.set(r.url, r);
       }
-      return [...seen.values()];
+      return { total: Math.max(total, seen.size), results: [...seen.values()] };
     },
   };
 }

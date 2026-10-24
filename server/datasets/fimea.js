@@ -10,13 +10,14 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { decodeXml as decode } from "../lib/text.js";
+import { tidyCase } from "../lib/text.js";
 import { DAY_MS, joinSubstances } from "./common.js";
 
 export const FIMEA_FILE = "Perusrekisteri.xml";
 // authorisation status ids: 5 marketing authorisation granted, 18 registration granted
 const CURRENT = new Set(["5", "18"]);
 
-const decode = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const text = (xml, tag) => decode(new RegExp(`<${tag}>([^<]*)</${tag}>`).exec(xml)?.[1]?.trim() ?? "");
 const attr = (xml, tag, name) => decode(new RegExp(`<${tag}\\b[^>]*\\b${name}="([^"]*)"`).exec(xml)?.[1]?.trim() ?? "");
 
@@ -35,6 +36,7 @@ export function parseFimea(xml) {
     substanceNames.set(id, [...body.matchAll(/<Aine\b[^>]*\bvalue="([^"]*)"/g)].map((m) => decode(m[1]).trim()));
   }
   const rows = [];
+  const seen = new Set();
   for (const [, id, body] of xml.matchAll(/<Laakevalmiste id="([^"]+)">([\s\S]*?)<\/Laakevalmiste>/g)) {
     const brand = text(body, "Kauppanimi");
     const pack = packs.get(id);
@@ -42,15 +44,20 @@ export function parseFimea(xml) {
     if (!CURRENT.has(attr(body, "Tila", "id"))) continue;
     const names = [...pack.substances].flatMap((ref) => substanceNames.get(ref) ?? []);
     if (!names.length) continue;
-    rows.push({
-      brand,
+    const row = {
+      brand: tidyCase(brand),
       ingredient: joinSubstances(names),
       country: "Finland",
       holder: text(body, "Haltija") || undefined,
       strength: text(body, "Vahvuus") || undefined,
       form: attr(body, "Laakemuoto", "value") || undefined,
       status: pack.marketed ? "Authorised, marketed" : "Authorised",
-    });
+    };
+    // products with the same name often repeat every field
+    const key = [row.brand, row.ingredient, row.strength, row.form, row.holder].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(row);
   }
   return rows;
 }

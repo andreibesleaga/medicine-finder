@@ -34,10 +34,13 @@ CREATE TABLE IF NOT EXISTS datasets (
 );
 `;
 
-/** Normalised words of an ingredient name, used for prefix lookups ("IBUPROFÈNE LYSINE" -> ibuprofene, lysine). */
+/** Normalised words of an ingredient name, used for lookups ("IBUPROFÈNE LYSINE" -> ibuprofene, lysine). */
 export function ingredientWords(ingredient) {
-  return [...new Set(normalize(ingredient).split(/[^a-z0-9]+/).filter((w) => w.length >= 3))];
+  return [...new Set(normalize(ingredient).split(/[^a-z0-9]+/).filter(Boolean))];
 }
+
+// stems this short ("d" in "vitamin d") must match a whole word, not the start of one
+const SHORT_STEM = 3;
 
 const brandKey = (s) => normalize(s).replace(/[^a-z0-9]+/g, " ").trim();
 
@@ -47,25 +50,31 @@ export function openStore(file) {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
   db.exec(SCHEMA);
+  // added in 2.3.1: which data format (parsers and word index) each dataset was loaded with
+  if (!db.prepare("PRAGMA table_info(datasets)").all().some((c) => c.name === "format")) {
+    db.exec("ALTER TABLE datasets ADD COLUMN format INTEGER");
+  }
 
   const insertProduct = db.prepare(
     "INSERT INTO products (source, brand, ingredient, country, holder, strength, form, status, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertWord = db.prepare("INSERT INTO words (source, word, product_id) VALUES (?, ?, ?)");
   const upsertDataset = db.prepare(
-    `INSERT INTO datasets (source, loaded_at, rows, error, attempted_at) VALUES (?, ?, ?, NULL, ?)
-     ON CONFLICT(source) DO UPDATE SET loaded_at = excluded.loaded_at, rows = excluded.rows, error = NULL, attempted_at = excluded.attempted_at`,
+    `INSERT INTO datasets (source, loaded_at, rows, error, attempted_at, format) VALUES (?, ?, ?, NULL, ?, ?)
+     ON CONFLICT(source) DO UPDATE SET loaded_at = excluded.loaded_at, rows = excluded.rows, error = NULL,
+       attempted_at = excluded.attempted_at, format = excluded.format`,
   );
   const markError = db.prepare(
     `INSERT INTO datasets (source, error, attempted_at) VALUES (?, ?, ?)
      ON CONFLICT(source) DO UPDATE SET error = excluded.error, attempted_at = excluded.attempted_at`,
   );
   const findIds = db.prepare("SELECT product_id FROM words WHERE source = ? AND word >= ? AND word < ?");
-  const getInfo = db.prepare("SELECT loaded_at, rows, error, attempted_at FROM datasets WHERE source = ?");
+  const findExact = db.prepare("SELECT product_id FROM words WHERE source = ? AND word = ?");
+  const getInfo = db.prepare("SELECT loaded_at, rows, error, attempted_at, format FROM datasets WHERE source = ?");
 
   return {
-    /** Replaces all rows of one source in a single transaction. */
-    replace(source, rows, now) {
+    /** Replaces all rows of one source in a single transaction; `format` is the data format version. */
+    replace(source, rows, now, format = null) {
       db.exec("BEGIN");
       try {
         db.prepare("DELETE FROM words WHERE source = ?").run(source);
@@ -84,7 +93,7 @@ export function openStore(file) {
           );
           for (const w of ingredientWords(r.ingredient)) insertWord.run(source, w, lastInsertRowid);
         }
-        upsertDataset.run(source, now, rows.length, now);
+        upsertDataset.run(source, now, rows.length, now, format);
         db.exec("COMMIT");
       } catch (err) {
         db.exec("ROLLBACK");
@@ -101,14 +110,16 @@ export function openStore(file) {
     },
 
     /**
-     * Products whose ingredient words start with every stem, one entry per brand (the first
+     * Products whose ingredient words start with every stem (a stem of one or two characters must
+     * be the whole word), one entry per brand (the first
      * strengths and forms joined). Returns { total, results } where total counts brands.
      */
     search(source, stems, limit = 60) {
       if (!stems.length) return { total: 0, results: [] };
       let ids = null;
       for (const s of stems) {
-        const found = new Set(findIds.all(source, s, `${s}￿`).map((r) => r.product_id));
+        const hits = s.length < SHORT_STEM ? findExact.all(source, s) : findIds.all(source, s, `${s}￿`);
+        const found = new Set(hits.map((r) => r.product_id));
         ids = ids ? new Set([...ids].filter((id) => found.has(id))) : found;
         if (ids.size === 0) return { total: 0, results: [] };
       }

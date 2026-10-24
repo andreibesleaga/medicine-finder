@@ -1,11 +1,11 @@
 // New Zealand: Pharmac Pharmaceutical Schedule (monthly XML; Pharmac content is CC BY 4.0). It
 // lists funded (subsidised) medicines only: Chemical > Formulation > Brand.
 
+import { decodeXml as decode } from "../lib/text.js";
 import { DAY_MS, downloadText } from "./common.js";
 
 export const PHARMAC_INDEX = "https://schedule.pharmac.govt.nz/pub/schedule/archive/";
 
-const decode = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const firstName = (xml) => decode(/<Name>([^<]*)<\/Name>/.exec(xml)?.[1]?.trim() ?? "");
 
 /** One row per chemical, formulation and brand. */

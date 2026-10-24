@@ -25,7 +25,8 @@ describe("Spain CIMA source", () => {
           }),
       ],
     ]);
-    const rows = await createCimaSource({ fetch }).search("ibuprofen");
+    const { total, results: rows } = await createCimaSource({ fetch }).search("ibuprofen");
+    expect(total).toBe(1);
     expect(fetch.calls).toHaveLength(1);
     expect(fetch.calls[0].url).toBe("https://cima.aemps.es/cima/rest/medicamentos?practiv1=ibupro&comerc=1&pagina=1");
     expect(rows).toEqual([
@@ -104,5 +105,20 @@ describe("other international names", () => {
     const fetch = stubFetch([["cima.aemps.es", () => jsonResponse({ resultados: [] })]]);
     await createCimaSource({ fetch }).search("acetaminophen");
     expect(fetch.calls.map((c) => new URL(c.url).searchParams.get("practiv1"))).toEqual(["acetaminop", "paraceta", "acetamino"]);
+  });
+
+  it("CIMA keeps the names that answered when one call fails, and reports CIMA's total", async () => {
+    const fetch = stubFetch([
+      ["practiv1=paraceta", () => jsonResponse({ totalFilas: 120, resultados: [{ nregistro: "1", nombre: "GELOCATIL 1 G COMPRIMIDOS" }] })],
+      ["cima.aemps.es", () => jsonResponse("down", { status: 503, type: "text/html" })],
+    ]);
+    const out = await createCimaSource({ fetch }).search("acetaminophen");
+    expect(out.total).toBe(120);
+    expect(out.results.map((r) => r.brandName)).toEqual(["Gelocatil"]);
+  });
+
+  it("CIMA fails only when every call fails", async () => {
+    const fetch = stubFetch([["cima.aemps.es", () => jsonResponse("down", { status: 503, type: "text/html" })]]);
+    await expect(createCimaSource({ fetch }).search("ibuprofen")).rejects.toThrow("HTTP 503 from cima.aemps.es");
   });
 });
