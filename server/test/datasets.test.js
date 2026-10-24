@@ -6,12 +6,16 @@ import { parseUrpl } from "../datasets/urpl.js";
 import { parseCbg } from "../datasets/cbg.js";
 import { parseHpra } from "../datasets/hpra.js";
 import { parseSwissmedicRows } from "../datasets/swissmedic.js";
+import { parseDpd, dpd, DPD_URL } from "../datasets/dpd.js";
+import { parseSukl, sukl, SUKL_PAGE } from "../datasets/sukl.js";
+import { parseDkmaRows } from "../datasets/dkma.js";
 import { curatedRows } from "../datasets/curated.js";
 import { withSynonyms } from "../datasets/common.js";
 import { openStore, ingredientWords } from "../db/store.js";
 import { createDatasetSources } from "../datasets/index.js";
 import { stems } from "../lib/text.js";
-import { fixedClock } from "./helpers.js";
+import { fixedClock, stubFetch } from "./helpers.js";
+import { makeZip } from "./zipfixture.js";
 
 describe("national dataset parsers", () => {
   it("EMA: authorised human medicines only", () => {
@@ -131,6 +135,81 @@ describe("national dataset parsers", () => {
     expect(() => parseSwissmedicRows([["no header"]])).toThrow("header row not found");
   });
 
+  it("Canada: marketed human products from the extract, salts dropped, DIN owner as holder", () => {
+    const files = {
+      drug: ['"1","","Human","02242345","ADVIL","","N","","1","","","Humain","",""', '"2","","Veterinary","0001","VETPROF"', '"3","","Human","0002","OLDPROF"'].join("\n"),
+      ingred: ['"1","2609","IBUPROFEN (IBUPROFEN SODIUM)","I","200","MG"', '"2","2609","IBUPROFEN","I","100","MG"', '"3","2609","IBUPROFEN","I","100","MG"'].join("\n"),
+      comp: ['"1","","1","MAILER INC","MAILING"', '"1","","2","HALEON CANADA ULC","DIN_OWNER"'].join("\n"),
+      form: '"1","5","TABLET","Comprimé"',
+      status: ['"1","N","APPROVED"', '"1","Y","MARKETED"', '"2","Y","MARKETED"', '"3","Y","CANCELLED POST MARKET"'].join("\r\n"),
+    };
+    expect(parseDpd(files)).toEqual([
+      {
+        brand: "Advil",
+        ingredient: "Ibuprofen",
+        country: "Canada",
+        holder: "Haleon Canada Ulc",
+        strength: "200 MG",
+        form: "Tablet",
+        status: "Marketed",
+        url: "https://health-products.canada.ca/dpd-bdpp/info?lang=eng&code=1",
+      },
+    ]);
+  });
+
+  it("Czech Republic: registered packs merged per name, strength and form; English substance names", () => {
+    const files = {
+      products: [
+        { KOD_SUKL: "1", NAZEV: "IBUMAX", SILA: "200MG", FORMA: "TBL FLM", DRZ: "VIB", ZEMDRZ: "FIN", REG: "R" },
+        { KOD_SUKL: "2", NAZEV: "IBUMAX", SILA: "200MG", FORMA: "TBL FLM", DRZ: "VIB", ZEMDRZ: "FIN", REG: "R" },
+        { KOD_SUKL: "3", NAZEV: "PARALEN PLUS", SILA: "", FORMA: "TBL", DRZ: "OPL", ZEMDRZ: "CZ", REG: "B" },
+        { KOD_SUKL: "4", NAZEV: "GONE", SILA: "1MG", FORMA: "TBL", DRZ: "OPL", ZEMDRZ: "CZ", REG: "C" },
+      ],
+      composition: [
+        { KOD_SUKL: "1", KOD_LATKY: "10", S: "L" },
+        { KOD_SUKL: "1", KOD_LATKY: "99", S: "X" },
+        { KOD_SUKL: "2", KOD_LATKY: "10", S: "L" },
+        { KOD_SUKL: "3", KOD_LATKY: "20", S: "L" },
+        { KOD_SUKL: "3", KOD_LATKY: "30", S: "L" },
+        { KOD_SUKL: "4", KOD_LATKY: "10", S: "L" },
+      ],
+      substances: [
+        { KOD_LATKY: "10", NAZEV_INN: "IBUPROFENUM", NAZEV_EN: "IBUPROFEN" },
+        { KOD_LATKY: "20", NAZEV_INN: "PARACETAMOLUM", NAZEV_EN: "PARACETAMOL" },
+        { KOD_LATKY: "30", NAZEV_INN: "COFFEINUM", NAZEV_EN: "" },
+        { KOD_LATKY: "99", NAZEV_INN: "LACTOSUM", NAZEV_EN: "LACTOSE" },
+      ],
+      organisations: [
+        { ZKR_ORG: "VIB", ZEM: "FIN", NAZEV: "Vitabalans Oy, Hämeenlinna" },
+        { ZKR_ORG: "OPL", ZEM: "CZ", NAZEV: "Opella Healthcare Czech s.r.o., Praha" },
+      ],
+      forms: [
+        { FORMA: "TBL FLM", NAZEV_EN: "Film-coated tablet" },
+        { FORMA: "TBL", NAZEV_EN: "Tablet" },
+      ],
+    };
+    expect(parseSukl(files)).toEqual([
+      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Vitabalans Oy", strength: "200MG", form: "Film-coated tablet", status: "Registered" },
+      { brand: "Paralen Plus", ingredient: "Paracetamol + Coffeinum", country: "Czech Republic", holder: "Opella Healthcare Czech s.r.o.", strength: undefined, form: "Tablet", status: "Registered" },
+    ]);
+  });
+
+  it("Denmark: authorised products, no parallel imports, price-list flag as status", () => {
+    const header = ["Drugid", "Navn", "Lægemiddelform", "Styrketekst", "AktiveSubstanser", "MftIndehaver", "ATC-kode", "Godkendt procedure", "Godkendt rolle", "Registreringsdato", "Er i Medicinpriser"];
+    const rows = [
+      header,
+      ["1", "Brufen", "filmovertrukne tabletter", "600 mg", "IBUPROFEN", "Viatris ApS", "M01AE01", "National", "DKMA", "30018", "Ja"],
+      ["2", "Brufen", "filmovertrukne tabletter", "600 mg", "IBUPROFEN", "Importer ApS", "M01AE01", "Par-Imp", "", "30019", "Ja"],
+      ["3", "Combo \"Stada\"", "tabletter", "600+300 mg", "Abacavir, LAMIVUDIN", "STADA Arzneimittel AG", "J05AR02", "MRP", "CMS", "42536", "Nej"],
+      ["4", "Vitaminpille", "tabletter", "", "C-VITAMIN", "X", "", "Vitamin", "", "1", "Nej"],
+    ];
+    expect(parseDkmaRows(rows)).toEqual([
+      { brand: "Brufen", ingredient: "Ibuprofen", country: "Denmark", holder: "Viatris ApS", strength: "600 mg", form: "filmovertrukne tabletter", status: "Authorised, in the price list" },
+      { brand: 'Combo "Stada"', ingredient: "Abacavir + Lamivudin", country: "Denmark", holder: "STADA Arzneimittel AG", strength: "600+300 mg", form: "tabletter", status: "Authorised" },
+    ]);
+    expect(() => parseDkmaRows([["Navn"]])).toThrow("header row not found");
+  });
+
   it("curated lists keep the other name of the ingredient searchable", () => {
     const rows = curatedRows();
     expect(rows.find((r) => r.brand === "Doliprane")).toMatchObject({ ingredient: "paracetamol (acetaminophen)", country: "France" });
@@ -232,5 +311,46 @@ describe("dataset loading", () => {
     const { sources, refreshDue } = createDatasetSources({ store, datasets: [d], now: fixedClock() });
     await refreshDue();
     expect((await sources[0].search("acetaminophen")).results.map((r) => r.brandName)).toEqual(["Doliprane"]);
+  });
+});
+
+describe("zip downloads", () => {
+  const binary = (buf) => new Response(buf, { status: 200, headers: { "content-type": "application/zip" } });
+
+  it("Canada: reads the five files of the extract", async () => {
+    const zip = makeZip({
+      "drug.txt": '"7","","Human","1","TYLENOL"',
+      "ingred.txt": '"7","1","ACETAMINOPHEN","I","500","MG"',
+      "comp.txt": '"7","","1","KENVUE","DIN_OWNER"',
+      "form.txt": '"7","1","TABLET"',
+      "status.txt": '"7","Y","MARKETED"',
+      "route.txt": "not read",
+    });
+    const fetch = stubFetch([[DPD_URL, () => binary(zip)]]);
+    expect((await dpd.load(fetch)).map((r) => [r.brand, r.ingredient])).toEqual([["Tylenol", "Acetaminophen"]]);
+    const broken = stubFetch([[DPD_URL, () => binary(makeZip({ "drug.txt": "" }))]]);
+    await expect(dpd.load(broken)).rejects.toThrow("ingred.txt missing");
+  });
+
+  it("Czech Republic: follows the catalogue link and decodes windows-1250", async () => {
+    // the few windows-1250 bytes these rows need (é, č); the rest is ASCII
+    const cp1250 = (s) => Buffer.from([...s].map((c) => ({ "é": 0xe9, "č": 0xe8 })[c] ?? c.charCodeAt(0)));
+    const zipUrl = "https://opendata.sukl.gov.cz/soubory/SOD20260925/DLP20260925.zip";
+    const zip = makeZip({
+      "dlp_lecivepripravky.csv": cp1250("KOD_SUKL;NAZEV;SILA;FORMA;DRZ;ZEMDRZ;REG\r\n1;IBUMAX;200MG;TBL;LZ;CZ;R\r\n"),
+      "dlp_slozeni.csv": "KOD_SUKL;KOD_LATKY;SQ;S\r\n1;10;1;L\r\n",
+      "dlp_latky.csv": "KOD_LATKY;ZDROJ;NAZEV_INN;NAZEV_EN\r\n10;;IBUPROFENUM;IBUPROFEN\r\n",
+      "dlp_organizace.csv": cp1250("ZKR_ORG;ZEM;NAZEV\r\nLZ;CZ;Léčiva Zentiva, Praha\r\n"),
+      "dlp_formy.csv": "FORMA;NAZEV;NAZEV_EN\r\nTBL;Tableta;Tablet\r\n",
+    });
+    const fetch = stubFetch([
+      [SUKL_PAGE, () => new Response(`<a href="${zipUrl}">DLP</a>`, { headers: { "content-type": "text/html" } })],
+      [zipUrl, () => binary(zip)],
+    ]);
+    expect(await sukl.load(fetch)).toEqual([
+      { brand: "Ibumax", ingredient: "Ibuprofen", country: "Czech Republic", holder: "Léčiva Zentiva", strength: "200MG", form: "Tablet", status: "Registered" },
+    ]);
+    const noLink = stubFetch([[SUKL_PAGE, () => new Response("<p>maintenance</p>")]]);
+    await expect(sukl.load(noLink)).rejects.toThrow("link to the current DLP zip not found");
   });
 });

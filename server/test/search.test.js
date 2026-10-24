@@ -39,6 +39,18 @@ describe("server search", () => {
     expect(body.sources[0].results).toBeUndefined();
   });
 
+  it("reports a provider outage as unavailable and keeps it in the cache only briefly", async () => {
+    const now = fixedClock();
+    const down = source("hc", "official", async () => {
+      throw Object.assign(new Error("Health Canada's API is not answering"), { unavailable: true });
+    });
+    const search = createSearch({ sources: [down], now });
+    expect((await search("ibuprofen")).sources[0].state).toBe("unavailable");
+    now.advance(6 * 60e3);
+    await search("ibuprofen");
+    expect(down.calls).toBe(2);
+  });
+
   it("caps each source but reports the full count", async () => {
     const many = source("m", "official", async () => Array.from({ length: 75 }, (_, i) => ({ brandName: `B${i}`, activeIngredient: "x", country: "France" })));
     const body = await createSearch({ sources: [many], now: fixedClock() })("x");

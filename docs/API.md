@@ -68,7 +68,7 @@ Response:
   ],
   "sources": [
     { "id": "ema", "name": "European Medicines Agency (EMA)", "kind": "official", "state": "ok", "count": 2, "ms": 3 },
-    { "id": "health-canada", "name": "Health Canada, Drug Product Database", "kind": "official", "state": "error", "count": 0, "detail": "HTTP 503 from health-products.canada.ca", "ms": 420 }
+    { "id": "health-canada-live", "name": "Health Canada, Drug Product Database (live API)", "kind": "official", "state": "unavailable", "count": 0, "detail": "Health Canada's API is not answering (HTTP 503 from health-products.canada.ca)", "ms": 420 }
   ],
   "cached": true
 }

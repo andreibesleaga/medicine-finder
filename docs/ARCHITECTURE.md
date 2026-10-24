@@ -18,9 +18,9 @@ flowchart LR
   U -->|direct| T[ClinicalTrials.gov count]
   U -.->|GET /api/ai, after| AI2[AI suggestions]
   U --- C[(Last 50 searches<br/>IndexedDB, 24 h)]
-  S -->|daily downloads| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, curated lists)]
+  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Canada, curated lists)]
   S -->|live| ES[Spain CIMA API]
-  S -->|live| HC[Health Canada DPD API]
+  S -.->|live, if HEALTH_CANADA=live or both| HC[Health Canada DPD API]
   S -->|key on server| AI[OpenAI / Perplexity /<br/>DeepSeek / OpenRouter]
 ```
 
@@ -51,9 +51,9 @@ flowchart LR
 
 | Type | Meaning | Sources |
 |---|---|---|
-| Official database | a regulator's or ministry's public data | EMA (EU), BDPM (France), CIMA (Spain), Health Canada DPD |
+| Official database | a regulator's or ministry's public data EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark and Canada, CIMA (Spain) |
 | Open reference | open public reference data, good but not a register of marketed products | RxNorm, openFDA labels, Wikidata, PubChem synonyms |
-| Curated sample | static lists typed into the app for a few common ingredients | `src/lib/search/curatedLists.ts` |
+| Curated sample | static lists typed into the app for a few common ingredients | `server/data/curated.json` |
 | AI suggestion | a language model's answer, never verified | OpenAI, Perplexity, DeepSeek, OpenRouter (each only when its key is set) |
 
 Every result card names its source and type. Curated and AI cards carry a warning. Nothing is
@@ -63,9 +63,11 @@ generated when a source has no data: an unknown ingredient returns no results.
 
 The national datasets are downloaded by `server/datasets/*.js` into SQLite (`server/db/store.js`,
 Node's built-in `node:sqlite`): one dataset at a time in the background at start, then whenever a
-dataset is more than a day old (checked hourly). A failed download keeps the previous data and is
-retried after an hour; an empty download never replaces good data. Without a volume at
-`DATA_DIR`, the database is rebuilt after each deploy (about 3 minutes; sources show "loading").
+dataset is older than its refresh interval (a day; a week for the monthly Czech and Canadian
+files; checked hourly). A failed download keeps the previous data and is
+retried after an hour; an empty download never replaces good data. On Railway a volume at
+`DATA_DIR` (`/app/data`) keeps the database across deploys; without one it is rebuilt after each
+deploy (about 3 minutes; sources show "loading").
 
 | Dataset | File | Rows (Oct 2026) |
 |---|---|---|
@@ -76,10 +78,15 @@ retried after an hour; an empty download never replaces good data. Without a vol
 | Netherlands CBG | `metadata.csv` (`|`), no homeopathics | 18,141 |
 | Ireland HPRA | `latestHMlist.xml`, not those marked not marketed | 8,242 |
 | Switzerland | Swissmedic "Zugelassene Packungen" `.xlsx` (read by `server/lib/xlsx.js`) | 10,303 |
+| Czech Republic SÚKL | monthly DLP zip (`;`, windows-1250), linked from the open-data catalogue page; registered products, English substance names | 11,881 |
+| Denmark DKMA | list of authorised medicines `.xlsx` (daily), no parallel imports, natural medicines or vitamins | 13,960 |
+| Canada (Health Canada) | DPD data extract `allfiles.zip` (marketed products), human medicines whose current status is MARKETED | 11,463 |
 | Curated sample | `server/data/curated.json` | 104 |
 
-Live per search: Spain CIMA (`practiv1=<stem>&comerc=1`), Health Canada (`activeingredient`, then
-`drugproduct` per drug code, up to 40). Each searches both international names
+Live per search: Spain CIMA (`practiv1=<stem>&comerc=1`); and only when `HEALTH_CANADA` is `live`
+or `both`, the Health Canada API (`activeingredient`, then `drugproduct` per drug code, up to 40).
+When that API is down (5xx, timeout) the source shows "not available" rather than "failed"; with
+the default `dataset` setting Canada always answers from the extract. Each searches both international names
 (`server/data/synonyms.json`).
 
 English ingredient names are matched to French and Spanish names by word stems
@@ -111,7 +118,7 @@ server/            search server (plain JavaScript, ES modules)
   db/store.js      SQLite store: products, ingredient words, dataset status
   datasets/        one loader per national dataset + the background runner (index.js)
   data/            curated.json (static samples), synonyms.json (INN/US names)
-  sources/         live sources: cima.js, healthCanada.js, ai.js
+  sources/         live sources: cima.js, healthCanada.js (+ the HEALTH_CANADA switch), ai.js
   lib/             text matching, CSV and XLSX readers, HTTP helpers, cache, rate limiter
   test/            server tests (Vitest)
 src/
@@ -127,13 +134,15 @@ tests/             browser-side tests (Vitest)
 |---|---|
 | Add or fix a national dataset | `server/datasets/<country>.js`, listed in `server/datasets/index.js` |
 | Database | `server/db/store.js` |
-| Live server sources (Spain, Canada, AI) | `server/sources/` |
+| Live server sources (Spain, Canada API, AI) | `server/sources/` |
+| Canada: extract, live API or both (`HEALTH_CANADA`) | `server/datasets/dpd.js`, `server/sources/healthCanada.js`, wired in `server/index.js` |
 | Routes, headers, static files | `server/app.js`; settings and wiring in `server/index.js` |
 | Name matching, INN/US name pairs | `server/lib/text.js`, `server/data/synonyms.json` |
 | Browser sources | `src/lib/search/browserSources.ts` |
 | Merging, ranking, AI phase | `src/lib/search/searchMedicines.ts` |
 | Country and region fallbacks | `src/lib/search/countryScope.ts` |
 | Browser cache | `src/lib/search/resultCache.ts` |
+| Railway build, health check, volume | `.railway/railway.ts`; preview with `railway config plan` |
 
 Rules: never invent data (every result keeps its source and `kind`); keys only in server
 variables; tests stub `fetch` and use fixed clocks; a new source needs a parser test, its terms in

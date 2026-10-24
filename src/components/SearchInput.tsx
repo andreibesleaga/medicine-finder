@@ -60,7 +60,7 @@ export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCount
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between text-sm text-gray-600 mt-3">
       <div className="flex items-center gap-2">
         <Database className="w-4 h-4 text-blue-600" aria-hidden="true" />
-        <span>Official databases in 9 countries and the EU • open references • optional AI</span>
+        <span>Official databases in 10 countries and the EU • open references • optional AI</span>
       </div>
       <Link to="/sources" className="text-blue-700 hover:underline">
         Data sources and their status

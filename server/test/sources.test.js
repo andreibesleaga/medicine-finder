@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createCimaSource } from "../sources/cima.js";
-import { createHealthCanadaSource } from "../sources/healthCanada.js";
+import { createHealthCanadaSource, healthCanadaMode } from "../sources/healthCanada.js";
 import { stubFetch, jsonResponse } from "./helpers.js";
 
 describe("Spain CIMA source", () => {
@@ -64,11 +64,38 @@ describe("Health Canada source", () => {
     expect(hc.status().state).toBe("live");
   });
 
-  it("reports the service error", async () => {
+  it("reports an outage on Health Canada's side as not available", async () => {
     const fetch = stubFetch([["/activeingredient/", () => jsonResponse("Service Unavailable", { status: 503, type: "text/html" })]]);
     const hc = createHealthCanadaSource({ fetch });
-    await expect(hc.search("ibuprofen")).rejects.toThrow("HTTP 503");
-    expect(hc.status()).toEqual({ state: "error", detail: "HTTP 503 from health-products.canada.ca" });
+    const err = await hc.search("ibuprofen").catch((e) => e);
+    expect(err.unavailable).toBe(true);
+    expect(err.message).toBe("Health Canada's API is not answering (HTTP 503 from health-products.canada.ca)");
+    expect(hc.status()).toEqual({ state: "unavailable", detail: err.message });
+  });
+
+  it("treats a timeout as an outage and a 4xx answer as an error", async () => {
+    const timeout = stubFetch([["/activeingredient/", () => Promise.reject(new DOMException("The operation timed out.", "TimeoutError"))]]);
+    expect((await createHealthCanadaSource({ fetch: timeout }).search("x").catch((e) => e)).unavailable).toBe(true);
+    const bad = stubFetch([["/activeingredient/", () => jsonResponse("bad", { status: 400, type: "text/html" })]]);
+    const hc = createHealthCanadaSource({ fetch: bad });
+    const err = await hc.search("x").catch((e) => e);
+    expect(err.unavailable).toBeUndefined();
+    expect(hc.status()).toEqual({ state: "error", detail: "HTTP 400 from health-products.canada.ca" });
+  });
+});
+
+describe("HEALTH_CANADA setting", () => {
+  it("uses the data extract by default and accepts live, both and off", () => {
+    expect(healthCanadaMode(undefined)).toEqual({ dataset: true, live: false });
+    expect(healthCanadaMode(" Live ")).toEqual({ dataset: false, live: true });
+    expect(healthCanadaMode("both")).toEqual({ dataset: true, live: true });
+    expect(healthCanadaMode("off")).toEqual({ dataset: false, live: false });
+  });
+
+  it("falls back to the extract on an unknown value and says so", () => {
+    const lines = [];
+    expect(healthCanadaMode("yes", (m) => lines.push(m))).toEqual({ dataset: true, live: false });
+    expect(lines).toEqual(['HEALTH_CANADA="yes" is not one of dataset, live, both, off; using dataset']);
   });
 });
 

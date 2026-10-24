@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { createApp } from "./app.js";
 import { createSearch } from "./search.js";
 import { openStore } from "./db/store.js";
-import { createDatasetSources } from "./datasets/index.js";
+import { createDatasetSources, DATASETS } from "./datasets/index.js";
 import { createCimaSource } from "./sources/cima.js";
-import { createHealthCanadaSource } from "./sources/healthCanada.js";
+import { createHealthCanadaSource, healthCanadaMode } from "./sources/healthCanada.js";
 import { createAiSources, AI_TIMEOUT_MS } from "./sources/ai.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,11 +28,30 @@ const version = (() => {
 // The national datasets live in SQLite. Mount a volume at DATA_DIR to keep them across deploys;
 // without one they are downloaded again after each start (a few minutes, in the background).
 const dataDir = path.resolve(root, env.DATA_DIR || "data");
-const store = openStore(path.join(dataDir, "medicines.sqlite"));
+const store = (() => {
+  try {
+    return openStore(path.join(dataDir, "medicines.sqlite"));
+  } catch (err) {
+    // usually a volume mounted as root while the image runs as `node` (Railway: RAILWAY_RUN_UID=0)
+    log(`cannot open the database in ${dataDir}: ${err.message}. The folder must be writable by this user.`);
+    process.exit(1);
+  }
+})();
 const deps = { fetch: globalThis.fetch, env };
-const datasets = createDatasetSources({ store, fetch: globalThis.fetch, log });
+// Canada: the monthly data extract (always answers), the live API, both, or neither
+const canada = healthCanadaMode(env.HEALTH_CANADA, log);
+const datasets = createDatasetSources({
+  store,
+  datasets: DATASETS.filter((d) => d.id !== "health-canada" || canada.dataset),
+  fetch: globalThis.fetch,
+  log,
+});
 
-const officialSources = [...datasets.sources, createCimaSource(deps), createHealthCanadaSource(deps)];
+const officialSources = [
+  ...datasets.sources,
+  createCimaSource(deps),
+  ...(canada.live ? [createHealthCanadaSource(deps)] : []),
+];
 const aiSources = createAiSources(deps);
 
 const search = createSearch({

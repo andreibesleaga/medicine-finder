@@ -21,7 +21,7 @@ Since version 2.0 the project has a small backend: a Node server that serves the
 for the official databases and AI engines a browser cannot call directly. It is still a
 proof-of-concept MVP, not a production medical service.
 
-**Live demo:** deployed on Railway. Official data from the EU and 8 countries and the open US
+**Live demo:** deployed on Railway. Official data from the EU and 10 countries and the open US
 references work without keys. AI suggestions appear when a provider key is set on the server; keys
 never reach the browser.
 
@@ -29,7 +29,7 @@ never reach the browser.
 
 | Type | Sources | Countries |
 |---|---|---|
-| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) (EU), France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Italy [AIFA](https://www.aifa.gov.it/liste-dei-farmaci), Poland [URPL](https://rejestry.ezdrowie.gov.pl/rpl/search/public), Netherlands [CBG](https://www.geneesmiddeleninformatiebank.nl/), Ireland [HPRA](https://www.hpra.ie/find-a-medicine), Switzerland [Swissmedic](https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html), Spain [CIMA](https://cima.aemps.es/), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/) | EU, FR, IT, PL, NL, IE, CH, ES, CA |
+| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) (EU), France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Italy [AIFA](https://www.aifa.gov.it/liste-dei-farmaci), Poland [URPL](https://rejestry.ezdrowie.gov.pl/rpl/search/public), Netherlands [CBG](https://www.geneesmiddeleninformatiebank.nl/), Ireland [HPRA](https://www.hpra.ie/find-a-medicine), Switzerland [Swissmedic](https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html), Czech Republic [SÚKL](https://prehledy.sukl.cz/prehled_leciv.html), Denmark [DKMA](https://laegemiddelstyrelsen.dk/en/licensing/licensing-of-medicines/lists-of-authorised-and-deregistered-medicines/), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/), Spain [CIMA](https://cima.aemps.es/) | EU, FR, IT, PL, NL, IE, CH, CZ, DK, CA, ES |
 | **Open reference** | [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/), [openFDA](https://open.fda.gov/) drug labels, [Wikidata](https://www.wikidata.org/), [PubChem](https://pubchem.ncbi.nlm.nih.gov/) synonyms; [ClinicalTrials.gov](https://clinicaltrials.gov/) study count | US, any |
 | **Curated sample** | static lists for a few common ingredients, typed into the app; not from a regulator | EU, DE, FR, IT, ES, NL, UK, IN |
 | **AI suggestion** | OpenAI, Perplexity, DeepSeek, OpenRouter, each only if its key is set; unverified | any |
@@ -49,8 +49,8 @@ pairs) find each other.
 flowchart LR
   U[Browser: React app] -->|/api/search| S[Node server]
   U --> O[RxNorm, openFDA, Wikidata,<br/>PubChem, ClinicalTrials.gov]
-  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, daily downloads)]
-  S --> L[Spain CIMA, Health Canada:<br/>live APIs]
+  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, CZ, DK, CA, downloaded files)]
+  S --> L[Spain CIMA:<br/>live API]
   S --> A[AI providers:<br/>keys on the server]
 ```
 
@@ -76,8 +76,8 @@ This project is automatically and manually built with:
 
 ## API keys
 
-All data sources (RxNorm, OpenFDA, EMA, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, CIMA, Health
-Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
+All data sources (RxNorm, OpenFDA, EMA, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, SÚKL, DKMA, CIMA,
+Health Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
 register to use it.
 
 AI keys are **server variables** (`OPENAI_API_KEY`, `PERPLEXITY_API_KEY`, `DEEPSEEK_API_KEY`,
@@ -99,8 +99,8 @@ docker build -t medicine-finder . && docker run --rm -p 8080:8080 medicine-finde
 
 ## Deploy
 
-- **Railway (default):** pushes to `main` build the `Dockerfile` (see `railway.json`); the health
-  check is `/api/health`.
+- **Railway (default):** pushes to `main` build the `Dockerfile` (see `.railway/railway.ts`); the
+  health check is `/api/health`; a volume at `/app/data` keeps the database across deploys.
 - **Vercel (off):** `vercel.json` keeps Git deployments disabled. [docs/DEPLOY.md](docs/DEPLOY.md)
   has the on/off switch.
 

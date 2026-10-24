@@ -6,8 +6,10 @@ Railway server for `/api`.
 
 ## Railway (default)
 
-The service builds from `Dockerfile`, as set in `railway.json`, with the health check on
-`/api/health`. Railway deploys every push to `main`.
+The service builds from `Dockerfile`, as set in `.railway/railway.ts` (Railway's infrastructure
+as code; it replaced `railway.json`), with the health check on `/api/health` and the volume at
+`/app/data`. Railway deploys every push to `main`. To change these settings, edit the file, then
+`railway config plan` (preview) and `railway config apply`.
 
 ### Variables
 
@@ -25,15 +27,24 @@ Set them in the Railway dashboard (service → Variables) or with the CLI. None 
 | `AI_RATE_LIMIT` | AI requests per minute per visitor | `10` |
 | `AI_CACHE_SECONDS` | how long an AI answer is cached | `86400` |
 | `DATA_DIR` | where the SQLite database is kept | `/app/data` in the image |
+| `HEALTH_CANADA` | Canada's data: `dataset` (monthly extract, always answers), `live` (API per search), `both`, or `off` | `dataset` |
+| `RAILWAY_RUN_UID` | `0` lets the app write to the Railway volume (volumes are mounted as root; the image runs as `node`) | set on Railway |
 | `SEARCH_RATE_LIMIT` | searches per minute per visitor | `20` |
 | `SEARCH_CACHE_SECONDS` | how long an answer is cached | `3600` |
 | `ALLOWED_ORIGINS` | other sites allowed to call `/api` (the Vercel copy) | none |
 
 `PORT` is provided by Railway.
 
-**Optional volume:** mount a Railway volume at `/app/data` (service → Settings → Volumes) so the
-national datasets survive deploys. Without it they are downloaded again after each deploy, which
-takes about 3 minutes in the background; meanwhile those sources show "loading".
+**Volume:** a Railway volume is mounted at `/app/data`, so the national datasets survive deploys
+and searches are complete right after a deploy. Without it they are downloaded again after each
+deploy, which takes about 3 minutes in the background; meanwhile those sources show "loading".
+Railway mounts volumes as root, so `RAILWAY_RUN_UID=0` is set; without it SQLite cannot write
+there and the service fails to start. To create both on a new service:
+
+```bash
+railway volume add --mount-path /app/data
+railway variables --set "RAILWAY_RUN_UID=0"
+```
 
 ```bash
 railway link --project medicine-finder --service medicine-finder --environment production
