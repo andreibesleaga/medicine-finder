@@ -1,0 +1,11 @@
+# Known exceptions for OSV-Scanner. Each one is reviewed again by its date.
+
+[[IgnoredVulns]]
+id = "GHSA-wrjc-x8rr-h8h6"
+ignoreUntil = 2027-01-31
+reason = "react-router 6: open redirect through user-supplied paths in <Link>/useNavigate. All links in this app are fixed strings; the fix exists only in react-router 7 (major, deferred under the same-major rule)."
+
+[[IgnoredVulns]]
+id = "GHSA-337j-9hxr-rhxg"
+ignoreUntil = 2027-01-31
+reason = "react-router: SSR hydration of serialized errors. This app renders only in the browser (BrowserRouter, no SSR); fix only in react-router 7."

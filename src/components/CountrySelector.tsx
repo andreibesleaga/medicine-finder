@@ -16,8 +16,8 @@ export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelec
   return (
     <div className="min-w-48">
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-blue-500">
-          <Globe className="w-4 h-4 mr-2 text-gray-500" />
+        <SelectTrigger aria-label="Country" className="h-12 border-2 border-gray-200 focus:border-blue-500">
+          <Globe className="w-4 h-4 mr-2 text-gray-500" aria-hidden="true" />
           <SelectValue placeholder="Select country" />
         </SelectTrigger>
         <SelectContent>
@@ -27,7 +27,7 @@ export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelec
               {allOption.label}
             </SelectItem>
           )}
-          
+
           {/* Individual Countries */}
           {countriesOnly.map((country) => (
             <SelectItem key={country.value} value={country.value}>

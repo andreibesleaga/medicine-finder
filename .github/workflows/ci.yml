@@ -5,18 +5,25 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # weekly security scan
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
@@ -29,13 +36,33 @@ jobs:
           name: sbom
           path: sbom.cdx.json
 
-  security-scan:
+  docker:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build the production image
+        run: docker build -t medicine-finder:ci .
+      - name: Start it and check the app and the API
+        run: |
+          docker run -d --name app -p 8080:8080 medicine-finder:ci
+          for i in $(seq 1 30); do curl -fs http://localhost:8080/api/health && break; sleep 1; done
+          curl -fs http://localhost:8080/ | grep -q '<div id="root">'
+          curl -fs http://localhost:8080/sources | grep -q '<div id="root">'
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8080/api/search?q=%3Cx%3E')" = 400
+          curl -fsI http://localhost:8080/.well-known/sustainability-data | grep -qi 'application/sustainability-data+json'
+          docker logs app
+
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: OSV-Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
+        uses: google/osv-scanner-action/osv-scanner-action@v2.7.0
         with:
           scan-args: --lockfile=package-lock.json
       - name: Trivy filesystem scan

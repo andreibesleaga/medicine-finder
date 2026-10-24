@@ -1,173 +1,126 @@
-import { MedicineResult } from "@/types/medicine";
+import type { SearchOutcome, SourceKind } from "@/types/medicine";
 import { MedicineCard } from "./MedicineCard";
-import { Loader2, Package, Globe, Database, Brain, RotateCcw } from "lucide-react";
+import { Loader2, Package, RotateCcw, FlaskConical } from "lucide-react";
+import { KIND_CLASS, KIND_LABEL, STATE_LABEL } from "./sourceLabels";
 
 interface ResultsDashboardProps {
-  results: MedicineResult[];
+  outcome: SearchOutcome | null;
   isLoading: boolean;
-  searchTerm: string;
   onReset?: () => void;
 }
 
-export const ResultsDashboard = ({ results, isLoading, searchTerm, onReset }: ResultsDashboardProps) => {
+const KINDS: SourceKind[] = ["official", "reference", "curated", "ai"];
+
+const Byline = () => <p className="text-gray-600 text-sm mt-8">by Andrei Besleaga Nicolae</p>;
+
+export const ResultsDashboard = ({ outcome, isLoading, onReset }: ResultsDashboardProps) => {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-4">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">Searching Medicine Database</h3>
-        <p className="text-gray-500 text-center max-w-md mb-4">
-          Querying RxNorm API and AI engines worldwide to find all brand names
-        </p>
-        <div className="flex items-center gap-4 text-sm text-gray-400">
-          <div className="flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            <span>RxNorm API</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4" />
-            <span>AI Engines</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4" />
-            <span>Global Sources</span>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center py-4" role="status">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-3" aria-hidden="true" />
+        <p className="text-gray-700">Searching official databases, open references and AI providers…</p>
       </div>
     );
   }
 
-  if (!searchTerm && results.length === 0) {
+  if (!outcome) {
     return (
       <div className="text-center py-8">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-          <Package className="w-10 h-10 text-gray-400" />
+          <Package className="w-10 h-10 text-gray-500" aria-hidden="true" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
-        <p className="text-gray-500 max-w-md mx-auto mb-4">
-          Enter an active drug ingredient above to discover brand names and equivalents worldwide
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Ready to search</h2>
+        <p className="text-gray-600 max-w-md mx-auto">
+          Enter an active ingredient to find brand names in official databases and open references.
         </p>
-        <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-blue-500" />
-            <span>RxNorm Database</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500" />
-            <span>AI Enhanced</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-green-500" />
-            <span>Global Coverage</span>
-          </div>
-        </div>
-        <div className="text-center mt-8">
-          <p className="text-gray-600 flex items-center justify-center gap-2">
-            by Andrei Besleaga Nicolae
-          </p>
-        </div>
+        <Byline />
       </div>
     );
   }
 
-  if (results.length === 0 && searchTerm) {
-    return (
-      <div className="text-center py-4">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-full mb-6">
-          <Globe className="w-10 h-10 text-yellow-600" />
-        </div>
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Results Found</h3>
-        <p className="text-gray-500 max-w-md mx-auto">
-          No medicines found containing "{searchTerm}". Try searching with a different active ingredient name or adjust the country filter.
-        </p>
-      </div>
-    );
-  }
-
-  const uniqueCountries = [...new Set(results.map(r => r.country))].length;
-  const rxNormCount = results.filter(r => r.source === 'rxnorm').length;
-  const aiCount = results.filter(r => r.source === 'ai').length;
+  const { results, sources, trials, term } = outcome;
+  const countries = new Set(results.map((r) => r.country).filter((c) => c !== "Not stated")).size;
+  const failed = sources.filter((s) => s.state === "error" || s.state === "unavailable");
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Results Summary */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8" aria-labelledby="summary">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Search Results for "{searchTerm}"
+            <h2 id="summary" className="text-2xl font-bold text-gray-900 mb-2">
+              Results for "{term}"
             </h2>
-            <p className="text-gray-600 mb-3">
-              Found {results.length} brand names across {uniqueCountries} countries
+            <p className="text-gray-700 mb-3">
+              {results.length} brand {results.length === 1 ? "name" : "names"} in {countries}{" "}
+              {countries === 1 ? "country" : "countries"}
             </p>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-2 text-blue-600">
-                <Database className="w-4 h-4" />
-                <span>{rxNormCount} from RxNorm</span>
-              </div>
-              <div className="flex items-center gap-2 text-purple-600">
-                <Brain className="w-4 h-4" />
-                <span>{aiCount} from AI sources</span>
-              </div>
-              <div className="flex items-center gap-2 text-green-600">
-                <Globe className="w-4 h-4" />
-                <span>{uniqueCountries} countries</span>
-              </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {KINDS.map((k) => {
+                const n = results.filter((r) => r.kind === k).length;
+                return n ? (
+                  <span key={k} className={`rounded border px-2 py-0.5 ${KIND_CLASS[k]}`}>
+                    {n} {KIND_LABEL[k].toLowerCase()}
+                  </span>
+                ) : null;
+              })}
             </div>
+            {trials && trials.count > 0 && (
+              <p className="mt-3 text-sm text-gray-700 flex items-center gap-1">
+                <FlaskConical className="w-4 h-4" aria-hidden="true" />
+                <a href={trials.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
+                  {trials.count.toLocaleString("en")} clinical studies on ClinicalTrials.gov
+                </a>
+              </p>
+            )}
           </div>
-          <div className="text-center lg:text-right">
-            <div className="text-3xl font-bold text-blue-600">{results.length}</div>
-            <div className="text-sm text-gray-500">Total Results</div>
-          </div>
+          <details className="text-sm text-gray-700 lg:max-w-sm">
+            <summary className="cursor-pointer text-blue-700">What each source returned</summary>
+            <ul className="mt-2 space-y-1">
+              {sources.map((s) => (
+                <li key={s.id} className="flex justify-between gap-3">
+                  <span>{s.name}</span>
+                  <span className="text-gray-600 text-right">
+                    {s.state === "ok" ? s.count : STATE_LABEL[s.state]}
+                    {s.detail && s.state !== "ok" ? ` (${s.detail})` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
         </div>
-      </div>
+        {failed.length > 0 && (
+          <p className="mt-3 text-xs text-amber-900">
+            Not reached this time: {failed.map((s) => s.name).join(", ")}. Results may be incomplete.
+          </p>
+        )}
+      </section>
 
-      {/* Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        {results.map((result) => (
-          <MedicineCard key={result.id} medicine={result} />
-        ))}
-      </div>
+      {results.length === 0 ? (
+        <div className="text-center py-4">
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No results</h3>
+          <p className="text-gray-600 max-w-md mx-auto">
+            Nothing found for "{term}". Try the international (INN) name, for example paracetamol instead of a brand.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {results.map((r) => (
+            <MedicineCard key={r.id} medicine={r} />
+          ))}
+        </div>
+      )}
 
-      {/* Ready to Search Section at the end */}
       <div className="text-center py-8 border-t border-gray-200">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-          <Package className="w-10 h-10 text-gray-400" />
-        </div>
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
-        <p className="text-gray-500 max-w-md mx-auto mb-4">
-          Enter an active drug ingredient above to discover brand names and equivalents worldwide
-        </p>
-        
-        {/* Reset Link */}
         {onReset && (
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors mb-6 text-sm font-medium"
+            className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 text-sm font-medium"
           >
-            <RotateCcw className="w-4 h-4" />
-            Reset Search
+            <RotateCcw className="w-4 h-4" aria-hidden="true" />
+            New search
           </button>
         )}
-        
-        <div className="flex justify-center items-center gap-6 text-sm text-gray-400 mb-6">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-blue-500" />
-            <span>RxNorm Database</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500" />
-            <span>AI Enhanced</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-green-500" />
-            <span>Global Coverage</span>
-          </div>
-        </div>
-        <div className="text-center mt-8">
-          <p className="text-gray-600 flex items-center justify-center gap-2">
-            by Andrei Besleaga Nicolae
-          </p>
-        </div>
+        <Byline />
       </div>
     </div>
   );

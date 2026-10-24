@@ -1,149 +1,77 @@
-import { MedicineResult } from "@/types/medicine";
+import type { MedicineResult } from "@/types/medicine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Building, Pill, Database, ExternalLink } from "lucide-react";
+import { MapPin, Building, Pill, FlaskConical, ExternalLink, AlertTriangle } from "lucide-react";
 import { getRegionForCountry } from "@/constants/countries";
+import { KIND_CLASS, KIND_LABEL } from "./sourceLabels";
 
 interface MedicineCardProps {
   medicine: MedicineResult;
 }
 
-export const MedicineCard = ({ medicine }: MedicineCardProps) => {
-  const getSourceBadge = (source: string) => {
-    switch (source) {
-      case 'rxnorm':
-        return <Badge variant="default" className="bg-blue-100 text-blue-800">RxNorm</Badge>;
-      case 'ai':
-        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">AI Enhanced</Badge>;
-      case 'both':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Verified</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getExternalLink = () => {
-    // If RxNorm data is available, link to RxNav
-    if (medicine.rxNormData?.rxcui) {
-      return `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${medicine.rxNormData.rxcui}`;
-    }
-
-    // For FDA/US medicines, use correct Orange Book format
-    if (medicine.country.toLowerCase().includes('united states')) {
-      return `https://www.accessdata.fda.gov/scripts/cder/ob/index.cfm?panel=0&drugname=${encodeURIComponent(medicine.brandName)}`;
-    }
-
-    // For European medicines, use EMA's correct search URL format with only the active ingredient
-    if (medicine.country.toLowerCase().includes('europe') || 
-        medicine.country.toLowerCase().includes('eu') ||
-        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom', 'ireland', 'belgium', 'austria', 'portugal', 'sweden', 'denmark', 'finland', 'poland', 'czech republic', 'hungary', 'slovakia', 'slovenia', 'estonia', 'latvia', 'lithuania', 'luxembourg', 'malta', 'cyprus'].some(country => 
-          medicine.country.toLowerCase().includes(country))) {
-      // Use only the active ingredient as search term
-      return `https://www.ema.europa.eu/en/search?f%5B0%5D=ema_search_entity_is_document%3ADocument&search_api_fulltext=${encodeURIComponent(medicine.activeIngredient)}`;
-    }
-
-    // Default to a comprehensive drug information search
-    return `https://go.drugbank.com/unearth/q?searcher=drugs&query=${encodeURIComponent(medicine.brandName + ' ' + medicine.activeIngredient)}&button=`;
-  };
-
-  const getLinkText = () => {
-    if (medicine.rxNormData?.rxcui) return "View in RxNav";
-    if (medicine.country.toLowerCase().includes('united states')) return "FDA Orange Book";
-    if (medicine.country.toLowerCase().includes('europe') || 
-        medicine.country.toLowerCase().includes('eu') ||
-        ['germany', 'france', 'italy', 'spain', 'netherlands', 'united kingdom', 'ireland', 'belgium', 'austria', 'portugal', 'sweden', 'denmark', 'finland', 'poland', 'czech republic', 'hungary', 'slovakia', 'slovenia', 'estonia', 'latvia', 'lithuania', 'luxembourg', 'malta', 'cyprus'].some(country => 
-          medicine.country.toLowerCase().includes(country))) {
-      return "Search EMA";
-    }
-    return "More Info";
-  };
-
-  const region = getRegionForCountry(medicine.country);
+export const MedicineCard = ({ medicine: m }: MedicineCardProps) => {
+  const region = m.country === "Not stated" || m.country === "European Union" ? "" : getRegionForCountry(m.country);
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 border-gray-200">
+    <Card className="hover:shadow-lg transition-shadow duration-200 border-gray-200 flex flex-col">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-lg font-semibold text-gray-900 leading-tight">
-            {medicine.brandName}
-          </CardTitle>
-          {getSourceBadge(medicine.source)}
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-lg font-semibold text-gray-900 leading-tight break-words">{m.brandName}</CardTitle>
+          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${KIND_CLASS[m.kind]}`}>{KIND_LABEL[m.kind]}</span>
         </div>
+        <p className="text-xs text-gray-600">{m.sourceName}</p>
       </CardHeader>
-      
-      <CardContent className="space-y-3">
-        {/* Active Ingredient */}
-        <div className="flex items-center gap-2 text-sm">
-          <Pill className="w-4 h-4 text-blue-600 flex-shrink-0" />
+
+      <CardContent className="space-y-2 text-sm flex-1 flex flex-col">
+        <div className="flex items-start gap-2">
+          <Pill className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" aria-hidden="true" />
           <span className="text-gray-600">Active:</span>
-          <span className="font-medium text-gray-900">{medicine.activeIngredient}</span>
+          <span className="font-medium text-gray-900">{m.activeIngredient}</span>
         </div>
-
-        {/* Country and Region */}
-        <div className="flex items-center gap-2 text-sm">
-          <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span className="text-gray-600">Location:</span>
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-900">{medicine.country}</span>
-            <span className="text-xs text-gray-500">{region}</span>
-          </div>
+        <div className="flex items-start gap-2">
+          <MapPin className="w-4 h-4 text-green-700 mt-0.5 shrink-0" aria-hidden="true" />
+          <span className="text-gray-600">Country:</span>
+          <span className="font-medium text-gray-900">
+            {m.country}
+            {region && region !== m.country && <span className="block text-xs font-normal text-gray-600">{region}</span>}
+          </span>
         </div>
-
-        {/* Manufacturer */}
-        {medicine.manufacturer && (
-          <div className="flex items-center gap-2 text-sm">
-            <Building className="w-4 h-4 text-orange-600 flex-shrink-0" />
-            <span className="text-gray-600">Manufacturer:</span>
-            <span className="font-medium text-gray-900 text-xs">{medicine.manufacturer}</span>
+        {m.manufacturer && (
+          <div className="flex items-start gap-2">
+            <Building className="w-4 h-4 text-orange-700 mt-0.5 shrink-0" aria-hidden="true" />
+            <span className="text-gray-600">Holder:</span>
+            <span className="font-medium text-gray-900">{m.manufacturer}</span>
           </div>
         )}
-
-        {/* Dosage Form & Strength */}
-        {(medicine.dosageForm || medicine.strength) && (
-          <div className="flex items-start gap-2 text-sm">
-            <Database className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              {medicine.dosageForm && (
-                <div>
-                  <span className="text-gray-600">Form:</span>
-                  <span className="font-medium text-gray-900 ml-1">{medicine.dosageForm}</span>
-                </div>
-              )}
-              {medicine.strength && (
-                <div>
-                  <span className="text-gray-600">Strength:</span>
-                  <span className="font-medium text-gray-900 ml-1">{medicine.strength}</span>
-                </div>
-              )}
-            </div>
+        {(m.strength || m.dosageForm) && (
+          <div className="flex items-start gap-2">
+            <FlaskConical className="w-4 h-4 text-purple-700 mt-0.5 shrink-0" aria-hidden="true" />
+            <span className="text-gray-900">{[m.strength, m.dosageForm].filter(Boolean).join(" • ")}</span>
           </div>
         )}
-
-        {/* RxNorm Data */}
-        {medicine.rxNormData && (
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">RxNorm Details:</div>
-            <div className="text-xs space-y-1">
-              <div><span className="text-gray-600">RXCUI:</span> <span className="font-mono">{medicine.rxNormData.rxcui}</span></div>
-              {medicine.rxNormData.tty && (
-                <div><span className="text-gray-600">Type:</span> <span>{medicine.rxNormData.tty}</span></div>
-              )}
-            </div>
-          </div>
+        {m.status && <p className="text-xs text-gray-700">{m.status}</p>}
+        {m.alsoIn && m.alsoIn.length > 0 && <p className="text-xs text-gray-600">Also listed by: {m.alsoIn.join("; ")}</p>}
+        {(m.kind === "ai" || m.kind === "curated") && (
+          <p className="flex items-start gap-1 text-xs text-amber-900 bg-amber-50 rounded p-2">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+            {m.kind === "ai"
+              ? "Generated by a language model; may be wrong. Check an official source."
+              : "From a static list in this app, not from a regulator; may be out of date."}
+          </p>
         )}
 
-        {/* External Link Button */}
-        <div className="mt-4 pt-3 border-t border-gray-100">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full flex items-center gap-2 hover:bg-blue-50"
-            onClick={() => window.open(getExternalLink(), '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="w-4 h-4" />
-            {getLinkText()}
-          </Button>
+        <div className="mt-auto pt-3">
+          {m.url && (
+            <a
+              href={m.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 hover:bg-blue-50"
+            >
+              <ExternalLink className="w-4 h-4" aria-hidden="true" />
+              Open the record
+              <span className="sr-only"> for {m.brandName} (opens in a new tab)</span>
+            </a>
+          )}
         </div>
       </CardContent>
     </Card>

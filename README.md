@@ -7,16 +7,49 @@
 > dispensing decisions. Always consult a qualified healthcare professional and
 > official drug labeling.
 
+**Live:** https://medicine-finder.up.railway.app/
+
+Type an active ingredient (for example *ibuprofen*) and get the brand names it is sold under in
+other countries. The names come from official medicines databases, open references and, when
+keys are configured, AI. Every result says where it came from.
+
 ## Project info
 
-Medicine Finder uses several online free medicine APIs (in RxNorm international format or others) and other 3rd party AI engines calls and Databases, to search for an active drug medicine substance component and return all known brands, medicines, containing the specified substance, useful for finding medicines in different other countries by doctor's prescription, moving patient data from one system into another and other international usages. 
+Medicine Finder uses several online free medicine APIs (in RxNorm international format or others) and other 3rd party AI engines calls and Databases, to search for an active drug medicine substance component and return all known brands, medicines, containing the specified substance, useful for finding medicines in different other countries by doctor's prescription, moving patient data from one system into another and other international usages.
 
-The project is frontend only and would require backend in a reliable scalable version, currently being a proof-of-concept mvp.
+Since version 2.0 the project has a small backend: a Node server that serves the app and an `/api`
+for the official databases and AI engines a browser cannot call directly. It is still a
+proof-of-concept MVP, not a production medical service.
 
-**Live demo:** deployed on Railway. It runs client-side only, so the free public
-medicine APIs work out of the box; AI-engine and DrugBank/ChemSpider results need
-your own API keys (see below) or the optional secure backend.
+**Live demo:** deployed on Railway. Official EU, French, Spanish and Canadian data and the open US
+references work without keys. AI suggestions appear when a provider key is set on the server; keys
+never reach the browser.
 
+## What it searches
+
+| Type | Sources | Countries |
+|---|---|---|
+| **Official database** | [EMA](https://www.ema.europa.eu/en/medicines/download-medicine-data) medicines data, France [BDPM](https://base-donnees-publique.medicaments.gouv.fr/), Spain [CIMA](https://cima.aemps.es/) (AEMPS), [Health Canada DPD](https://health-products.canada.ca/dpd-bdpp/) | EU, France, Spain, Canada |
+| **Open reference** | [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/), [openFDA](https://open.fda.gov/) drug labels, [Wikidata](https://www.wikidata.org/), [PubChem](https://pubchem.ncbi.nlm.nih.gov/) synonyms; [ClinicalTrials.gov](https://clinicaltrials.gov/) study count | US, any |
+| **Curated sample** | static lists for a few common ingredients, typed into the app; not from a regulator | EU, DE, FR, IT, ES, NL, UK, IN |
+| **AI suggestion** | OpenAI, Perplexity, DeepSeek, OpenRouter, each only if its key is set; unverified | any |
+
+The **Data sources** page (`/sources`) shows each source's live status.
+
+## How it works
+
+```mermaid
+flowchart LR
+  U[Browser: React app] -->|/api/search| S[Node server]
+  U --> O[RxNorm, openFDA, Wikidata,<br/>PubChem, ClinicalTrials.gov]
+  S --> E[(EMA, France BDPM:<br/>daily downloads)]
+  S --> L[Spain CIMA, Health Canada:<br/>live APIs]
+  S --> A[AI providers:<br/>keys on the server]
+```
+
+All sources run in parallel, each with a time limit. The app merges the answers into one card per
+brand and country, preferring official data. The details are in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and the API in [docs/API.md](docs/API.md).
 
 ## What technologies are used for this project?
 
@@ -27,40 +60,50 @@ This project is automatically and manually built with:
 - Vite
 - shadcn-ui
 - Tailwind CSS
-- Supabase/Vercel/Openrouter.ai integrations
+- Node.js 22 server (no runtime dependencies), Docker
+- Railway (default deployment), Vercel (optional, off by default)
+- OpenAI, Perplexity, DeepSeek and OpenRouter.ai integrations (optional)
 
 
-### .env API keys, for some searches to work - or securely add backend Supabase Edge Function for them
-Note: Some APIs (RxNorm, OpenFDA, EMA, WHO, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys.
-DeepSeek/OpenRouter offers a free tier with generous limits if you register to use it.
-APIs and/or engines might need either local setup, changes of URLS, registering your API keys (locally in env and exposed, or as functions responses in supabase/deployment/etc.)
+## API keys
 
-Copy `.env.example` to `.env` and fill the keys you have. See [.env.example](./.env.example) for the full list.
+Some APIs (RxNorm, OpenFDA, EMA, BDPM, CIMA, Health Canada, ClinicalTrials, PubChem, Wikidata) are
+free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
+register to use it.
 
-> [!CAUTION]
-> Any `VITE_*` value is **bundled into the browser build and publicly visible**.
-> By default (`VITE_USE_SECURE_API` unset/`false`) the AI/DrugBank/ChemSpider keys
-> you set are exposed client-side — only use keys you are comfortable exposing, or
-> set `VITE_USE_SECURE_API=true` to route those calls through the Supabase Edge
-> Functions in [supabase/functions/](./supabase/functions) so the keys stay
-> server-side (see [docs/supabase-security.md](./docs/supabase-security.md)).
+AI keys are **server variables** (`OPENAI_API_KEY`, `PERPLEXITY_API_KEY`, `DEEPSEEK_API_KEY`,
+`OPENROUTER_API_KEY`), set in Railway or in a local `.env`. They are never bundled into the browser
+build. See [.env.example](./.env.example) and [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Run & test
 
 ```bash
-npm install          # (the Docker build uses --legacy-peer-deps)
-npm run dev          # local dev server at http://localhost:8080
+npm ci               # install
+npm run dev          # app only, http://localhost:8080
 npm run build        # production build
-npm run lint         # ESLint
+npm start            # app + /api from dist/ on http://localhost:8080
+npm run lint         # ESLint (app and server)
 npm run typecheck    # strict TypeScript check
-npm test             # Vitest unit tests (data adapters + secure-API toggle)
+npm test             # Vitest: server sources, API, merging, browser sources
+docker build -t medicine-finder . && docker run --rm -p 8080:8080 medicine-finder
 ```
+
+## Deploy
+
+- **Railway (default):** pushes to `main` build the `Dockerfile` (see `railway.json`); the health
+  check is `/api/health`.
+- **Vercel (off):** `vercel.json` keeps Git deployments disabled. [docs/DEPLOY.md](docs/DEPLOY.md)
+  has the on/off switch.
 
 ## Manual review checklist
 
-- **config:** copy `.env.example` → `.env`; free APIs need no keys; AI keys optional; `VITE_USE_SECURE_API` toggles the secure backend path
-- **run:** `npm install` → `npm run dev` (or `npm run build` + `npm run preview`)
-- **examples:** search an active ingredient (e.g. "ibuprofen") to list brands/medicines
-- **result:** merged, de-duplicated brand list from RxNorm/OpenFDA/EMA/etc. (+ AI engines if keys set)
-- **path:** data adapters in `src/utils/api/`, secure wrapper `src/utils/api/secureApiWrapper.ts`, edge functions `supabase/functions/`
+- **config:** copy `.env.example` → `.env`; free sources need no keys; AI keys optional and server-side
+- **run:** `npm ci` → `npm run build` → `npm start`
+- **examples:** search an active ingredient (e.g. "ibuprofen", "paracetamol", "amoxicillin") to list brands/medicines
+- **result:** merged brand list labelled by source type (official / open reference / curated / AI), with links to the source records; `/sources` shows each source's status
+- **path:** browser sources and merging in `src/lib/search/`, server in `server/` (sources in `server/sources/`)
 
+## Security
+
+See [SECURITY.md](SECURITY.md). In short: keys stay on the server; searches are validated,
+rate-limited and cached; AI use has a daily cap; pages send a strict Content Security Policy.

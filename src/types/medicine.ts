@@ -1,26 +1,13 @@
-
-export interface RxNormConcept {
-  rxcui: string;
-  name: string;
-  synonym?: string;
-  tty?: string;
-  language?: string;
-  suppress?: string;
-  umlscui?: string;
-}
-
-export interface RxNormGroup {
-  name?: string;
-  conceptGroup?: {
-    tty?: string;
-    conceptProperties?: RxNormConcept[];
-  }[];
-}
-
-export interface RxNormResponse {
-  drugGroup?: RxNormGroup;
-  approximateGroup?: RxNormGroup;
-}
+/** Where a result comes from. */
+export type SourceKind =
+  /** a regulator's or official public database */
+  | "official"
+  /** an open reference database (RxNorm, openFDA labels, Wikidata, PubChem) */
+  | "reference"
+  /** a static list typed into this app, not from a regulator */
+  | "curated"
+  /** a language model's suggestion, not verified */
+  | "ai";
 
 export interface MedicineResult {
   id: string;
@@ -28,15 +15,39 @@ export interface MedicineResult {
   activeIngredient: string;
   country: string;
   manufacturer?: string;
-  rxNormData?: RxNormConcept;
-  dosageForm?: string;
   strength?: string;
-  source: 'rxnorm' | 'ai' | 'both';
-  relevanceScore?: number;
+  dosageForm?: string;
+  status?: string;
+  /** the record at the source, when the source has one */
+  url?: string;
+  sourceId: string;
+  sourceName: string;
+  kind: SourceKind;
+  /** other sources that list the same brand for the same country */
+  alsoIn?: string[];
 }
 
-export interface SearchResponse {
+export type SourceState = "pending" | "ok" | "error" | "disabled" | "skipped" | "unavailable";
+
+export interface SourceRun {
+  id: string;
+  name: string;
+  kind: SourceKind;
+  state: SourceState;
+  /** results the source found (results shown may be capped) */
+  count: number;
+  detail?: string;
+}
+
+export interface TrialsInfo {
+  count: number;
+  url: string;
+}
+
+export interface SearchOutcome {
+  term: string;
+  country?: string;
   results: MedicineResult[];
-  totalFound: number;
-  searchTerm: string;
+  sources: SourceRun[];
+  trials?: TrialsInfo;
 }
