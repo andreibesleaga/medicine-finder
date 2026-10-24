@@ -26,8 +26,10 @@ npm test
 A national dataset is one file in `server/datasets/` exporting `{ id, name, kind, coverage,
 homepage, refreshMs, load(fetch) }` where `load` returns rows `{ brand, ingredient, country,
 holder?, strength?, form?, status?, url? }`; add it to `DATASETS` in `server/datasets/index.js`,
-with a parser test in `server/test/datasets.test.js` and its terms in `NOTICE.md`. Only official,
-free, publicly downloadable data.
+with a parser test in `server/test/datasets.test.js`, its terms in `NOTICE.md` (and a `terms`
+link on the dataset), and a row in [docs/DATA-SOURCES.md](docs/DATA-SOURCES.md). Only official,
+free, publicly downloadable data whose terms allow reuse; that page lists the registers already
+checked and why the others are not used.
 
 By contributing you agree that your contribution is licensed under GPL-3.0-or-later.
 

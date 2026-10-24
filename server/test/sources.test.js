@@ -103,6 +103,6 @@ describe("other international names", () => {
   it("CIMA also searches paracetamol when asked for acetaminophen", async () => {
     const fetch = stubFetch([["cima.aemps.es", () => jsonResponse({ resultados: [] })]]);
     await createCimaSource({ fetch }).search("acetaminophen");
-    expect(fetch.calls.map((c) => new URL(c.url).searchParams.get("practiv1"))).toEqual(["acetaminop", "paraceta"]);
+    expect(fetch.calls.map((c) => new URL(c.url).searchParams.get("practiv1"))).toEqual(["acetaminop", "paraceta", "acetamino"]);
   });
 });

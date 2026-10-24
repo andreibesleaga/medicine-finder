@@ -13,9 +13,24 @@ import { swissmedic } from "./swissmedic.js";
 import { sukl } from "./sukl.js";
 import { dkma } from "./dkma.js";
 import { dpd } from "./dpd.js";
+import { mpa } from "./mpa.js";
+import { vvkt } from "./vvkt.js";
+import { drlz } from "./drlz.js";
+import { maltama } from "./maltama.js";
+import { usfda } from "./usfda.js";
+import { invima } from "./invima.js";
+import { tfda } from "./tfda.js";
+import { hsa } from "./hsa.js";
+import { pharmac } from "./pharmac.js";
 import { curated } from "./curated.js";
 
-export const DATASETS = [ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, sukl, dkma, dpd, curated];
+// loaded in this order after a start: Europe, then the Americas, then Asia-Pacific
+export const DATASETS = [
+  ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, sukl, dkma, mpa, vvkt, drlz, maltama,
+  dpd, usfda, invima,
+  tfda, hsa, pharmac,
+  curated,
+];
 
 export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = 60 }) {
   const loading = new Set();
@@ -38,6 +53,7 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
     kind: d.kind,
     coverage: d.coverage,
     homepage: d.homepage,
+    terms: d.terms,
     enabled: () => true,
     status: () => status(d),
     async search(term) {

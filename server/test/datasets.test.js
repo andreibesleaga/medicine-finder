@@ -9,6 +9,15 @@ import { parseSwissmedicRows } from "../datasets/swissmedic.js";
 import { parseDpd, dpd, DPD_URL } from "../datasets/dpd.js";
 import { parseSukl, sukl, SUKL_PAGE } from "../datasets/sukl.js";
 import { parseDkmaRows } from "../datasets/dkma.js";
+import { parseMpaRows } from "../datasets/mpa.js";
+import { parseVvkt, vvkt, VVKT_URL } from "../datasets/vvkt.js";
+import { parseDrlz } from "../datasets/drlz.js";
+import { parseMaltaRows } from "../datasets/maltama.js";
+import { parseNdcProducts } from "../datasets/usfda.js";
+import { parseInvima } from "../datasets/invima.js";
+import { parseTfda } from "../datasets/tfda.js";
+import { parseHsa, hsa, HSA_POLL_URL } from "../datasets/hsa.js";
+import { parsePharmac, pharmac, PHARMAC_INDEX } from "../datasets/pharmac.js";
 import { curatedRows } from "../datasets/curated.js";
 import { withSynonyms } from "../datasets/common.js";
 import { openStore, ingredientWords } from "../db/store.js";
@@ -210,14 +219,153 @@ describe("national dataset parsers", () => {
     expect(() => parseDkmaRows([["Navn"]])).toThrow("header row not found");
   });
 
+  it("Sweden: approved human medicines, no parallel imports, deregistered or homeopathic", () => {
+    const header = ["Namn", "Styrka", "Form", "ATC-kod", "Verksamt ämne (förenklat)", "Verksamt ämne", "Registrerings-status", "Godkännande-datum", "Avregistrerings-datum", "Tillfälligt återkallad, datum", "Restsituation", "Försäljningsstatus", "Innehavare", "H/V", "Djurslag", "Parallellimport", "Direktimporterat läkemedel", "Avvikelse från direktimporterat läkemedel", "Receptstatus", "Narkotika", "Särskilda regler för biv.rap.", "Ombud", "MT-nummer", "NPL-id", "Godkännande-procedur", "EUMA-nummer", "Produktkategori"];
+    const row = (name, status, hv, parallel, category, onSale, substance = "Ibuprofen") => {
+      const r = Array(header.length).fill("");
+      Object.assign(r, { 0: name, 1: "400 mg", 2: "Tablett", 4: substance, 6: status, 11: onSale, 12: "Viatris AB", 13: hv, 15: parallel, 26: category });
+      return r;
+    };
+    const rows = [
+      header,
+      row("Brufen", "Godkänd", "HUM", "", "Läkemedel", "Finns till försäljning"),
+      row("Brufen", "Godkänd", "HUM", "Importer AB", "Läkemedel", "Finns till försäljning"),
+      row("Old", "Avregistrerad", "HUM", "", "Läkemedel", "Ej aktuellt"),
+      row("Vetprofen", "Godkänd", "VET", "", "Läkemedel", "Ej aktuellt"),
+      row("Homeo", "Registrerad", "HUM", "", "Homeopatiskt läkemedel", "Ej aktuellt"),
+      row("Combo", "Registrerad", "HUM", "", "Läkemedel", "Ej aktuellt", "Abakavir + lamivudin"),
+    ];
+    expect(parseMpaRows(rows)).toEqual([
+      { brand: "Brufen", ingredient: "Ibuprofen", country: "Sweden", holder: "Viatris AB", strength: "400 mg", form: "Tablett", status: "Approved, on sale" },
+      { brand: "Combo", ingredient: "Abakavir + lamivudin", country: "Sweden", holder: "Viatris AB", strength: "400 mg", form: "Tablett", status: "Approved" },
+    ]);
+    expect(() => parseMpaRows([["Name"]])).toThrow("header row not found");
+  });
+
+  it("Lithuania: one row per product, supplied when any package is, deregistered left out", () => {
+    const pack = (vid, name, stadija, supply, substance = "Ibuprofen") => ({ vid, preparato_pav: name, veikl_angl_pavad: substance, stiprumas: "400 mg", farmacine_forma_lt: "tabletės", stadija, pak_tiekimo_busena: supply, registruotojas: "Reckitt" });
+    expect(
+      parseVvkt([
+        pack("1", "Nurofen", "Registruotas", "Netiekiama"),
+        pack("1", "Nurofen", "Registruotas", "Tiekiama"),
+        pack("2", "Gone", "Išregistruotas", "Netiekiama"),
+        pack("3", "Trio", "Perregistruotas", "Netiekiama", "Valsartan, amlodipine and hydrochlorothiazide"),
+      ]).map((r) => [r.brand, r.ingredient, r.status]),
+    ).toEqual([
+      ["Nurofen", "Ibuprofen", "Registered, supplied"],
+      ["Trio", "Valsartan + amlodipine + hydrochlorothiazide", "Registered"],
+    ]);
+  });
+
+  it("Ukraine: INN as ingredient, early terminations, substances and homeopathics left out", () => {
+    const rec = (brand, inn, form, stopped = "Ні", group = "Анальгетики", homeo = "Ні") => ({
+      "Торгівельне найменування": brand, "Міжнародне непатентоване найменування": inn, "Форма випуску": form,
+      "Дострокове припинення": stopped, "Фармакотерапевтична група": group, "Гомеопатичний ЛЗ": homeo, "Заявник: назва українською": "Містрал",
+    });
+    expect(
+      parseDrlz([
+        rec("АПІРОЛ", "Ibuprofen", "розчин для інфузій, 400 мг/100 мл, по 100 мл у флаконі"),
+        rec("АФФИДА", "Ibuprofen", "таблетки, вкриті плівковою оболонкою, по 10 таблеток"),
+        rec("СТАРИЙ", "Ibuprofen", "таблетки, 200 мг", "Так"),
+        rec("ІБУПРОФЕН", "Ibuprofen", "порошок (субстанція) у пакетах", "Ні", "Субстанції."),
+        rec("ГОМЕО", "Ibuprofen", "краплі, 10 мл", "Ні", "Інші", "Так"),
+      ]).map((r) => [r.brand, r.ingredient, r.form, r.strength]),
+    ).toEqual([
+      ["Апірол", "Ibuprofen", "розчин для інфузій", "400 мг/100 мл"],
+      ["Аффида", "Ibuprofen", "таблетки", undefined],
+    ]);
+  });
+
+  it("Malta: quoted cells cleaned, authorised only, ingredient amounts dropped", () => {
+    const rows = [
+      ["[Medicine Name]", " [Active Ingredients]", " [Pharmaceutical Forms]", " [Therapeutic Class]", " [Classification]", " [ATC Code]", " [Status]", " [Authorisation Number]", " [Authorisation Date]", " [Authorization Holder]"],
+      ["'Efudix, cream 50 mg/g'", " 'FLUOROURACIL 50 milligram(s)/gram'", " 'CREAM'", "", "", "", " 'Authorised'", "", "", " 'EJ Busuttil Ltd'"],
+      ["'Rennie 680mg/80mg Chewable Tablets'", " 'CALCIUM CARBONATE 680 milligram(s) | MAGNESIUM CARBONATE, HEAVY 80 milligram(s)'", " 'CHEWABLE TABLET'", "", "", "", " 'Authorised'", "", "", " 'NM Pharma'"],
+      ["'Old 5 mg tablets'", " 'X 5 milligram(s)'", " 'TABLET'", "", "", "", " 'Withdrawn'", "", "", " 'Y'"],
+    ];
+    expect(parseMaltaRows(rows).map((r) => [r.brand, r.ingredient, r.form, r.holder])).toEqual([
+      ["Efudix", "Fluorouracil", "Cream", "EJ Busuttil Ltd"],
+      ["Rennie", "Calcium Carbonate + Magnesium Carbonate, Heavy", "Chewable Tablet", "NM Pharma"],
+    ]);
+  });
+
+  it("United States: marketed human products, excluded and ended listings left out", () => {
+    const head = "PRODUCTID\tPRODUCTNDC\tPRODUCTTYPENAME\tPROPRIETARYNAME\tPROPRIETARYNAMESUFFIX\tNONPROPRIETARYNAME\tDOSAGEFORMNAME\tROUTENAME\tSTARTMARKETINGDATE\tENDMARKETINGDATE\tMARKETINGCATEGORYNAME\tAPPLICATIONNUMBER\tLABELERNAME\tSUBSTANCENAME\tACTIVE_NUMERATOR_STRENGTH\tACTIVE_INGRED_UNIT\tPHARM_CLASSES\tDEASCHEDULE\tNDC_EXCLUDE_FLAG";
+    const line = (type, name, end, flag, subst = "IBUPROFEN", str = "200", unit = "mg/1") => ["1", "0001-1", type, name, "", "", "TABLET, FILM COATED", "ORAL", "20200101", end, "NDA", "", "Haleon", subst, str, unit, "", "", flag].join("\t");
+    const text = [
+      head,
+      line("HUMAN OTC DRUG", "Advil", "", "N"),
+      line("HUMAN OTC DRUG", "Advil", "", "N"),
+      line("HUMAN OTC DRUG", "good sense ibuprofen pm", "", "N", "DIPHENHYDRAMINE CITRATE; IBUPROFEN", "38; 200", "mg/1; mg/1"),
+      line("HUMAN PRESCRIPTION DRUG", "Ended", "20240101", "N"),
+      line("HUMAN PRESCRIPTION DRUG", "Excluded", "", "E"),
+      line("BULK INGREDIENT", "Raw", "", "N"),
+    ].join("\n");
+    expect(parseNdcProducts(text).map((r) => [r.brand, r.ingredient, r.strength, r.form, r.status])).toEqual([
+      ["Advil", "Ibuprofen", "200 mg/1", "Tablet, Film Coated", "Listed, over the counter"],
+      ["Good Sense Ibuprofen Pm", "Diphenhydramine Citrate + Ibuprofen", "38 mg/1 / 200 mg/1", "Tablet, Film Coated", "Listed, over the counter"],
+    ]);
+  });
+
+  it("Colombia: one row per registration, ingredients of all its rows joined", () => {
+    const rec = (expediente, producto, principioactivo, cantidad) => ({ expediente, producto, titular: "HALEON COLOMBIA S.A.S", principioactivo, cantidad, unidadmedida: "mg", formafarmaceutica: "TABLETA RECUBIERTA" });
+    expect(
+      parseInvima([
+        rec("1", "ADVIL® 400 MG TABLETAS", "IBUPROFENO", "400"),
+        rec("1", "ADVIL® 400 MG TABLETAS", "IBUPROFENO", "400"),
+        rec("2", "BUSCAPINA FEM", "HIOSCINA N-BUTIL BROMURO", "20"),
+        rec("2", "BUSCAPINA FEM", "IBUPROFENO GRANULADO (IBUPROFENO 85% + CELULOSA) 235.3 MG", "400"),
+      ]).map((r) => [r.brand, r.ingredient, r.strength]),
+    ).toEqual([
+      ["Advil", "Ibuprofeno", "400 mg"],
+      ["Buscapina Fem", "Hioscina N-Butil Bromuro + Ibuprofeno Granulado", "20 mg / 400 mg"],
+    ]);
+  });
+
+  it("Taiwan: current licences for finished products, English names, strength split off", () => {
+    const lic = (en, ingredients, kind = "製　劑", cancelled = "") => ({ 英文品名: en, 中文品名: "中文", 主成分略述: ingredients, 註銷狀態: cancelled, 許可證種類: kind, 申請商名稱: "元聖企業", 劑型: "膜衣錠" });
+    expect(
+      parseTfda([
+        lic("IbuKern 600mg film-coated tablets", "IBUPROFEN"),
+        lic("Old 400mg tablets", "IBUPROFEN", "製　劑", "已註銷"),
+        lic("IBUPROFEN", "IBUPROFEN", "原料藥"),
+        lic("RIFON OIL", "METHYL SALICYLATE;;MENTHOL"),
+      ]).map((r) => [r.brand, r.ingredient, r.strength]),
+    ).toEqual([
+      ["IbuKern", "Ibuprofen", "600mg film-coated tablets"],
+      ["Rifon Oil", "Methyl Salicylate + Menthol", undefined],
+    ]);
+  });
+
+  it("Singapore: brand without strength or trailing form word; && separates ingredients", () => {
+    const rec = (Productname, Activeingredients, Strength, Dosageform) => ({ Productname, Activeingredients, Strength, Dosageform, Licenseholder: "GOLDPLUS UNIVERSAL PTE LTD" });
+    expect(
+      parseHsa([rec("FUCON CAPSULE 10 mg", "HYOSCINE N-BUTYLBROMIDE", "10 mg", "CAPSULE"), rec("INON GRANULES", "CALCIUM CARBONATE&&SODIUM BICARBONATE", "497 mg&&600 mg", "GRANULE")]).map((r) => [r.brand, r.ingredient, r.strength]),
+    ).toEqual([
+      ["Fucon", "Hyoscine N-Butylbromide", "10 mg"],
+      ["Inon", "Calcium Carbonate + Sodium Bicarbonate", "497 mg / 600 mg"],
+    ]);
+  });
+
+  it("New Zealand: chemical, formulation and brand from the schedule XML", () => {
+    const xml = `<Schedule><Chemical ID="C1"><Name>Ibuprofen</Name>
+      <Formulation ID="F1"><Name>Tab 200 mg</Name><Brand ID="B1"><Name>Relieve</Name><Pack ID="P1"><Quantity>20</Quantity></Pack></Brand>
+      <Brand ID="B2"><Name>Nurofen &amp; Co</Name></Brand></Formulation></Chemical></Schedule>`;
+    expect(parsePharmac(xml)).toEqual([
+      { brand: "Relieve", ingredient: "Ibuprofen", country: "New Zealand", strength: "Tab 200 mg", status: "Funded (Pharmaceutical Schedule)" },
+      { brand: "Nurofen & Co", ingredient: "Ibuprofen", country: "New Zealand", strength: "Tab 200 mg", status: "Funded (Pharmaceutical Schedule)" },
+    ]);
+  });
+
   it("curated lists keep the other name of the ingredient searchable", () => {
     const rows = curatedRows();
     expect(rows.find((r) => r.brand === "Doliprane")).toMatchObject({ ingredient: "paracetamol (acetaminophen)", country: "France" });
     expect(rows.find((r) => r.brand === "Combiflam")?.ingredient).toBe("ibuprofen + paracetamol");
   });
 
-  it("knows INN/US name pairs both ways", () => {
-    expect(withSynonyms("Acetaminophen")).toEqual(["acetaminophen", "paracetamol"]);
+  it("knows every name of an ingredient, whichever one is typed", () => {
+    expect(withSynonyms("Acetaminophen")).toEqual(["acetaminophen", "paracetamol", "acetaminofen"]);
+    expect(withSynonyms("acetaminofen")).toEqual(["acetaminofen", "paracetamol", "acetaminophen"]);
     expect(withSynonyms("salbutamol")).toEqual(["salbutamol", "albuterol"]);
     expect(withSynonyms("ibuprofen")).toEqual(["ibuprofen"]);
   });
@@ -352,5 +500,31 @@ describe("zip downloads", () => {
     ]);
     const noLink = stubFetch([[SUKL_PAGE, () => new Response("<p>maintenance</p>")]]);
     await expect(sukl.load(noLink)).rejects.toThrow("link to the current DLP zip not found");
+  });
+
+  it("Lithuania: tries again once after a 502 from the portal", async () => {
+    let calls = 0;
+    const csv = "vid,preparato_pav,veikl_angl_pavad,stadija,pak_tiekimo_busena\n1,Nurofen,Ibuprofen,Registruotas,Tiekiama\n";
+    const fetch = stubFetch([[VVKT_URL, () => (++calls === 1 ? new Response("Bad Gateway", { status: 502 }) : new Response(csv))]]);
+    expect((await vvkt.load(fetch)).map((r) => r.brand)).toEqual(["Nurofen"]);
+    expect(calls).toBe(2);
+  });
+
+  it("Singapore: asks for a fresh signed link, then reads the CSV", async () => {
+    const csvUrl = "https://s3.example/sg.csv?signed=1";
+    const fetch = stubFetch([
+      [HSA_POLL_URL, () => new Response(JSON.stringify({ code: 0, data: { url: csvUrl } }), { headers: { "content-type": "application/json" } })],
+      [csvUrl, () => new Response("Productname,Activeingredients,Strength,Dosageform,Licenseholder\nPANADOL TABLET 500 mg,PARACETAMOL,500 mg,TABLET,GSK\n")],
+    ]);
+    expect((await hsa.load(fetch)).map((r) => [r.brand, r.ingredient])).toEqual([["Panadol", "Paracetamol"]]);
+  });
+
+  it("New Zealand: picks the newest schedule listed in the archive", async () => {
+    const fetch = stubFetch([
+      [PHARMAC_INDEX + "Schedule_2026-11.xml", () => new Response("<Chemical><Name>Ibuprofen</Name><Formulation><Name>Tab 200 mg</Name><Brand><Name>Relieve</Name></Brand></Formulation></Chemical>")],
+      [PHARMAC_INDEX, () => new Response('<a href="Schedule_2026-09.xml">x</a><a href="Schedule_2026-11.xml">y</a><a href="Schedule_2026-10.xml">z</a>')],
+    ]);
+    expect((await pharmac.load(fetch)).map((r) => r.brand)).toEqual(["Relieve"]);
+    expect(fetch.calls.map((c) => c.url.split("/").at(-1))).toEqual(["", "Schedule_2026-11.xml"]);
   });
 });

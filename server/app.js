@@ -105,6 +105,7 @@ export function createApp({
         kind: s.kind,
         coverage: s.coverage,
         homepage: s.homepage,
+        terms: s.terms,
         enabled: s.enabled(),
         ...s.status(),
       }));

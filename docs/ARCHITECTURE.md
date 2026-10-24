@@ -18,7 +18,7 @@ flowchart LR
   U -->|direct| T[ClinicalTrials.gov count]
   U -.->|GET /api/ai, after| AI2[AI suggestions]
   U --- C[(Last 50 searches<br/>IndexedDB, 24 h)]
-  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Canada, curated lists)]
+  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Sweden, Lithuania,<br/>Ukraine, Malta, Canada, US,<br/>Colombia, Taiwan, Singapore,<br/>New Zealand, curated lists)]
   S -->|live| ES[Spain CIMA API]
   S -.->|live, if HEALTH_CANADA=live or both| HC[Health Canada DPD API]
   S -->|key on server| AI[OpenAI / Perplexity /<br/>DeepSeek / OpenRouter]
@@ -51,7 +51,7 @@ flowchart LR
 
 | Type | Meaning | Sources |
 |---|---|---|
-| Official database | a regulator's or ministry's public data EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark and Canada, CIMA (Spain) |
+| Official database | a regulator's or ministry's public data EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark, Sweden, Lithuania, Ukraine, Malta, Canada, the United States, Colombia, Taiwan, Singapore and New Zealand, CIMA (Spain) |
 | Open reference | open public reference data, good but not a register of marketed products | RxNorm, openFDA labels, Wikidata, PubChem synonyms |
 | Curated sample | static lists typed into the app for a few common ingredients | `server/data/curated.json` |
 | AI suggestion | a language model's answer, never verified | OpenAI, Perplexity, DeepSeek, OpenRouter (each only when its key is set) |
@@ -63,8 +63,8 @@ generated when a source has no data: an unknown ingredient returns no results.
 
 The national datasets are downloaded by `server/datasets/*.js` into SQLite (`server/db/store.js`,
 Node's built-in `node:sqlite`): one dataset at a time in the background at start, then whenever a
-dataset is older than its refresh interval (a day; a week for the monthly Czech and Canadian
-files; checked hourly). A failed download keeps the previous data and is
+dataset is older than its refresh interval (a day, or a week for files published monthly or
+large ones; checked hourly). A failed download keeps the previous data and is
 retried after an hour; an empty download never replaces good data. On Railway a volume at
 `DATA_DIR` (`/app/data`) keeps the database across deploys; without one it is rebuilt after each
 deploy (about 3 minutes; sources show "loading").
@@ -80,14 +80,23 @@ deploy (about 3 minutes; sources show "loading").
 | Switzerland | Swissmedic "Zugelassene Packungen" `.xlsx` (read by `server/lib/xlsx.js`) | 10,303 |
 | Czech Republic SÚKL | monthly DLP zip (`;`, windows-1250), linked from the open-data catalogue page; registered products, English substance names | 11,881 |
 | Denmark DKMA | list of authorised medicines `.xlsx` (daily), no parallel imports, natural medicines or vitamins | 13,960 |
+| Sweden Läkemedelsverket | `Lakemedelsprodukter.xlsx` (daily), human, approved or registered, no parallel imports or homeopathics | 13,540 |
+| Lithuania VVKT | data.gov.lt CSV (one row per package), registered or re-registered, grouped per product | 7,586 |
+| Ukraine | State Register `reestr.csv` (windows-1251), not terminated early, no substances or homeopathics; INN as ingredient | 12,183 |
+| Malta Medicines Authority | national products `.xlsx` (daily), authorised | 5,448 |
 | Canada (Health Canada) | DPD data extract `allfiles.zip` (marketed products), human medicines whose current status is MARKETED | 11,463 |
+| United States FDA | NDC Directory `ndctext.zip` → `product.txt`, human Rx/OTC, still marketed, not excluded | 87,903 |
+| Colombia INVIMA | CUM on datos.gov.co, filtered by the portal (`$where` current + active), grouped per registration | 9,362 |
+| Taiwan TFDA | open data set 36 (zip with one 79 MB JSON), licences not cancelled, finished products and biologics | 22,938 |
+| Singapore HSA | data.gov.sg CSV (a signed link requested each time) | 5,511 |
+| New Zealand Pharmac | monthly Pharmaceutical Schedule XML, funded medicines only | 2,361 |
 | Curated sample | `server/data/curated.json` | 104 |
 
 Live per search: Spain CIMA (`practiv1=<stem>&comerc=1`); and only when `HEALTH_CANADA` is `live`
 or `both`, the Health Canada API (`activeingredient`, then `drugproduct` per drug code, up to 40).
 When that API is down (5xx, timeout) the source shows "not available" rather than "failed"; with
-the default `dataset` setting Canada always answers from the extract. Each searches both international names
-(`server/data/synonyms.json`).
+the default `dataset` setting Canada always answers from the extract. Each searches every name of the
+ingredient (`server/data/synonyms.json`), as do the datasets.
 
 English ingredient names are matched to French and Spanish names by word stems
 (`amoxicillin` → `amoxicil` matches `amoxicilline` and `amoxicilina`), see `server/lib/text.js`.
@@ -117,7 +126,7 @@ server/            search server (plain JavaScript, ES modules)
   search.js        runs a set of sources, caching, AI daily cap
   db/store.js      SQLite store: products, ingredient words, dataset status
   datasets/        one loader per national dataset + the background runner (index.js)
-  data/            curated.json (static samples), synonyms.json (INN/US names)
+  data/            curated.json (static samples), synonyms.json (other names of an ingredient)
   sources/         live sources: cima.js, healthCanada.js (+ the HEALTH_CANADA switch), ai.js
   lib/             text matching, CSV and XLSX readers, HTTP helpers, cache, rate limiter
   test/            server tests (Vitest)
@@ -137,7 +146,7 @@ tests/             browser-side tests (Vitest)
 | Live server sources (Spain, Canada API, AI) | `server/sources/` |
 | Canada: extract, live API or both (`HEALTH_CANADA`) | `server/datasets/dpd.js`, `server/sources/healthCanada.js`, wired in `server/index.js` |
 | Routes, headers, static files | `server/app.js`; settings and wiring in `server/index.js` |
-| Name matching, INN/US name pairs | `server/lib/text.js`, `server/data/synonyms.json` |
+| Name matching, other names of an ingredient | `server/lib/text.js`, `server/data/synonyms.json` |
 | Browser sources | `src/lib/search/browserSources.ts` |
 | Merging, ranking, AI phase | `src/lib/search/searchMedicines.ts` |
 | Country and region fallbacks | `src/lib/search/countryScope.ts` |

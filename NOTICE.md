@@ -21,6 +21,15 @@ the source has one.
 | Authorised human medicines | HPRA (Ireland) | https://www.hpra.ie/ |
 | Authorised packs, human medicines | Swissmedic | https://www.swissmedic.ch/swissmedic/en/home/services/legal-notices.html |
 | List of authorised medicines | Danish Medicines Agency (Lægemiddelstyrelsen); source: Danish Medicines Agency | https://laegemiddelstyrelsen.dk/en/about/copyright-and-logo/ |
+| List of all medicinal products | Läkemedelsverket (Sweden), CC BY 4.0 | https://creativecommons.org/licenses/by/4.0/ |
+| Registered medicinal products | VVKT (Lithuania), via data.gov.lt, CC BY 4.0 | https://data.gov.lt/datasets/2853/ |
+| State Register of Medicinal Products | Ministry of Health of Ukraine, via data.gov.ua, CC BY | https://data.gov.ua/dataset/fded13b8-4e2c-4c48-bf14-65d0e3106463 |
+| National products list | Medicines Authority (Malta); reproduced with reference to the source, not for commercial or marketing use | https://medicinesauthority.gov.mt/copyright |
+| National Drug Code Directory | US Food and Drug Administration (public domain; openFDA CC0) | https://open.fda.gov/terms/ |
+| Código Único de Medicamentos Vigentes | INVIMA (Colombia), via datos.gov.co, CC BY-SA 4.0 | https://creativecommons.org/licenses/by-sa/4.0/ |
+| All drug licences (data set 36) | Taiwan Food and Drug Administration, Open Government Data License v1.0 | https://data.gov.tw/license |
+| Listing of registered therapeutic products | Health Sciences Authority (Singapore); contains information from data.gov.sg accessed in 2026 from HSA, made available under the terms of the Singapore Open Data Licence version 1.0 | https://data.gov.sg/open-data-licence |
+| Pharmaceutical Schedule | Pharmac (New Zealand), CC BY 4.0 | https://www.pharmac.govt.nz/about-this-site/copyright |
 | Database of medicinal products (DLP), open data | SÚKL (Czech Republic); source: SÚKL, not endorsed by SÚKL | https://opendata.sukl.gov.cz/podminky-uziti-otevrenych-dat |
 | RxNorm | US National Library of Medicine | https://lhncbc.nlm.nih.gov/RxNav/TermsofService.html |
 | openFDA drug labels | US Food and Drug Administration | https://open.fda.gov/terms/ |

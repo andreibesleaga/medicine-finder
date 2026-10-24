@@ -33,6 +33,14 @@ describe("XLSX reader", () => {
     ]);
   });
 
+  it("reads sheets whose tags carry a namespace prefix, and empty <v /> cells", () => {
+    const sheet =
+      '<x:worksheet><x:sheetData>' +
+      '<x:row r="1"><x:c r="A1" t="str"><x:v>Läkemedel</x:v></x:c><x:c r="B1" t="str"><x:v /></x:c><x:c r="C1"><x:v>40606</x:v></x:c></x:row>' +
+      "</x:sheetData></x:worksheet>";
+    expect(readFirstSheet(makeZip({ "xl/worksheets/sheet1.xml": sheet }))).toEqual([["Läkemedel", "", "40606"]]);
+  });
+
   it("converts column letters", () => {
     expect([columnIndex("A1"), columnIndex("Q7"), columnIndex("AB3")]).toEqual([0, 16, 27]);
   });

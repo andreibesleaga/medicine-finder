@@ -19,15 +19,11 @@ export async function downloadBuffer(fetchImpl, url, timeoutMs = 10 * 60e3) {
 /** Joins several substance names: ["A", "B"] -> "A + B". */
 export const joinSubstances = (list) => [...new Set(list.map((s) => s.trim()).filter(Boolean))].join(" + ");
 
-const synonymPairs = JSON.parse(readFileSync(new URL("../data/synonyms.json", import.meta.url), "utf8")).pairs;
+const synonymGroups = JSON.parse(readFileSync(new URL("../data/synonyms.json", import.meta.url), "utf8")).groups;
 
-/** The term plus its other international names ("acetaminophen" -> ["acetaminophen", "paracetamol"]). */
+/** The term plus its other names ("acetaminophen" -> ["acetaminophen", "paracetamol", "acetaminofen"]). */
 export function withSynonyms(term) {
   const t = term.trim().toLowerCase();
-  const out = [t];
-  for (const [a, b] of synonymPairs) {
-    if (t === a) out.push(b);
-    else if (t === b) out.push(a);
-  }
-  return out;
+  const group = synonymGroups.find((names) => names.includes(t));
+  return group ? [t, ...group.filter((name) => name !== t)] : [t];
 }

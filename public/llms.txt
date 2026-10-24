@@ -1,6 +1,6 @@
 # Medicine Brand Finder
 
-> Find the brand names of a medicine's active ingredient in other countries. Results come from official medicines databases (EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Canada, Spain), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
+> Find the brand names of a medicine's active ingredient in other countries. Results come from official medicines databases (EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Sweden, Lithuania, Ukraine, Malta, Canada, United States, Colombia, Taiwan, Singapore, New Zealand, Spain), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
 
 - Live: https://medicine-finder.up.railway.app/
 - Source: https://github.com/andreibesleaga/medicine-finder
@@ -15,6 +15,7 @@
 - [README](https://github.com/andreibesleaga/medicine-finder/blob/main/README.md): what it does, sources, run and test
 - [Architecture](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/ARCHITECTURE.md): components, search flow, ranking, country fallbacks, datasets, limits; code map at the end
 - [Deploy](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/DEPLOY.md): Railway (default), Vercel switch, variables, local and Docker
+- [Data sources](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/DATA-SOURCES.md): registers in use and every other national register checked, with access and licence
 - [Notices](https://github.com/andreibesleaga/medicine-finder/blob/main/NOTICE.md): data-source terms and attributions
 - [Contributing](https://github.com/andreibesleaga/medicine-finder/blob/main/CONTRIBUTING.md): rules, adding a data source
 
