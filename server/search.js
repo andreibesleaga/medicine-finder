@@ -38,7 +38,9 @@ export function createSearch({ sources, cacheTtlMs = 3600e3, aiDailyLimit = 500,
       const results = rows.slice(0, MAX_PER_SOURCE).map((r) => ({ ...r, sourceId: source.id, sourceName: source.name, kind: source.kind }));
       return { ...base, state: "ok", count, results, ms: now() - started };
     } catch (err) {
-      return { ...base, state: "error", count: 0, results: [], detail: err instanceof Error ? err.message : String(err), ms: now() - started };
+      // a source sets err.unavailable when the provider itself is down (shown as "not available")
+      const state = err?.unavailable ? "unavailable" : "error";
+      return { ...base, state, count: 0, results: [], detail: err instanceof Error ? err.message : String(err), ms: now() - started };
     } finally {
       clearTimeout(timer);
     }
@@ -56,7 +58,7 @@ export function createSearch({ sources, cacheTtlMs = 3600e3, aiDailyLimit = 500,
       sources: runs.map((r) => ({ ...r, results: undefined })),
     };
     // a failed source is retried after a few minutes instead of the full hour
-    cache.set(key, body, runs.some((r) => r.state === "error") ? Math.min(cacheTtlMs, 5 * 60e3) : cacheTtlMs);
+    cache.set(key, body, runs.some((r) => r.state === "error" || r.state === "unavailable") ? Math.min(cacheTtlMs, 5 * 60e3) : cacheTtlMs);
     return body;
   };
 }

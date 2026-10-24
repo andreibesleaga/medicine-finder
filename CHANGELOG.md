@@ -5,6 +5,28 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-24
+
+### Added
+- Czech Republic: SÚKL database of medicinal products (monthly open data), 11,881 registered
+  products.
+- Denmark: Danish Medicines Agency list of authorised medicines (daily), 13,960 products.
+- Canada from Health Canada's monthly data extract (11,463 marketed products), so Canada answers
+  even when the Health Canada API is down.
+- `HEALTH_CANADA` setting: `dataset` (default), `live`, `both` or `off`.
+- Railway volume at `/app/data`: the database survives deploys.
+
+### Changed
+- The live Health Canada API (now optional, id `health-canada-live`) reports an outage on its side
+  as "not available" instead of "failed".
+- Railway configuration moved from `railway.json` (read until 1 Dec 2026) to `.railway/railway.ts`.
+- The Czech and Canadian files are refreshed weekly (they change monthly); the others daily.
+
+### Fixed
+- Architecture doc pointed at a deleted file for the curated lists.
+- Page description and README listed the wrong countries; the server now says clearly when its
+  data folder is not writable instead of a bare "unable to open database file".
+
 ## [2.1.0] - 2026-10-24
 
 ### Added

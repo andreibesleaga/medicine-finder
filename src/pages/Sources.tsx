@@ -45,9 +45,9 @@ const Sources = () => {
           ? "search server (key on server)"
           : s.kind === "curated"
             ? "search server (built-in list)"
-            : s.id === "cima" || s.id === "health-canada"
+            : s.id === "cima" || s.id === "health-canada-live"
               ? "search server (live API)"
-              : "search server (database, daily)",
+              : "search server (database, refreshed automatically)",
       state: s.state,
       detail: [
         s.rows ? `${s.rows.toLocaleString("en")} products` : "",

@@ -10,9 +10,12 @@ import { urpl } from "./urpl.js";
 import { cbg } from "./cbg.js";
 import { hpra } from "./hpra.js";
 import { swissmedic } from "./swissmedic.js";
+import { sukl } from "./sukl.js";
+import { dkma } from "./dkma.js";
+import { dpd } from "./dpd.js";
 import { curated } from "./curated.js";
 
-export const DATASETS = [ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, curated];
+export const DATASETS = [ema, bdpm, aifa, urpl, cbg, hpra, swissmedic, sukl, dkma, dpd, curated];
 
 export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = 60 }) {
   const loading = new Set();
