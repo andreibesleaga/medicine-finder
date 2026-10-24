@@ -1,49 +1,44 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, Database } from "lucide-react";
-import { MedicineResult } from "@/types/medicine";
+import type { SearchOutcome, SourceRun } from "@/types/medicine";
 import { useSearchMedicine } from "@/hooks/useSearchMedicine";
 import { CountrySelector } from "./CountrySelector";
 import { Link } from "react-router-dom";
 
 interface SearchInputProps {
-  onSearch: (term: string, results: MedicineResult[]) => void;
+  onResult: (outcome: SearchOutcome) => void;
   onLoadingChange: (loading: boolean) => void;
+  onProgress: (sources: SourceRun[]) => void;
 }
 
-export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => {
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedCountry,
-    setSelectedCountry,
-    isLoading,
-    handleSearch,
-    handleKeyPress
-  } = useSearchMedicine({ onSearch, onLoadingChange });
+export const SearchInput = ({ onResult, onLoadingChange, onProgress }: SearchInputProps) => {
+  const { searchTerm, setSearchTerm, selectedCountry, setSelectedCountry, isLoading, handleSearch, handleKeyDown } =
+    useSearchMedicine({ onResult, onLoadingChange, onProgress });
 
   return (
     <div className="max-w-4xl mx-auto mb-8">
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1">
+          <label htmlFor="ingredient" className="sr-only">
+            Active ingredient
+          </label>
           <Input
-            type="text"
-            placeholder="Enter active drug ingredient (e.g., acetaminophen, ibuprofen, aspirin)"
+            id="ingredient"
+            type="search"
+            placeholder="Active ingredient, e.g. ibuprofen, paracetamol, amoxicillin"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
+            maxLength={80}
+            autoComplete="off"
             className="h-12 text-lg px-4 border-2 border-gray-200 focus:border-blue-500 transition-colors"
           />
         </div>
-        
-        <CountrySelector 
-          value={selectedCountry}
-          onValueChange={setSelectedCountry}
-          disabled={isLoading}
-        />
-        
+
+        <CountrySelector value={selectedCountry} onValueChange={setSelectedCountry} disabled={isLoading} />
+
         <Button
           onClick={handleSearch}
           disabled={isLoading || !searchTerm.trim()}
@@ -63,17 +58,14 @@ export const SearchInput = ({ onSearch, onLoadingChange }: SearchInputProps) => 
           )}
         </Button>
       </div>
-      
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between text-sm text-gray-500 mt-3">
-        <div className="flex items-center gap-2 text-center sm:text-left">
-          <Database className="w-4 h-4 text-blue-500" />
-          <span>Local & Global databases • AI enhanced • Real-time</span>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between text-sm text-gray-600 mt-3">
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4 text-blue-600" aria-hidden="true" />
+          <span>Official databases (EU, France, Spain, Canada, US) • open references • optional AI</span>
         </div>
-        <Link to="/database">
-          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
-            <Database className="w-3 h-3 mr-1" />
-            Manage Local Databases
-          </Button>
+        <Link to="/sources" className="text-blue-700 hover:underline">
+          Data sources and their status
         </Link>
       </div>
     </div>

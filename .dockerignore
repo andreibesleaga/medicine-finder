@@ -1,0 +1,10 @@
+# keep secrets and local artefacts out of the image
+.env
+.env.*
+!.env.example
+node_modules
+dist
+.git
+.github
+coverage
+*.log
