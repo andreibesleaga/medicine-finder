@@ -44,9 +44,11 @@ export const maltama = {
   id: "malta-ma",
   name: "Malta, Medicines Authority national products",
   kind: "official",
+  countries: ["Malta"],
   coverage: "Malta, authorised medicines (national list)",
   homepage: "https://medicinesauthority.gov.mt/advanced-search",
   terms: "https://medicinesauthority.gov.mt/copyright",
+  reuse: "Not for commercial or marketing use; name the Medicines Authority (Malta) as the source",
   refreshMs: DAY_MS,
   load: async (fetchImpl) => parseMaltaRows(readFirstSheet(await downloadBuffer(fetchImpl, MALTA_URL))),
 };

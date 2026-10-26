@@ -113,4 +113,24 @@ describe("server search", () => {
     expect(next.cached).toBeUndefined();
     expect(next.sources[0].state).toBe("ok");
   });
+
+  it("reports each source's homepage, terms and reuse condition with its run", async () => {
+    const a = Object.assign(source("a", "official", async () => []), { homepage: "https://a", terms: "https://a/terms", reuse: "Not commercial" });
+    const body = await createSearch({ sources: [a], now: fixedClock() })("ibuprofen");
+    expect(body.sources[0]).toMatchObject({ id: "a", homepage: "https://a", terms: "https://a/terms", reuse: "Not commercial" });
+  });
+
+  it("asks every source for the ingredient a brand name stands for, and reports the brand", async () => {
+    const seen = [];
+    const a = source("a", "official", async (term) => {
+      seen.push(term);
+      return [{ brandName: "Advil", activeIngredient: "ibuprofen", country: "Canada" }];
+    });
+    const brand = { name: "Nurofen", ingredient: "Ibuprofen", searchFor: "ibuprofen", others: [] };
+    const search = createSearch({ sources: [a], resolve: (t) => (t === "nurofen" ? brand : null), now: fixedClock() });
+    const body = await search("nurofen");
+    expect(seen).toEqual(["ibuprofen"]);
+    expect(body).toMatchObject({ term: "nurofen", brand });
+    expect((await search("ibuprofen")).brand).toBeUndefined();
+  });
 });

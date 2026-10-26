@@ -62,6 +62,7 @@ export const dkma = {
   id: "dkma",
   name: "Denmark, Danish Medicines Agency authorised medicines",
   kind: "official",
+  countries: ["Denmark"],
   coverage: "Denmark, authorised human medicines (no veterinary products or parallel imports)",
   homepage: "https://laegemiddelstyrelsen.dk/en/licensing/licensing-of-medicines/lists-of-authorised-and-deregistered-medicines/",
   terms: "https://laegemiddelstyrelsen.dk/en/about/copyright-and-logo/",

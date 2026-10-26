@@ -38,6 +38,7 @@ export const hpra = {
   id: "hpra",
   name: "Ireland, HPRA authorised medicines",
   kind: "official",
+  countries: ["Ireland"],
   coverage: "Ireland, authorised human medicines (not those marked not marketed)",
   homepage: "https://www.hpra.ie/find-a-medicine",
   terms: "https://www.hpra.ie/",

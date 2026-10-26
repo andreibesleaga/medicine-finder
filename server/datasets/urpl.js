@@ -29,6 +29,7 @@ export const urpl = {
   id: "urpl",
   name: "Poland, Register of Medicinal Products (URPL)",
   kind: "official",
+  countries: ["Poland"],
   coverage: "Poland, authorised human medicines",
   homepage: "https://rejestry.ezdrowie.gov.pl/rpl/search/public",
   terms: "https://rejestry.ezdrowie.gov.pl/",

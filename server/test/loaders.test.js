@@ -12,6 +12,7 @@ import { dkma, DKMA_URL } from "../datasets/dkma.js";
 import { mpa, MPA_URL } from "../datasets/mpa.js";
 import { drlz, DRLZ_URL } from "../datasets/drlz.js";
 import { maltama, MALTA_URL } from "../datasets/maltama.js";
+import { article57, ARTICLE57_URL } from "../datasets/article57.js";
 import { usfda, NDC_URL } from "../datasets/usfda.js";
 import { invima, INVIMA_URL } from "../datasets/invima.js";
 import { tfda, TFDA_URL } from "../datasets/tfda.js";
@@ -188,6 +189,18 @@ describe("dataset load(): spreadsheet and zip downloads", () => {
     expect(rows.map((r) => [r.ingredient, r.country, r.holder, r.form])).toEqual([["Fluorouracil", "Malta", "Mylan", "Cream"]]);
     expect(rows[0].brand).toMatch(/^Efudix/);
     expect(urls(fetch)).toEqual([MALTA_URL]);
+  });
+
+  it("EEA (Article 57): reads the extract below its title rows", async () => {
+    const xlsx = makeXlsx([
+      ["Article 57 product data"],
+      ["Product name", "Active substance", "Route of administration", "Product authorisation country", "Marketing authorisation holder"],
+      ["Dolormin", "Ibuprofen", "Oral Use", "Germany", "Johnson & Johnson Gmbh"],
+    ]);
+    const fetch = stubFetch([[ARTICLE57_URL, () => binary(xlsx)]]);
+    const rows = await article57.load(fetch);
+    expect(summary(rows)).toEqual([["Dolormin", "Ibuprofen", "Germany"]]);
+    expect(urls(fetch)).toEqual([ARTICLE57_URL]);
   });
 
   it("United States: reads product.txt from the NDC zip, and rejects a zip without it", async () => {

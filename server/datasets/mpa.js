@@ -36,6 +36,7 @@ export const mpa = {
   id: "mpa",
   name: "Sweden, Läkemedelsverket medicinal products",
   kind: "official",
+  countries: ["Sweden"],
   coverage: "Sweden, approved and registered human medicines (not parallel imports)",
   homepage: "https://www.lakemedelsverket.se/sv/sok-lakemedelsfakta",
   terms: "https://creativecommons.org/licenses/by/4.0/",

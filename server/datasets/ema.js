@@ -24,9 +24,11 @@ export const ema = {
   id: "ema",
   name: "European Medicines Agency (EMA)",
   kind: "official",
+  countries: ["European Union"],
   coverage: "European Union, centrally authorised medicines",
   homepage: "https://www.ema.europa.eu/en/medicines/download-medicine-data",
   terms: "https://www.ema.europa.eu/en/about-us/legal-notice",
+  reuse: "Name the European Medicines Agency (EMA) as the source in every copy",
   refreshMs: DAY_MS,
   load: async (fetchImpl) => parseEma(await fetchJson(fetchImpl, EMA_URL, { timeoutMs: 5 * 60e3 })),
 };

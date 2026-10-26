@@ -61,6 +61,7 @@ export const dpd = {
   id: "health-canada",
   name: "Canada, Health Canada Drug Product Database",
   kind: "official",
+  countries: ["Canada"],
   coverage: "Canada, marketed human drug products (Health Canada data extract)",
   homepage: "https://health-products.canada.ca/dpd-bdpp/",
   terms: "https://www.canada.ca/en/transparency/terms.html",

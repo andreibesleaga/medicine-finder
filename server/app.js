@@ -113,6 +113,8 @@ export function createApp({
         coverage: s.coverage,
         homepage: s.homepage,
         terms: s.terms,
+        ...(s.reuse ? { reuse: s.reuse } : {}),
+        ...(s.countries ? { countries: s.countries } : {}),
         enabled: s.enabled(),
         ...s.status(),
       }));

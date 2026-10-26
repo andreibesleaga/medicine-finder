@@ -34,8 +34,10 @@ export function createHealthCanadaSource({ fetch }) {
     id: "health-canada-live",
     name: "Health Canada, Drug Product Database (live API)",
     kind: "official",
+    countries: ["Canada"],
     coverage: "Canada, marketed and approved drug products",
     homepage: "https://health-products.canada.ca/dpd-bdpp/",
+    terms: "https://www.canada.ca/en/transparency/terms.html",
     enabled: () => true,
     status: () => last ?? { state: "live" },
     async search(term) {

@@ -1,6 +1,6 @@
 # Medicine Brand Finder
 
-> Find the brand names of a medicine's active ingredient in other countries. Results come from official medicines databases (EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, United States, Colombia, Taiwan, Singapore, New Zealand, Spain), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
+> Find the brand names of a medicine's active ingredient (or of a brand name) in other countries. Results come from official medicines databases (EU and 39 countries: EU EMA, France, Italy, Poland, Netherlands, Ireland, Switzerland, Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, United States, Colombia, Taiwan, Singapore, New Zealand, Spain, and through EMA's Article 57 data Austria, Belgium, Bulgaria, Croatia, Cyprus, Estonia, Germany, Greece, Hungary, Iceland, Latvia, Liechtenstein, Luxembourg, Norway, Portugal, Romania, Slovakia, Slovenia and the United Kingdom (Northern Ireland)), open references (RxNorm, openFDA, Wikidata, PubChem) and optional AI suggestions; every result is labelled with its source. Demo, not medical advice. Free software, GPL-3.0-or-later.
 
 - Live: https://medicine-finder.up.railway.app/
 - Source: https://github.com/andreibesleaga/medicine-finder
@@ -8,7 +8,9 @@
 
 ## API
 
-- [API reference](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/API.md): GET /api/search?q=<ingredient>&country=<country> (official data), GET /api/ai (AI suggestions), GET /api/sources (source status), GET /api/health. JSON, rate-limited, no key needed.
+- [API reference](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/API.md): GET /api/search?q=<ingredient or brand>&country=<country> (official data; a brand name is answered with its ingredient's brands and a `brand` field), GET /api/ai (AI suggestions), GET /api/sources (source status), GET /api/health. JSON, rate-limited, no key needed.
+
+- Results page: shareable address /?q=<term>&country=<country>; each result list downloads as CSV or JSON with the source and its terms on every row.
 
 ## Docs
 

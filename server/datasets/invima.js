@@ -48,9 +48,11 @@ export const invima = {
   id: "invima",
   name: "Colombia, INVIMA registered medicines (CUM)",
   kind: "official",
+  countries: ["Colombia"],
   coverage: "Colombia, medicines with a current registration and an active presentation",
   homepage: "https://www.datos.gov.co/Salud-y-Protecci-n-Social/C-digo-nico-de-Medicamentos-Vigentes/i7cb-raxc",
   terms: "https://creativecommons.org/licenses/by-sa/4.0/",
+  reuse: "CC BY-SA 4.0: name INVIMA as the source and share adaptations under the same licence",
   refreshMs: DAY_MS,
   load: async (fetchImpl) => parseInvima(toRecords(parseCsv(await downloadText(fetchImpl, INVIMA_URL)))),
 };

@@ -38,6 +38,7 @@ export const swissmedic = {
   id: "swissmedic",
   name: "Switzerland, Swissmedic authorised medicines",
   kind: "official",
+  countries: ["Switzerland"],
   coverage: "Switzerland, authorised human medicine packs",
   homepage: "https://www.swissmedic.ch/swissmedic/en/home/services/listen_neu.html",
   terms: "https://www.swissmedic.ch/swissmedic/en/home/services/legal-notices.html",

@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SearchInput } from "@/components/SearchInput";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { SearchProgressComponent } from "@/components/SearchProgress";
 import { Disclaimer } from "@/components/Disclaimer";
 import { useSearchMedicine } from "@/hooks/useSearchMedicine";
+import { useCoverage } from "@/hooks/useCoverage";
 import type { SearchOutcome, SourceRun } from "@/types/medicine";
+import { linkSearch, searchParams } from "@/lib/search/searchLink";
 
 const Index = () => {
   const [outcome, setOutcome] = useState<SearchOutcome | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<SourceRun[]>([]);
+  const [params, setParams] = useSearchParams();
+  const coverage = useCoverage();
   const search = useSearchMedicine({
+    // the address shows the search, so it can be bookmarked or sent
+    onSearchStart: (term, country) => setParams(searchParams(term, country), { replace: true }),
     onResult: setOutcome,
     onLoadingChange: (loading) => {
       setIsLoading(loading);
@@ -18,6 +25,16 @@ const Index = () => {
     },
     onProgress: setProgress,
   });
+
+  // a link such as /?q=ibuprofen&country=Germany runs its search once, on arrival
+  const linked = useRef(false);
+  useEffect(() => {
+    if (linked.current) return;
+    linked.current = true;
+    const from = linkSearch(params);
+    if (from) void search.handleSearch(false, from);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
@@ -44,14 +61,18 @@ const Index = () => {
           isLoading={search.isLoading}
           onSearch={() => search.handleSearch()}
           onKeyDown={search.handleKeyDown}
+          withData={coverage?.countries}
+          euData={coverage?.eu}
         />
         <SearchProgressComponent isSearching={isLoading} sources={progress} />
         <ResultsDashboard
+          coverage={coverage}
           outcome={outcome}
           isLoading={isLoading}
           onReset={() => {
             search.reset();
             setOutcome(null);
+            setParams({}, { replace: true });
           }}
           onRefresh={() => search.handleSearch(true)}
         />

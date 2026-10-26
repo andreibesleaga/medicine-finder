@@ -12,19 +12,22 @@ interface SearchInputProps {
   isLoading: boolean;
   onSearch: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  /** countries with official data, when the server has said */
+  withData?: string[];
+  euData?: boolean;
 }
 
-export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCountryChange, isLoading, onSearch, onKeyDown }: SearchInputProps) => (
+export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCountryChange, isLoading, onSearch, onKeyDown, withData, euData }: SearchInputProps) => (
   <div className="max-w-4xl mx-auto mb-8">
     <div className="flex flex-col gap-4 sm:flex-row">
       <div className="flex-1">
         <label htmlFor="ingredient" className="sr-only">
-          Active ingredient
+          Active ingredient or brand name
         </label>
         <Input
           id="ingredient"
           type="search"
-          placeholder="Active ingredient, e.g. ibuprofen, paracetamol, amoxicillin"
+          placeholder="Ingredient or brand, e.g. ibuprofen, Nurofen, amoxicillin"
           value={searchTerm}
           onChange={(e) => onTermChange(e.target.value)}
           onKeyDown={onKeyDown}
@@ -35,7 +38,7 @@ export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCount
         />
       </div>
 
-      <CountrySelector value={selectedCountry} onValueChange={onCountryChange} disabled={isLoading} />
+      <CountrySelector value={selectedCountry} onValueChange={onCountryChange} disabled={isLoading} withData={withData} />
 
       <Button
         onClick={onSearch}
@@ -60,7 +63,10 @@ export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCount
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between text-sm text-gray-600 mt-3">
       <div className="flex items-center gap-2">
         <Database className="w-4 h-4 text-blue-600" aria-hidden="true" />
-        <span>Official databases in 20 countries and the EU • open references • optional AI</span>
+        <span>
+          {withData?.length ? `Official databases in ${withData.length} countries${euData ? " and the EU" : ""}` : "Official databases"} • open
+          references • optional AI
+        </span>
       </div>
       <Link to="/sources" className="text-blue-700 hover:underline">
         Data sources and their status

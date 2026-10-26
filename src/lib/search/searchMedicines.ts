@@ -2,7 +2,7 @@
 // Official national data comes first; AI suggestions are fetched afterwards (addAiSuggestions)
 // because language models can take much longer.
 
-import type { MedicineResult, SearchOutcome, SourceKind, SourceRun } from "@/types/medicine";
+import type { BrandMatch, MedicineResult, SearchOutcome, SourceKind, SourceRun } from "@/types/medicine";
 import { BROWSER_SOURCES, clinicalTrials } from "./browserSources";
 import { searchAi, searchServer } from "./serverApi";
 import { scopeResults, selectionForServer } from "./countryScope";
@@ -96,21 +96,29 @@ export async function searchMedicines(
   for (const s of BROWSER_SOURCES) set({ id: s.id, name: s.name, kind: s.kind, state: "pending", count: 0 });
   set(SERVER_PLACEHOLDER);
 
-  const browserJobs = BROWSER_SOURCES.map(async (s) => {
-    try {
-      const found = await s.search(term, fetchImpl);
-      rows.push(...found.map((r) => ({ ...r, sourceId: s.id, sourceName: s.name, kind: s.kind })));
-      set({ id: s.id, name: s.name, kind: s.kind, state: "ok", count: found.length });
-    } catch (err) {
-      set({ id: s.id, name: s.name, kind: s.kind, state: "error", count: 0, detail: message(err) });
-    }
-  });
+  // the browser sources' rows, replaced when the term turns out to be a brand name
+  const browserRows = new Map<string, Omit<MedicineResult, "id">[]>();
+  const runBrowser = (query: string) =>
+    Promise.all(
+      BROWSER_SOURCES.map(async (s) => {
+        try {
+          const found = await s.search(query, fetchImpl);
+          browserRows.set(s.id, found.map((r) => ({ ...r, sourceId: s.id, sourceName: s.name, kind: s.kind })));
+          set({ id: s.id, name: s.name, kind: s.kind, state: "ok", count: found.length });
+        } catch (err) {
+          browserRows.delete(s.id);
+          set({ id: s.id, name: s.name, kind: s.kind, state: "error", count: 0, detail: message(err) });
+        }
+      }),
+    );
 
+  let brand: BrandMatch | undefined;
   const serverJob = (async () => {
     try {
       const body = await searchServer(term, selectionForServer(selection), fetchImpl);
       runs.delete(SERVER_PLACEHOLDER.id);
       rows.push(...body.results);
+      brand = body.brand;
       for (const run of body.sources) runs.set(run.id, run);
       emit();
     } catch (err) {
@@ -119,9 +127,16 @@ export async function searchMedicines(
   })();
 
   const trialsJob = clinicalTrials(term, fetchImpl).catch(() => undefined);
-  const [, , trials] = await Promise.all([Promise.all(browserJobs), serverJob, trialsJob]);
+  let [, , trials] = await Promise.all([runBrowser(term), serverJob, trialsJob]);
+  if (brand) {
+    // "Nurofen": ask the browser sources and ClinicalTrials.gov for ibuprofen instead
+    for (const s of BROWSER_SOURCES) set({ id: s.id, name: s.name, kind: s.kind, state: "pending", count: 0 });
+    browserRows.clear();
+    [, trials] = await Promise.all([runBrowser(brand.searchFor), clinicalTrials(brand.searchFor, fetchImpl).catch(() => undefined)]);
+  }
+  rows.push(...[...browserRows.values()].flat());
   const serverReached = runs.get(SERVER_PLACEHOLDER.id)?.state !== "unavailable";
-  return finish(term, selection, rows, [...runs.values()], { trials: trials ?? undefined, aiPending: serverReached });
+  return finish(term, selection, rows, [...runs.values()], { trials: trials ?? undefined, aiPending: serverReached, brand });
 }
 
 /** Adds the AI suggestions to an outcome (or marks them unavailable). */
@@ -129,11 +144,11 @@ export async function addAiSuggestions(outcome: SearchOutcome, fetchImpl: typeof
   const rows = [...(rawRows.get(outcome) ?? outcome.results)];
   let sources = outcome.sources;
   try {
-    const body = await searchAi(outcome.term, selectionForServer(outcome.country), fetchImpl);
+    const body = await searchAi(outcome.brand?.searchFor ?? outcome.term, selectionForServer(outcome.country), fetchImpl);
     rows.push(...body.results);
     sources = [...sources, ...body.sources];
   } catch (err) {
     sources = [...sources, { id: "ai", name: "AI suggestions", kind: "ai", state: "unavailable", count: 0, detail: message(err) }];
   }
-  return finish(outcome.term, outcome.country, rows, sources, { trials: outcome.trials, aiPending: false });
+  return finish(outcome.term, outcome.country, rows, sources, { trials: outcome.trials, aiPending: false, brand: outcome.brand });
 }

@@ -7,12 +7,17 @@ interface CountrySelectorProps {
   value: string;
   onValueChange: (value: string) => void;
   disabled?: boolean;
+  /** countries with official data; listed first when known */
+  withData?: string[];
 }
 
-export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelectorProps) => {
+export const CountrySelector = ({ value, onValueChange, disabled, withData }: CountrySelectorProps) => {
   const allOption = countries.find(country => country.value === "all");
   const regions = countries.filter(country => country.isRegion);
   const countriesOnly = countries.filter(country => !country.isRegion && country.value !== "all");
+  const data = new Set(withData ?? []);
+  const official = countriesOnly.filter((c) => data.has(c.value));
+  const others = data.size ? countriesOnly.filter((c) => !data.has(c.value)) : countriesOnly;
 
   return (
     <div className="min-w-48">
@@ -39,9 +44,23 @@ export const CountrySelector = ({ value, onValueChange, disabled }: CountrySelec
             ))}
           </SelectGroup>
           <SelectSeparator />
+          {official.length > 0 && (
+            <>
+              <SelectGroup>
+                <SelectLabel>Countries with official data ({official.length})</SelectLabel>
+                {official.map((country) => (
+                  <SelectItem key={country.value} value={country.value}>
+                    {/* the United Kingdom's official data covers Northern Ireland only (EMA Article 57) */}
+                    {country.value === "United Kingdom" ? `${country.label} (Northern Ireland data)` : country.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+            </>
+          )}
           <SelectGroup>
-            <SelectLabel>Countries</SelectLabel>
-            {countriesOnly.map((country) => (
+            <SelectLabel>{official.length > 0 ? "Other countries (open references and AI only)" : "Countries"}</SelectLabel>
+            {others.map((country) => (
               <SelectItem key={country.value} value={country.value}>
                 {country.label}
               </SelectItem>

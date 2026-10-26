@@ -26,7 +26,9 @@ npm test
 ## Adding a data source
 
 A national dataset is one file in `server/datasets/` exporting `{ id, name, kind, coverage,
-homepage, terms, refreshMs, load(fetch, ctx) }` where `load` returns rows `{ brand, ingredient,
+countries, homepage, terms, reuse?, refreshMs, load(fetch, ctx) }` (`countries`: the country names
+it covers, as in the app's country list; `reuse`: a condition of its terms beyond naming the source,
+copied into downloads) where `load` returns rows `{ brand, ingredient,
 country, holder?, strength?, form?, status?, url? }`. A file imported by hand also defines
 `available(ctx)`, `unavailableDetail` and `modifiedAt(ctx)`, with `ctx.importDir` the imports
 folder; see `server/datasets/fimea.js`. Add it to `DATASETS` in `server/datasets/index.js`, with a

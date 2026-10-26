@@ -12,6 +12,7 @@ the source has one.
 | Source | Publisher | Terms |
 |---|---|---|
 | Medicines data (JSON report) | European Medicines Agency | https://www.ema.europa.eu/en/about-us/legal-notice |
+| Public data from the Article 57 database (product data extract) | European Medicines Agency; reproduced with EMA acknowledged as the source | https://www.ema.europa.eu/en/about-us/about-website/legal-notice |
 | Base de données publique des médicaments | ANSM / French Ministry of Health | https://base-donnees-publique.medicaments.gouv.fr/telechargement |
 | CIMA | AEMPS (Spain) | https://cima.aemps.es/ |
 | Drug Product Database (data extract and API) | Health Canada | https://www.canada.ca/en/transparency/terms.html |
