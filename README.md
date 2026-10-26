@@ -61,7 +61,7 @@ copy); AI suggestions are marked.
 flowchart LR
   U[Browser: React app] -->|/api/search| S[Node server]
   U --> O[RxNorm, openFDA, Wikidata,<br/>PubChem, ClinicalTrials.gov]
-  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, CZ, DK, SE, FI, LT, UA, MT,<br/>CA, US, CO, TW, SG, NZ,<br/>EMA Article 57 (19 more):<br/>downloaded files)]
+  S --> E[(SQLite: EMA, FR, IT, PL, NL,<br/>IE, CH, CZ, DK, SE, FI, LT, UA, MT,<br/>CA, US, CO, TW, SG, NZ,<br/>EMA Article 57: 19 more countries<br/>downloaded files)]
   S --> L[Spain CIMA:<br/>live API]
   S --> A[AI providers:<br/>keys on the server]
 ```
