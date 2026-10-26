@@ -65,6 +65,7 @@ export const sukl = {
   id: "sukl",
   name: "Czech Republic, SÚKL medicinal products database",
   kind: "official",
+  countries: ["Czech Republic"],
   coverage: "Czech Republic, registered human medicinal products (no homeopathics or parallel imports)",
   homepage: "https://prehledy.sukl.cz/prehled_leciv.html",
   terms: "https://opendata.sukl.gov.cz/podminky-uziti-otevrenych-dat",

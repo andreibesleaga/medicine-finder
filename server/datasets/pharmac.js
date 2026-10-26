@@ -32,6 +32,7 @@ export const pharmac = {
   id: "pharmac",
   name: "New Zealand, Pharmac Pharmaceutical Schedule",
   kind: "official",
+  countries: ["New Zealand"],
   coverage: "New Zealand, funded medicines only (not every approved medicine)",
   homepage: "https://schedule.pharmac.govt.nz/",
   terms: "https://www.pharmac.govt.nz/about-this-site/copyright",

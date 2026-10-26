@@ -58,6 +58,8 @@ const aiSources = createAiSources(deps);
 
 const search = createSearch({
   sources: officialSources,
+  // a brand name ("Nurofen") is searched as its ingredient
+  resolve: datasets.resolveBrand,
   cacheTtlMs: int(env.SEARCH_CACHE_SECONDS, 3600) * 1000,
 });
 const aiSearch = createSearch({

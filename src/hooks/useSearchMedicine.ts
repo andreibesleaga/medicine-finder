@@ -8,9 +8,11 @@ interface UseSearchMedicineProps {
   onResult: (outcome: SearchOutcome) => void;
   onLoadingChange: (loading: boolean) => void;
   onProgress: (sources: SourceRun[]) => void;
+  /** called when a search starts, with the cleaned term and the country or region ("all" for none) */
+  onSearchStart?: (term: string, country: string) => void;
 }
 
-export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: UseSearchMedicineProps) => {
+export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress, onSearchStart }: UseSearchMedicineProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,15 +20,21 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: Use
   const searchId = useRef(0);
   const { toast } = useToast();
 
-  /** `fresh` skips this browser's saved results. */
-  const handleSearch = async (fresh = false) => {
-    const term = searchTerm.trim().replace(/\s+/g, " ").toLowerCase();
+  /** `fresh` skips this browser's saved results; `from` searches a term and country given by a link. */
+  const handleSearch = async (fresh = false, from?: { term: string; country: string }) => {
+    if (from) {
+      setSearchTerm(from.term);
+      setSelectedCountry(from.country);
+    }
+    const term = (from?.term ?? searchTerm).trim().replace(/\s+/g, " ").toLowerCase();
+    const country = from?.country ?? selectedCountry;
     if (term.length < 2) {
-      toast({ title: "Search term required", description: "Enter an active ingredient, for example ibuprofen.", variant: "destructive" });
+      toast({ title: "Search term required", description: "Enter an active ingredient or a brand name, for example ibuprofen or Nurofen.", variant: "destructive" });
       return;
     }
     const id = ++searchId.current;
-    const selection = selectedCountry === "all" ? undefined : selectedCountry;
+    const selection = country === "all" ? undefined : country;
+    onSearchStart?.(term, country);
     const key = cacheKey(term, selection);
 
     if (!fresh) {
@@ -57,7 +65,7 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress }: Use
     if (id !== searchId.current) return;
     onResult(outcome);
     if (outcome.results.length === 0 && !outcome.aiPending) {
-      toast({ title: "No results found", description: `Nothing found for "${term}". Check the spelling or use the international (INN) name.` });
+      toast({ title: "No results found", description: `Nothing found for "${term}". Check the spelling or use the active ingredient.` });
     }
     if (outcome.aiPending) {
       const withAi = await addAiSuggestions(outcome);

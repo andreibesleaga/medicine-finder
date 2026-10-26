@@ -57,6 +57,7 @@ export const usfda = {
   id: "us-fda-ndc",
   name: "United States, FDA National Drug Code Directory",
   kind: "official",
+  countries: ["United States"],
   coverage: "United States, marketed human prescription and OTC drugs (no homeopathics or generics sold under the generic name)",
   homepage: "https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory",
   terms: "https://open.fda.gov/terms/",

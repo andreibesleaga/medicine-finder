@@ -1,7 +1,9 @@
-import type { MedicineResult, SourceKind, SourceRun } from "@/types/medicine";
+import type { BrandMatch, MedicineResult, SourceKind, SourceRun } from "@/types/medicine";
 import { AI_TIMEOUT_MS, API_BASE, SERVER_TIMEOUT_MS } from "./config";
 
 export interface ServerSearchBody {
+  /** set when the term is a brand name; the sources were asked for its ingredient */
+  brand?: BrandMatch;
   results: Omit<MedicineResult, "id">[];
   sources: SourceRun[];
 }
@@ -14,6 +16,10 @@ export interface ServerSourceInfo {
   homepage: string;
   /** the source's licence or terms of use (shown on the Sources page as its attribution) */
   terms?: string;
+  /** a condition of reuse beyond naming the source (e.g. non-commercial), carried into exports */
+  reuse?: string;
+  /** the countries an official source covers ("European Union" for EU-wide authorisations) */
+  countries?: string[];
   enabled: boolean;
   state: string;
   detail?: string;

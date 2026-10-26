@@ -136,6 +136,26 @@ describe("searchMedicines", () => {
     expect(withAi.results.at(-1)).toMatchObject({ brandName: "Madeupin", kind: "ai" });
   });
 
+  it("asks the browser sources, trials and AI for the ingredient when the term is a brand name", async () => {
+    const brand = { name: "Nurofen", ingredient: "Ibuprofen", searchFor: "ibuprofen", others: [] };
+    const fetch = stubFetch([
+      ["rxcui.json?name=ibuprofen", () => jsonResponse({ idGroup: { rxnormId: ["5640"] } })],
+      ["rxcui.json?name=nurofen", () => jsonResponse({ idGroup: {} })],
+      ["related.json", () => jsonResponse({ relatedGroup: { conceptGroup: [{ conceptProperties: [{ rxcui: "1", name: "Advil" }] }] } })],
+      [/api\.fda\.gov|wikidata|pubchem/, () => jsonResponse({}, 404)],
+      ["clinicaltrials.gov", (url) => jsonResponse({ totalCount: url.includes("intr=ibuprofen") ? 7 : 0 })],
+      ["/api/search?q=nurofen", () => jsonResponse({ brand, results: [], sources: [] })],
+      ["/api/ai?q=ibuprofen", () => jsonResponse({ results: [], sources: [] })],
+    ]);
+    const out = await searchMedicines("nurofen", undefined, () => {}, fetch);
+    expect(out.brand).toEqual(brand);
+    expect(out.results.map((r) => r.brandName)).toEqual(["Advil"]);
+    expect(out.trials?.count).toBe(7);
+    const withAi = await addAiSuggestions(out, fetch);
+    expect(withAi.brand).toEqual(brand);
+    expect(fetch.calls.some((u) => u.includes("/api/ai?q=ibuprofen"))).toBe(true);
+  });
+
   it("still answers when the search server is missing (static hosting) and skips the AI phase", async () => {
     const fetch = stubFetch([
       ["/api/search", () => jsonResponse("<!doctype html>", 200, "text/html")],

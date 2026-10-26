@@ -29,8 +29,10 @@ export function createCimaSource({ fetch }) {
     id: "cima",
     name: "Spain, CIMA (AEMPS)",
     kind: "official",
+    countries: ["Spain"],
     coverage: "Spain, marketed medicines",
     homepage: "https://cima.aemps.es/",
+    terms: "https://cima.aemps.es/",
     enabled: () => true,
     status: () => ({ state: "live" }),
     async search(term) {

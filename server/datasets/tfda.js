@@ -45,6 +45,7 @@ export const tfda = {
   id: "tfda",
   name: "Taiwan, TFDA drug licences",
   kind: "official",
+  countries: ["Taiwan"],
   coverage: "Taiwan, licensed medicines (finished products and biologics, not cancelled or expired)",
   homepage: "https://data.gov.tw/dataset/9122",
   terms: "https://data.gov.tw/license",

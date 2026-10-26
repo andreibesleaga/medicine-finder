@@ -68,6 +68,7 @@ export const fimea = {
   id: "fimea",
   name: "Finland, Fimea basic register of medicinal products",
   kind: "official",
+  countries: ["Finland"],
   coverage: "Finland, authorised human medicines (imported file, not parallel imports)",
   homepage: "https://fimea.fi/en/databases_and_registers/basic-register-xml",
   terms: "https://avoindata.suomi.fi/data/en/dataset/fimea-avoin-data",

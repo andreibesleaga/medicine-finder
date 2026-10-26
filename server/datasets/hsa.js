@@ -30,6 +30,7 @@ export const hsa = {
   id: "hsa",
   name: "Singapore, HSA registered therapeutic products",
   kind: "official",
+  countries: ["Singapore"],
   coverage: "Singapore, registered therapeutic products",
   homepage: "https://data.gov.sg/datasets/d_767279312753558cbf19d48344577084/view",
   terms: "https://data.gov.sg/open-data-licence",

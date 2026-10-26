@@ -41,6 +41,7 @@ export const bdpm = {
   id: "bdpm",
   name: "France, Base de données publique des médicaments",
   kind: "official",
+  countries: ["France"],
   coverage: "France, all marketed medicines",
   homepage: BASE,
   terms: "https://base-donnees-publique.medicaments.gouv.fr/telechargement",

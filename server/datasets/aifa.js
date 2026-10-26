@@ -35,6 +35,7 @@ export const aifa = {
   id: "aifa",
   name: "Italy, AIFA authorised medicines",
   kind: "official",
+  countries: ["Italy"],
   coverage: "Italy, authorised medicine packs",
   homepage: "https://www.aifa.gov.it/liste-dei-farmaci",
   terms: "https://www.aifa.gov.it/en/open-data",

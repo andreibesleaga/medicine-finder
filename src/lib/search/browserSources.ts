@@ -9,6 +9,9 @@ export interface BrowserSource {
   id: string;
   name: string;
   kind: "reference";
+  homepage: string;
+  /** terms of use, carried into exported files (as in NOTICE.md) */
+  terms: string;
   search: (term: string, fetchImpl?: typeof fetch) => Promise<BrowserRow[]>;
 }
 
@@ -32,6 +35,8 @@ export const rxnorm: BrowserSource = {
   id: "rxnorm",
   name: "RxNorm (US NLM)",
   kind: "reference",
+  homepage: "https://www.nlm.nih.gov/research/umls/rxnorm/",
+  terms: "https://lhncbc.nlm.nih.gov/RxNav/TermsofService.html",
   async search(term, fetchImpl = fetch) {
     const base = "https://rxnav.nlm.nih.gov/REST";
     const ids = await getJson<{ idGroup?: { rxnormId?: string[] } }>(
@@ -63,6 +68,8 @@ export const openFda: BrowserSource = {
   id: "openfda",
   name: "openFDA drug labels (US FDA)",
   kind: "reference",
+  homepage: "https://open.fda.gov/apis/drug/label/",
+  terms: "https://open.fda.gov/terms/",
   async search(term, fetchImpl = fetch) {
     const q = `openfda.generic_name:"${term}"+openfda.substance_name:"${term}"`;
     const data = await getJson<{ results?: FdaLabel[] }>(
@@ -100,6 +107,8 @@ export const wikidata: BrowserSource = {
   id: "wikidata",
   name: "Wikidata",
   kind: "reference",
+  homepage: "https://www.wikidata.org/",
+  terms: "https://www.wikidata.org/wiki/Wikidata:Licensing",
   async search(term, fetchImpl = fetch) {
     const label = term.toLowerCase().replace(/["\\]/g, "");
     const query = `SELECT DISTINCT ?item ?itemLabel WHERE {
@@ -128,6 +137,8 @@ export const pubchem: BrowserSource = {
   id: "pubchem",
   name: "PubChem synonyms (US NIH)",
   kind: "reference",
+  homepage: "https://pubchem.ncbi.nlm.nih.gov/",
+  terms: "https://www.ncbi.nlm.nih.gov/home/about/policies/",
   async search(term, fetchImpl = fetch) {
     const data = await getJson<{ InformationList?: { Information?: { CID: number; Synonym?: string[] }[] } }>(
       `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(term)}/synonyms/JSON`,

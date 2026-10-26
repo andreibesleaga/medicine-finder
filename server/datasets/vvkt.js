@@ -53,6 +53,7 @@ export const vvkt = {
   id: "vvkt",
   name: "Lithuania, VVKT register of medicinal products",
   kind: "official",
+  countries: ["Lithuania"],
   coverage: "Lithuania, registered medicinal products (not parallel imports)",
   homepage: "https://data.gov.lt/datasets/2853/",
   terms: "https://creativecommons.org/licenses/by/4.0/",

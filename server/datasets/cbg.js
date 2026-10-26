@@ -28,6 +28,7 @@ export const cbg = {
   id: "cbg",
   name: "Netherlands, CBG medicines information bank",
   kind: "official",
+  countries: ["Netherlands"],
   coverage: "Netherlands, authorised human medicines (no homeopathics)",
   homepage: "https://www.geneesmiddeleninformatiebank.nl/",
   terms: "https://www.geneesmiddeleninformatiebank.nl/",

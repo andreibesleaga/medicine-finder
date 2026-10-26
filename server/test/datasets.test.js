@@ -13,6 +13,7 @@ import { parseMpaRows } from "../datasets/mpa.js";
 import { parseVvkt, vvkt, VVKT_URL } from "../datasets/vvkt.js";
 import { parseDrlz } from "../datasets/drlz.js";
 import { parseMaltaRows } from "../datasets/maltama.js";
+import { parseArticle57, article57Substances } from "../datasets/article57.js";
 import { parseNdcProducts } from "../datasets/usfda.js";
 import { parseInvima } from "../datasets/invima.js";
 import { parseTfda } from "../datasets/tfda.js";
@@ -25,7 +26,7 @@ import path from "node:path";
 import { curatedRows } from "../datasets/curated.js";
 import { withSynonyms } from "../lib/synonyms.js";
 import { openStore, ingredientWords } from "../db/store.js";
-import { createDatasetSources, DATA_FORMAT } from "../datasets/index.js";
+import { createDatasetSources, DATA_FORMAT, PER_COUNTRY, coreIngredient, sameIngredient } from "../datasets/index.js";
 import { stems } from "../lib/text.js";
 import { fixedClock, stubFetch } from "./helpers.js";
 import { makeZip } from "./zipfixture.js";
@@ -291,6 +292,43 @@ describe("national dataset parsers", () => {
       ["Efudix", "Fluorouracil", "Cream", "EJ Busuttil Ltd"],
       ["Rennie", "Calcium Carbonate + Magnesium Carbonate, Heavy", "Chewable Tablet", "NM Pharma"],
     ]);
+  });
+
+  it("EEA (Article 57): header found by its text, countries with their own data skipped, routes merged", () => {
+    const rows = [
+      ["Data as present in the Article 57 database on 09/10/2026", ""],
+      ["EMA/518502/2018, Rev.90", ""],
+      ["Product name\r\n\r\nProduct short name: brand name or the combination of the generic name and the company name", "Active substance\r\n\r\nThe symbol \"|\" is used to separate different pharmaceutical products", "Route of administration", "Product authorisation country", "Marketing authorisation holder", "Pharmacovigilance system master file location", "Pharmacovigilance enquiries email address", "Pharmacovigilance enquiries telephone number"],
+      ["Dolormin", "Ibuprofen", "Oral Use", "Germany", "Johnson & Johnson Gmbh", "Germany", "pv@example.com", "+49 1"],
+      ["Dolormin", "Ibuprofen", "Rectal Use", "Germany", "Johnson & Johnson Gmbh", "Germany", "pv@example.com", "+49 1"],
+      ["Aarane N", "Reproterol Hydrochloride, Sodium Cromoglicate", "Inhalation Use", "Germany", "Hormosan Pharma Gmbh", "Germany", "", ""],
+      ["Citalopram Clydesdale Pharma", "Citalopram Hydrobromide", "Oral Use", "Portugal", "Clydesdale", "", "", ""],
+      ["Aaa Sore Throat", "Benzocaine", "Oromucosal Use", "United Kingdom (Northern Ireland)", "Manx Healthcare Ltd", "", "", ""],
+      ["Nurofen", "Ibuprofen", "Oral Use", "France", "Reckitt", "", "", ""],
+      ["Somecentral", "Ibuprofen", "Oral Use", "European Union", "X", "", "", ""],
+      ["", "Ibuprofen", "Oral Use", "Austria", "X", "", "", ""],
+    ];
+    const out = parseArticle57(rows);
+    expect(out.map((r) => [r.brand, r.ingredient, r.country, r.holder, r.status])).toEqual([
+      ["Dolormin", "Ibuprofen", "Germany", "Johnson & Johnson Gmbh", "Authorised"],
+      ["Aarane N", "Reproterol Hydrochloride + Sodium Cromoglicate", "Germany", "Hormosan Pharma Gmbh", "Authorised"],
+      ["Citalopram Clydesdale Pharma", "Citalopram Hydrobromide", "Portugal", "Clydesdale", "Authorised; generic name and company"],
+      ["Aaa Sore Throat", "Benzocaine", "United Kingdom", "Manx Healthcare Ltd", "Authorised in Northern Ireland"],
+    ]);
+    // the contact columns are never copied
+    expect(JSON.stringify(out)).not.toMatch(/pv@example|\+49/);
+    // a name with a second language after a line break is kept on one line
+    const twoLines = parseArticle57([rows[2], ["Aflu \r\nафлу Капки", "Oxymetazoline", "Nasal Use", "Bulgaria", "Tays\r\nPharma", "", "", ""]]);
+    expect(twoLines.map((r) => [r.brand, r.holder])).toEqual([["Aflu афлу Капки", "Tays Pharma"]]);
+  });
+
+  it("EEA (Article 57): substances split on | and commas, herbal descriptions kept whole", () => {
+    expect(article57Substances("Abiraterone Acetate | Prednisolone")).toEqual(["Abiraterone Acetate", "Prednisolone"]);
+    expect(article57Substances("Calcium Carbonate, Cholecalciferol Concentrate | Risedronate Sodium")).toEqual(["Calcium Carbonate", "Cholecalciferol Concentrate", "Risedronate Sodium"]);
+    expect(article57Substances("Vitamin A Concentrate (Oily Form), Synthetic")).toEqual(["Vitamin A Concentrate (Oily Form)", "Synthetic"]);
+    const herbal = "Tincture From Agnus Castus Fruit (1:10), Extraction Solvent: Ethanol 69.5% V/V";
+    expect(article57Substances(herbal)).toEqual([herbal]);
+    expect(() => parseArticle57([["no header here"]])).toThrow(/header row not found/);
   });
 
   it("United States: marketed human products, excluded and ended listings left out", () => {
@@ -608,6 +646,119 @@ describe("dataset loading", () => {
     const { sources, refreshDue } = createDatasetSources({ store, datasets: [d], now: fixedClock() });
     await refreshDue();
     expect((await sources[0].search("acetaminophen")).results.map((r) => r.brandName)).toEqual(["Doliprane"]);
+  });
+});
+
+describe("brand-name search", () => {
+  const load = async (byDataset) => {
+    const store = openStore(":memory:");
+    const datasets = Object.entries(byDataset).map(([id, rows]) => ({ id, name: id, kind: "official", refreshMs: 24 * 3600e3, load: async () => rows }));
+    const ds = createDatasetSources({ store, datasets, now: fixedClock() });
+    await ds.refreshDue();
+    return { store, ...ds };
+  };
+
+  it("indexes brand names and finds a brand and the products starting with it", async () => {
+    const { store } = await load({ bdpm: [
+      { brand: "Nurofen", ingredient: "Ibuprofène", country: "France" },
+      { brand: "Nurofen Junior", ingredient: "Ibuprofène", country: "France" },
+      { brand: "Nurofenix", ingredient: "Other", country: "France" },
+    ] });
+    expect(store.findBrands("bdpm", "nurofen").map((r) => r.brand)).toEqual(["Nurofen", "Nurofen Junior"]);
+    expect(store.findBrands("bdpm", "")).toEqual([]);
+    expect(store.hasIngredientWords("bdpm", stems("ibuprofen"))).toBe(true);
+    expect(store.hasIngredientWords("bdpm", stems("nurofen"))).toBe(false);
+  });
+
+  it("turns a brand into its ingredient, preferring single-ingredient products and English names", async () => {
+    const { resolveBrand } = await load({
+      bdpm: [{ brand: "Nurofen", ingredient: "Ibuprofène", country: "France" }, { brand: "Nurofen Rhume", ingredient: "Ibuprofène + Pseudoéphédrine", country: "France" }],
+      "ema-article57": [{ brand: "Nurofen", ingredient: "Ibuprofen Lysine", country: "Austria" }],
+    });
+    expect(resolveBrand("Nurofen")).toEqual({ name: "Nurofen", ingredient: "Ibuprofen Lysine", searchFor: "ibuprofen", others: [] });
+    // an ingredient (or another name of one) is searched as it is
+    expect(resolveBrand("ibuprofen")).toBeNull();
+    expect(resolveBrand("unknownbrand")).toBeNull();
+    expect(resolveBrand("nu")).toBeNull();
+  });
+
+  it("names the brand as the register writes it when only longer names match", async () => {
+    const { resolveBrand } = await load({ a: [{ brand: "Dolormin Extra", ingredient: "Ibuprofen", country: "Germany" }] });
+    expect(resolveBrand("dolormin")).toMatchObject({ name: "Dolormin", ingredient: "Ibuprofen" });
+  });
+
+  it("warns when the same brand name stands for a different ingredient elsewhere", async () => {
+    const { resolveBrand } = await load({
+      a: [{ brand: "Flomax", ingredient: "Tamsulosin", country: "United States" }, { brand: "Flomax", ingredient: "Tamsulosin", country: "Canada" }],
+      b: [{ brand: "Flomax", ingredient: "Morniflumate", country: "Italy" }],
+    });
+    expect(resolveBrand("flomax")).toMatchObject({ ingredient: "Tamsulosin", others: [{ ingredient: "Morniflumate", countries: ["Italy"] }] });
+  });
+
+  it("a source covering several countries keeps each country's brands apart and filters by the chosen one", async () => {
+    const store = openStore(":memory:");
+    const rows = [
+      ...Array.from({ length: 25 }, (_, i) => ({ brand: `A${String(i).padStart(2, "0")}`, ingredient: "Ibuprofen", country: "Austria" })),
+      { brand: "Nurofen", ingredient: "Ibuprofen", country: "Austria" },
+      { brand: "Nurofen", ingredient: "Ibuprofen", country: "Germany" },
+      { brand: "Dolormin", ingredient: "Ibuprofen", country: "Germany" },
+    ];
+    const d = { id: "multi", name: "multi", kind: "official", countries: ["Austria", "Germany"], refreshMs: 24 * 3600e3, load: async () => rows };
+    const { sources, refreshDue } = createDatasetSources({ store, datasets: [d], now: fixedClock() });
+    await refreshDue();
+    expect(sources[0].maxResults).toBe(PER_COUNTRY * 2);
+    const germany = await sources[0].search("ibuprofen", { country: "Germany" });
+    expect(germany.results.map((r) => [r.brandName, r.country])).toEqual([["Dolormin", "Germany"], ["Nurofen", "Germany"]]);
+    const all = await sources[0].search("ibuprofen", {});
+    expect(all.results.filter((r) => r.country === "Austria")).toHaveLength(PER_COUNTRY);
+    expect(all.results.filter((r) => r.country === "Germany").map((r) => r.brandName)).toEqual(["Dolormin", "Nurofen"]);
+    expect(all.total).toBe(28);
+  });
+
+  it("does not warn when the other name is another name of the same ingredient", async () => {
+    const { resolveBrand } = await load({
+      a: [{ brand: "Panadol", ingredient: "Paracetamol", country: "Portugal" }, { brand: "Panadol", ingredient: "Paracetamol", country: "Malta" }],
+      b: [{ brand: "Panadol", ingredient: "ACETAMINOPHEN", country: "United States" }],
+    });
+    expect(resolveBrand("panadol")).toMatchObject({ ingredient: "Paracetamol", others: [] });
+  });
+
+  it("does not search a brand of three or more substances by its ingredients", async () => {
+    const { resolveBrand } = await load({ a: [{ brand: "Accusol", ingredient: "Sodium Chloride + Calcium Chloride + Magnesium Chloride", country: "Germany" }] });
+    expect(resolveBrand("accusol")).toBeNull();
+  });
+
+  it("tells spellings of one substance from different substances", () => {
+    const same = [
+      ["Metyrapone", "Metirapone"], ["Ciclosporin", "Ciklosporin"], ["Voriconazole", "Vorikonazol"],
+      ["Flupentixol Hydrochloride", "Dichlorhydrate De Flupentixol"], ["Clobetasol Propionate", "Propionate De Clobétasol"],
+      ["Cholic Acid", "Acide Cholique"], ["Cholic Acid", "Acido Colico"], ["Filgrastim", "Recombinant Filgrastim"],
+      ["Oxymetazoline Hydrochloride", "Oximetazolina Clorhidrato"], ["Fluorid", "Natriumfluoride"], ["Fluorid", "Sodium Fluoride"],
+      ["Alendronic Acid", "Sodium Alendronate Trihydrate"], ["Paracetamol", "ACETAMINOPHEN"], ["Ibuprofen", "ibuprofène"],
+      ["Fusidic Acid", "Sodium Fusidate"], ["Anhydrous Lidocaine Hydrochloride", "LIGNOCAINE HCl ANHYDROUS"], ["Quizartinib", "Kizartinib"],
+      ["Haloperidol", "Aloperidolo"],
+    ];
+    for (const [a, b] of same) expect(sameIngredient(a, b), `${a} = ${b}`).toBe(true);
+    const different = [
+      ["Pseudoephedrine Hydrochloride", "Xylometazoline hydrochloride"], ["Sodium Cromoglicate", "Azelastina Cloridrato"],
+      ["Sodium Chloride", "Potassium Chloride"], ["Vitamin D3", "Vitamin B12"], ["Chlorhexidine", "Chlorphenamine"], ["Tamsulosin", "Morniflumate"],
+      ["Ibuprofene Sale Di Lisina", "Naproxene Sodico"], ["Bisacodyl", "Sodium Picosulfate Monohydrate"], ["Dinoprostone", "Alprostadil"],
+    ];
+    for (const [a, b] of different) expect(sameIngredient(a, b), `${a} != ${b}`).toBe(false);
+  });
+
+  it("keeps only the substance part of a resolved ingredient", () => {
+    expect(coreIngredient("Dexamethasone Sodium Phosphate")).toBe("dexamethasone");
+    expect(coreIngredient("Acetylsalicylic Acid")).toBe("acetylsalicylic acid");
+    expect(coreIngredient("Pseudoephedrine Hydrochloride + Ibuprofen")).toBe("pseudoephedrine + ibuprofen");
+    expect(coreIngredient("Sodium Chloride")).toBe("sodium chloride");
+    expect(coreIngredient("Magnesium Hydroxide")).toBe("magnesium hydroxide");
+    expect(coreIngredient("Diclofenac Diethylamine")).toBe("diclofenac");
+    expect(coreIngredient("Cetirizine Dihydrochloride")).toBe("cetirizine");
+    // salts of a metal keep their name (else "magnesium" would find every magnesium product)
+    expect(coreIngredient("Magnesium Sulfate")).toBe("magnesium sulfate");
+    expect(coreIngredient("Sodium Phosphate")).toBe("sodium phosphate");
+    expect(coreIngredient("Ferrous Sulfate Dihydrate")).toBe("ferrous sulfate");
   });
 });
 

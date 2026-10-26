@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS words (
   product_id INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS words_lookup ON words(source, word);
+CREATE TABLE IF NOT EXISTS brands (
+  source TEXT NOT NULL,
+  key TEXT NOT NULL,
+  product_id INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS brands_lookup ON brands(source, key);
 CREATE TABLE IF NOT EXISTS datasets (
   source TEXT PRIMARY KEY,
   loaded_at INTEGER,
@@ -42,7 +48,8 @@ export function ingredientWords(ingredient) {
 // stems this short ("d" in "vitamin d") must match a whole word, not the start of one
 const SHORT_STEM = 3;
 
-const brandKey = (s) => normalize(s).replace(/[^a-z0-9]+/g, " ").trim();
+/** "Nurofen Junior 100 mg" -> "nurofen junior 100 mg": the form a brand is indexed and looked up in. */
+export const brandKey = (s) => normalize(s).replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Opens (and creates if needed) the database. `file` may be ":memory:". */
 export function openStore(file) {
@@ -59,6 +66,7 @@ export function openStore(file) {
     "INSERT INTO products (source, brand, ingredient, country, holder, strength, form, status, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertWord = db.prepare("INSERT INTO words (source, word, product_id) VALUES (?, ?, ?)");
+  const insertBrand = db.prepare("INSERT INTO brands (source, key, product_id) VALUES (?, ?, ?)");
   const upsertDataset = db.prepare(
     `INSERT INTO datasets (source, loaded_at, rows, error, attempted_at, format) VALUES (?, ?, ?, NULL, ?, ?)
      ON CONFLICT(source) DO UPDATE SET loaded_at = excluded.loaded_at, rows = excluded.rows, error = NULL,
@@ -71,6 +79,12 @@ export function openStore(file) {
   const findIds = db.prepare("SELECT product_id FROM words WHERE source = ? AND word >= ? AND word < ?");
   const findExact = db.prepare("SELECT product_id FROM words WHERE source = ? AND word = ?");
   const getInfo = db.prepare("SELECT loaded_at, rows, error, attempted_at, format FROM datasets WHERE source = ?");
+  const anyWordFrom = db.prepare("SELECT 1 FROM words WHERE source = ? AND word >= ? AND word < ? LIMIT 1");
+  const anyWord = db.prepare("SELECT 1 FROM words WHERE source = ? AND word = ? LIMIT 1");
+  const findBrands = db.prepare(
+    `SELECT p.brand, p.ingredient, p.country FROM brands b JOIN products p ON p.id = b.product_id
+     WHERE b.source = ? AND b.key >= ? AND b.key < ? LIMIT ?`,
+  );
 
   return {
     /** Replaces all rows of one source in a single transaction; `format` is the data format version. */
@@ -78,6 +92,7 @@ export function openStore(file) {
       db.exec("BEGIN");
       try {
         db.prepare("DELETE FROM words WHERE source = ?").run(source);
+        db.prepare("DELETE FROM brands WHERE source = ?").run(source);
         db.prepare("DELETE FROM products WHERE source = ?").run(source);
         for (const r of rows) {
           const { lastInsertRowid } = insertProduct.run(
@@ -92,6 +107,7 @@ export function openStore(file) {
             r.url ?? null,
           );
           for (const w of ingredientWords(r.ingredient)) insertWord.run(source, w, lastInsertRowid);
+          insertBrand.run(source, brandKey(r.brand), lastInsertRowid);
         }
         upsertDataset.run(source, now, rows.length, now, format);
         db.exec("COMMIT");
@@ -111,10 +127,12 @@ export function openStore(file) {
 
     /**
      * Products whose ingredient words start with every stem (a stem of one or two characters must
-     * be the whole word), one entry per brand (the first
+     * be the whole word), one entry per brand and country (the first
      * strengths and forms joined). Returns { total, results } where total counts brands.
+     * `country` keeps one country's products (a source covering several); `perCountry` caps the
+     * results of each country, so one country does not fill the whole list.
      */
-    search(source, stems, limit = 60) {
+    search(source, stems, limit = 60, { country, perCountry } = {}) {
       if (!stems.length) return { total: 0, results: [] };
       let ids = null;
       for (const s of stems) {
@@ -131,7 +149,8 @@ export function openStore(file) {
       }
       const byBrand = new Map();
       for (const r of rows) {
-        const key = brandKey(r.brand);
+        if (country && r.country !== country) continue;
+        const key = `${brandKey(r.brand)}|${r.country}`;
         const hit = byBrand.get(key);
         if (!hit) {
           byBrand.set(key, { ...r, strengths: r.strength ? [r.strength] : [] });
@@ -142,9 +161,17 @@ export function openStore(file) {
       // single-ingredient products first (what the user asked for), then combinations; then by name
       const isCombo = (r) => (r.ingredient.includes(" + ") ? 1 : 0);
       const brands = [...byBrand.values()].sort((a, b) => isCombo(a) - isCombo(b) || a.brand.localeCompare(b.brand));
+      const perCountryCount = new Map();
+      const kept = perCountry
+        ? brands.filter((r) => {
+            const n = perCountryCount.get(r.country) ?? 0;
+            perCountryCount.set(r.country, n + 1);
+            return n < perCountry;
+          })
+        : brands.slice(0, limit);
       return {
         total: brands.length,
-        results: brands.slice(0, limit).map((r) => ({
+        results: kept.map((r) => ({
           brandName: r.brand,
           activeIngredient: r.ingredient,
           country: r.country,
@@ -155,6 +182,21 @@ export function openStore(file) {
           url: r.url ?? undefined,
         })),
       };
+    },
+
+    /** True when every stem starts (or, if short, is) a word of some ingredient of this source. */
+    hasIngredientWords(source, stems) {
+      if (!stems.length) return false;
+      return stems.every((s) => (s.length < SHORT_STEM ? anyWord.get(source, s) : anyWordFrom.get(source, s, `${s}\uffff`)) !== undefined);
+    },
+
+    /** Products whose brand is `key` or starts with `key` and a space ("nurofen" -> "Nurofen Junior"). */
+    findBrands(source, key, limit = 200) {
+      if (!key) return [];
+      return findBrands.all(source, key, `${key}\uffff`, limit).filter((r) => {
+        const k = brandKey(r.brand);
+        return k === key || k.startsWith(`${key} `);
+      });
     },
 
     close() {

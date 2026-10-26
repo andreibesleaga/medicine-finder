@@ -3,7 +3,9 @@
 Medicine Brand Finder only uses a national register when it is **official, free, reachable by a
 server script, and its terms allow reuse**. This page lists the registers in use and every other
 register that was checked, with how it could be imported if its status changes. Checked on
-24 October 2026; registers change, so re-check a source before adding it.
+24 October 2026 and re-checked on 26 October 2026; registers change, so re-check a source before
+adding it. A register that offers a search API is queried live (as Spain's CIMA is) rather than
+copied into the database.
 
 How a register can be used:
 
@@ -37,6 +39,7 @@ Terms for each source are in [NOTICE.md](../NOTICE.md); row counts and file deta
 | Europe | Lithuania | VVKT (data.gov.lt) | bulk CSV, daily | CC BY 4.0 |
 | Europe | Ukraine | State Register of Medicinal Products | bulk CSV | CC BY |
 | Europe | Malta | Medicines Authority | bulk XLSX, daily | reuse with reference, not commercial |
+| Europe | Austria, Belgium, Bulgaria, Croatia, Cyprus, Estonia, Germany, Greece, Hungary, Iceland, Latvia, Liechtenstein, Luxembourg, Norway, Portugal, Romania, Slovakia, Slovenia, United Kingdom (Northern Ireland) | EMA public extract of the Article 57 database | bulk XLSX, about monthly (brand, substance, country, holder; no strength or form) | reuse, commercial too, with EMA named as the source in every copy |
 | North America | Canada | Health Canada DPD | bulk zip, monthly (+ optional live API) | Government of Canada terms (NOTICE.md) |
 | North America | United States | FDA NDC Directory | bulk zip, daily | public domain (openFDA: CC0) |
 | South America | Colombia | INVIMA CUM (datos.gov.co) | bulk CSV via the portal API | CC BY-SA 4.0 |
@@ -52,35 +55,40 @@ scripts; **No data** = no file or API found, only a search page.
 
 ### Europe
 
+The countries in the Article 57 row above have their brand names from EMA's extract; their
+national registers would add strength, form and status. Their state on 26 October 2026:
+
 | Country | Register | How it could be imported | Why it is not in use |
 |---|---|---|---|
-| Estonia | Ravimiregister | bulk downloads page | Blocked: browser check on all Estonian medicines sites. |
-| Latvia | ZVA medicinal product register (data.gov.lv) | bulk XML/CSV/JSON | Possible: CC0, but the server refused connections from the test machine; re-test from the deployment. |
-| Norway | DMP FEST (SOAP service) | bulk XML, about 95 MB a day | Possible: NLOD 2.0 open licence; large download and a multi-part XML to join. |
-| Iceland | Lyfjastofnun list of authorised medicines | bulk XLSX, monthly | Possible: no licence statement found. |
-| Slovakia | ŠÚKL list of medicines | bulk zip with XLSX, monthly | Possible: no licence statement found; no separate ingredient column. |
-| Turkey | TİTCK licensed medicines list | bulk XLSX, weekly (link changes) | Possible: no licence statement found. |
-| Romania | ANMDMR Nomenclator | bulk XLSX | Possible: the site states "all rights reserved"; needs the agency's consent. |
-| Belgium | SAM (Authentic Source of Medicines) export | bulk zip of XML, about 114 MB | Possible: publicly accessible, no licence statement; large multi-file XML. |
+| Estonia | Ravimiregister | bulk downloads page | Blocked: browser check on every Estonian medicines site (26 Oct). |
+| Latvia | ZVA medicinal product register (`dati.zva.gov.lv/zalu-registrs/export/HumanProducts.xml`) | bulk XML, 125 MB (zip available), daily | Possible: CC0 (data.gov.lv), reachable on 26 Oct; English brand, Latin INN, strength, form, holder, status. |
+| Norway | DMP FEST (public zip on dmp.no, `festNNN.zip`) | zip of one 117 MB XML, twice a month | Possible: NLOD 2.0 ("System providers can freely use the information in FEST"); English INN; brand to substance join. |
+| Iceland | Lyfjastofnun price list | binary `.xls`, monthly | Possible: no licence statement found; priced products only; needs an `.xls` reader. |
+| Slovakia | ŠÚKL list of medicines | bulk zip with XLSX, monthly | No licence statement found; no ingredient column (ATC class names only). |
+| Turkey | TİTCK licensed medicines list | bulk XLSX, weekly (link changes) | Possible: no licence statement found; Turkish ingredient names; needs the agency's confirmation. |
+| Romania | ANMDMR Nomenclator (`nomenclator.anm.ro/files/nomenclator.xlsx`) | bulk XLSX, 2.2 MB | Possible: script-friendly; the site states "all rights reserved", so it needs the agency's consent. |
+| Belgium | SAM (Authentic Source of Medicines) export | zip of 10 XML files, 122 MB (2.7 GB unpacked), hourly | Possible: publicly accessible; no licence statement reachable by script; heavy joins. |
 | Luxembourg | CNS positive list | bulk CSV, monthly | Partial: reimbursed products only, no ingredient names; most products are in the Belgian SAM. |
 | United Kingdom | NHSBSA dm+d (NHS TRUD) | bulk XML zip, weekly | Account: free TRUD account and key, Open Government Licence. |
 | Sweden (NPL) | NPL product export | bulk XML | Account: free for users in Sweden; the public XLSX above is used instead. |
-| Portugal | Infarmed database | bulk, by request | Account: EUR 150 + VAT a year for non-public bodies. |
+| Portugal | Infarmed database | bulk, by request | Account: EUR 150 + VAT a year for non-public bodies (24 Oct; Infomed answered 503 on 26 Oct). |
 | Slovenia | Central Medicines Database (CBZ) | XML for authorised users | Account: certificate and written authorisation. |
 | Germany | BfArM / PharmNet.Bund | search page only | No data: reuse needs BfArM's explicit consent. |
-| Austria | BASG medicines register | manual web export | Blocked by terms: no technical or commercial processing, no public API. |
-| Hungary | OGYÉI medicines database | CSV linked from the site | Blocked: the CSV answers 403 to scripts. |
-| Croatia | HALMED medicines database | Excel export from the search | Unclear: the site refused connections from the test machine; open licence on data.gov.hr. |
-| Bulgaria | BDA register | unknown | Unclear: the site was down for maintenance when checked. |
+| Austria | BASG register (new "MiA" app since Feb 2026) | undocumented app API | Not usable: no documented interface; the old register's terms forbade technical processing. |
+| Hungary | OGYÉI medicines database (`ogyei.gov.hu/generalt_listak/tk_lista.csv`) | CSV, 9 MB, ISO-8859-2 | Possible: the CSV answers scripts since at least 25 Oct (the folder itself answers 403); no reuse statement found. |
+| Croatia | HALMED medicines database | Excel export per search only | No bulk file; the site refused connections again on 26 Oct. |
+| Bulgaria | BDA register | static HTML pages, one per name | No bulk file; no terms found. |
 | Greece | EOF product search | search form only | No data: no file or API; terms allow faithful reuse naming EOF. |
 | Serbia | ALIMS medicines search | search form only | No data: the full register is a paid product. |
 | Cyprus | Pharmaceutical Services | none found | Blocked / no data. |
+| Albania | AKBPM register | PDF, 773 pages | No data file: PDF only. |
+| Moldova, Kosovo, Bosnia and Herzegovina, North Macedonia, Montenegro, Georgia, Armenia, Belarus, Russia | national registers | search pages, PDFs or unreachable | No data: no bulk file found (26 Oct). |
 
 ### Americas
 
 | Country | Register | How it could be imported | Why it is not in use |
 |---|---|---|---|
-| Brazil | ANVISA registered medicines (dados.anvisa.gov.br) | bulk CSV, about 46 MB, daily | Possible: the licence is shown only on a page that needs a browser (reported as CC BY); not confirmed. |
+| Brazil | ANVISA registered medicines (`dados.anvisa.gov.br/dados/DADOS_ABERTOS_MEDICAMENTOS.csv`) | bulk CSV, 46 MB, about monthly | Possible: CC BY in the dataset's CKAN metadata (data.amerigeoss.org mirror; the primary portal answers 401 to scripts); Portuguese names; no strength or form. |
 | Mexico | COFEPRIS registrations viewer | web viewer only | No data. |
 | Argentina | ANMAT Vademécum | search form only | No data. |
 | Chile | ISP sanitary register | search form only | No data (site refused connections). |
@@ -92,12 +100,16 @@ scripts; **No data** = no file or API found, only a search page.
 | Country | Register | How it could be imported | Why it is not in use |
 |---|---|---|---|
 | South Korea | MFDS product licences (data.go.kr) | live API, 10,000 calls a day | Account: free service key, Korean-language portal; terms "no restriction". |
-| Japan | PMDA | bulk package inserts after registration | Account; names in Japanese only. |
+| Japan | PMDA; MHLW drug-price lists | package inserts after registration; price-list XLSX files | Names in Japanese only (the price lists are open under PDL 1.0 with a source credit). |
 | Thailand | Thai FDA web service (data.go.th) | web service | Unclear: endpoint not found; the listing states no licence. |
 | Australia | PBS API (subsidised medicines) | live API, 1 request per 20 s | Account: free subscription key; the full register (ARTG) has no bulk file. |
 | China | NMPA data search | search page | Blocked: anti-bot page. |
 | India | CDSCO | none | No data. |
-| Malaysia | NPRA | cancelled products only (data.gov.my) | No data for registered products. |
+| Malaysia | NPRA registered products (`storage.data.gov.my/healthcare/pharmaceutical_products.csv`) | bulk CSV, 10.6 MB, daily | Possible: CC BY 4.0 (stated on data.moh.gov.my); about 9,000 medicines among 28,302 rows (the rest natural products and supplements). |
+| Hong Kong | Drug Office list (`drugoffice.gov.hk/eps/psi/DrugList.xml`) | bulk XML, 4.3 MB | Possible: data.gov.hk terms allow reuse with the Government named; English INN. |
+| Sri Lanka | NMRA valid registrations | binary `.xls`, weekly | Needs consent ("All Rights Reserved") and an `.xls` reader. |
+| Lebanon | Ministry of Public Health drug list | about 200 HTML pages | Needs consent (copyright notice). |
+| Jordan | JFDA drug prices (opendata.gov.jo) | XLSX, 2020–21 | Stale; licence text not read. |
 | Philippines | FDA verification portal | search page | Blocked. |
 | Indonesia | BPOM Cek BPOM | search page | No data. |
 | Israel | Ministry of Health Drug Index | web app | Blocked for scripts. |
@@ -108,9 +120,9 @@ scripts; **No data** = no file or API found, only a search page.
 
 | Source | Register | How it could be imported | Why it is not in use |
 |---|---|---|---|
-| Nigeria | NAFDAC Greenbook | the site's own search feed (JSON) | Possible: not a documented API and no terms stated. |
-| South Africa | SAHPRA register | the site's own search feed (JSON) | Possible: not a documented API and no terms stated. |
-| Rwanda | Rwanda FDA register | one HTML page with all products | Possible: no terms stated; status from the expiry date. |
+| Nigeria | NAFDAC Greenbook | the site's own search feed (JSON, 8,949 products) | Needs consent: "All rights reserved"; not a documented API. |
+| South Africa | SAHPRA register | the site's own search feed (JSON, 21,399 rows) | Needs consent: "All rights reserved"; ingredients as free text. |
+| Rwanda | Rwanda FDA register | one HTML page with all 2,613 products, daily | Needs consent: no terms stated; brand, generic, strength, form, holder in English. |
 | Kenya | Pharmacy and Poisons Board | login required | Account. |
 | Egypt | EDA drug database | search form with a verification code | Blocked. |
 | Ghana, Uganda | FDA Ghana, NDA | search pages | Blocked (403 to scripts). |
@@ -118,9 +130,11 @@ scripts; **No data** = no file or API found, only a search page.
 | Tanzania | TMDA portal | single-page app | Unclear: no documented endpoint. |
 | Ethiopia | EFDA | none | No data. |
 | WHO | Prequalified medicines list | bulk CSV | Not useful here: generic names only, no brands; terms exclude commercial use. |
+| International and regional | WHO collaborative registration, Global Fund PQR, PAHO, UNICEF, CARICOM CRS, Gulf Health Council, EAC, AMRH, ECOWAS, ASEAN, Access Consortium, Wikidata (bulk), RxNorm (bulk), ChEMBL, DrugBank | various | Checked 26 Oct: none gives brand and country together in a reusable file except EMA's Article 57 extract (in use). |
 
 ## Adding one
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md#adding-a-data-source): a loader in `server/datasets/`, a
-parser test with a small fixture, its terms in `NOTICE.md`, a line in the README table and in the
+parser test with a small fixture, its terms in `NOTICE.md`, the `countries` it covers (and `reuse`,
+when its terms set a condition such as non-commercial use), a line in the README table and in the
 "In use" table above.

@@ -59,6 +59,7 @@ export const drlz = {
   id: "drlz",
   name: "Ukraine, State Register of Medicinal Products",
   kind: "official",
+  countries: ["Ukraine"],
   coverage: "Ukraine, registered medicines (brand names in Ukrainian, ingredient as INN)",
   homepage: "https://data.gov.ua/dataset/fded13b8-4e2c-4c48-bf14-65d0e3106463",
   terms: "https://creativecommons.org/licenses/by/4.0/",

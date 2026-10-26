@@ -5,6 +5,36 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-26
+
+### Added
+- Official data for 19 more countries from the European Medicines Agency's public extract of the
+  Article 57 database (89,285 products): Austria, Belgium, Bulgaria, Croatia, Cyprus, Estonia,
+  Germany, Greece, Hungary, Iceland, Latvia, Liechtenstein, Luxembourg, Norway, Portugal, Romania,
+  Slovakia, Slovenia and the United Kingdom (Northern Ireland). Coverage: the EU and 39 countries.
+  Countries with their own register here keep it; the extract's contact columns are never read.
+- Brand-name search: a brand ("Nurofen") is answered with its ingredient's brands in every country,
+  with a line saying so, and a warning when the same name stands for another ingredient elsewhere.
+  `/api/search` returns a `brand` field in that case.
+- Downloads at the end of the results: CSV (RFC 4180, UTF-8 with BOM, ISO 3166 country codes) and
+  JSON, with each row's source, terms and condition of reuse; AI rows are marked.
+- The page address carries the search (`/?q=ibuprofen&country=Germany`); a link runs it, and "Copy
+  link to this search" copies it.
+- The front page explains coverage, downloads and AI keys; the country list puts countries with
+  official data first; the count comes from the loaded sources (`countries` in `/api/sources`).
+- A message while the sleeping server wakes up (first search after a pause).
+- `/api/sources` carries `countries` and, where the terms set one, `reuse` for each source; each
+  source run in `/api/search` carries `homepage`, `terms` and `reuse`, so downloads always name them.
+- A source covering several countries returns the chosen country's brands (up to 60), or up to 20
+  per country when none is chosen; the same brand in two countries stays two results.
+
+### Changed
+- `DATA_FORMAT` 3: every dataset is reloaded once after the deploy to index brand names (old rows
+  are served meanwhile).
+- docs/DATA-SOURCES.md re-checked on 26 October 2026 world-wide (Hungary's CSV now answers scripts;
+  Latvia, Norway, Hong Kong, Malaysia, Brazil reachable with open licences; several registers need
+  the agency's consent).
+
 ## [2.3.1] - 2026-10-24
 
 ### Fixed

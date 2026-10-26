@@ -51,7 +51,7 @@ flowchart LR
 
 | Type | Meaning | Sources |
 |---|---|---|
-| Official database | a regulator's or ministry's public data | EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, the United States, Colombia, Taiwan, Singapore and New Zealand, CIMA (Spain) |
+| Official database | a regulator's or ministry's public data | EMA (EU), the national registers of France, Italy, Poland, the Netherlands, Ireland, Switzerland, the Czech Republic, Denmark, Sweden, Finland, Lithuania, Ukraine, Malta, Canada, the United States, Colombia, Taiwan, Singapore and New Zealand, CIMA (Spain); EMA's Article 57 extract for 18 other EEA countries and Northern Ireland |
 | Open reference | open public reference data, good but not a register of marketed products | RxNorm, openFDA labels, Wikidata, PubChem synonyms |
 | Curated sample | static lists typed into the app for a few common ingredients | `server/data/curated.json` |
 | AI suggestion | a language model's answer, never verified | OpenAI, Perplexity, DeepSeek, OpenRouter (each only when its key is set) |
@@ -92,6 +92,7 @@ deploy (about 3 minutes; sources show "loading").
 | Taiwan TFDA | open data set 36 (zip with one 79 MB JSON), licences not cancelled or expired, finished products and biologics; brands without form, strength or maker tag | 18,305 |
 | Singapore HSA | data.gov.sg CSV (a signed link requested each time); brands and substances cut back from form and strength text | 5,475 |
 | New Zealand Pharmac | monthly Pharmaceutical Schedule XML, funded medicines only | 2,361 |
+| EEA (EMA Article 57) | public extract of the Article 57 database (one `.xlsx`, header row found by its text); only countries without their own dataset here (AT, BE, BG, HR, CY, EE, DE, GR, HU, IS, LV, LI, LU, NO, PT, RO, SK, SI and Northern Ireland, shown as the United Kingdom); routes merged; "generic name + company" names marked in `status`; the pharmacovigilance e-mail and phone columns are never read | 89,285 |
 | Curated sample | `server/data/curated.json` | 104 |
 
 Live per search: Spain CIMA (`practiv1=<stem>&comerc=1`); and only when `HEALTH_CANADA` is `live`
@@ -105,6 +106,17 @@ English ingredient names are matched to French and Spanish names by word stems
 
 Search answers are cached for an hour (5 minutes when a source failed), AI answers for a day, keyed
 by ingredient and country.
+
+### Brand names
+
+`store.replace` also indexes each product's brand (`brands` table, normalised: "Nurofen Junior" ->
+`nurofen junior`). Before a search, `resolveBrand` checks whether the term is an ingredient (or
+another name of one) in any loaded dataset; if not, and products carry that brand name (or start
+with it and a space), it picks the ingredient most of them contain (single-ingredient products
+first, English-language registers preferred) and every source is asked for that ingredient. The
+answer carries `brand`, with `others` when the same name stands for another ingredient elsewhere.
+The browser then asks its own sources, ClinicalTrials.gov and the AI phase for the ingredient too.
+Raising `DATA_FORMAT` to 3 reloads every dataset once after the deploy, which fills the brand index.
 
 ## Limits and protection
 
@@ -156,6 +168,10 @@ tests/             browser-side tests (Vitest)
 | Merging, ranking, AI phase | `src/lib/search/searchMedicines.ts` |
 | Country and region fallbacks | `src/lib/search/countryScope.ts` |
 | Browser cache | `src/lib/search/resultCache.ts` |
+| Brand-name search (brand index, brand → ingredient) | `server/db/store.js` (`brands` table, `findBrands`), `resolveBrand` in `server/datasets/index.js`, `resolve` in `server/search.js` |
+| Search in the address (`?q=&country=`) | `src/lib/search/searchLink.ts`, `src/pages/Index.tsx` |
+| CSV and JSON downloads | `src/lib/export/exportResults.ts`, `src/components/ExportBar.tsx`; ISO country codes in `src/lib/export/countryCodes.ts` |
+| Countries with data (front page, country list) | `countries` on each official source; `src/lib/search/coverage.ts` |
 | Railway build, health check, volume | `.railway/railway.ts`; preview with `railway config plan` |
 
 Rules: never invent data (every result keeps its source and `kind`); keys only in server

@@ -37,6 +37,10 @@ export interface SourceRun {
   /** results the source found (results shown may be capped) */
   count: number;
   detail?: string;
+  /** the source's site, terms of use and condition of reuse (server sources; copied into downloads) */
+  homepage?: string;
+  terms?: string;
+  reuse?: string;
 }
 
 export interface TrialsInfo {
@@ -44,8 +48,20 @@ export interface TrialsInfo {
   url: string;
 }
 
+/** Set when the search term is a brand name: the ingredient it stands for, searched instead. */
+export interface BrandMatch {
+  /** the brand as a register writes it */
+  name: string;
+  ingredient: string;
+  /** what every source was asked for */
+  searchFor: string;
+  /** other ingredients the same brand name stands for in other countries */
+  others: { ingredient: string; countries: string[] }[];
+}
+
 export interface SearchOutcome {
   term: string;
+  brand?: BrandMatch;
   /** the country or region chosen ("region:Asia"), if any */
   country?: string;
   results: MedicineResult[];
