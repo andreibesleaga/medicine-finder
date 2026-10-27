@@ -1,0 +1,54 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "medicine-status",
+  "url": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-status",
+  "version": "2.5.0",
+  "name": "Medicinestatusaspublished",
+  "title": "Medicine status as published",
+  "status": "active",
+  "publisher": "Medicine Brand Finder",
+  "description": "The authorisation or marketing status exactly as the register writes it.",
+  "fhirVersion": "4.0.1",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Medication"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Medicine status as published",
+        "definition": "The authorisation or marketing status exactly as the register writes it.",
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "max": "0"
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-status"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    ]
+  }
+}

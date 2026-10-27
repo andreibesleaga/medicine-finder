@@ -18,15 +18,27 @@ disclosure window.
 
 - AI provider keys are server-side variables (Railway or a local `.env`); the browser build contains
   no keys. `.env` files are gitignored and kept out of the Docker image (`.dockerignore`).
-- `/api/search` validates input (2–80 safe characters), is rate-limited per visitor
-  (`SEARCH_RATE_LIMIT`, default 20/min) and AI calls are capped per day (`AI_DAILY_LIMIT`, default 500).
-- Pages are served with a Content Security Policy (same-origin scripts, network access only to the
-  listed data sources), `X-Frame-Options: DENY`, `nosniff`, HSTS and a referrer policy. The image runs
+- `/api/search` validates input (2–80 safe characters), is rate-limited per visitor with a sliding
+  window (`SEARCH_RATE_LIMIT`, default 20/min) and for all visitors together (`GLOBAL_SEARCH_RATE_LIMIT`,
+  default 300/min); AI calls are limited the same way (`AI_RATE_LIMIT`, `GLOBAL_AI_RATE_LIMIT`) and capped
+  per day (`AI_DAILY_LIMIT`, default 500). Identical searches running at the same time share one
+  upstream round. `HEAD` is refused on the search endpoints.
+- Pages are served with a Content Security Policy (same-origin scripts, no inline event handlers,
+  network access only to the listed data sources), `X-Frame-Options: DENY`, `nosniff`, HSTS, a referrer
+  policy, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` (same-origin for pages,
+  cross-origin for `/api` and the published files), `Origin-Agent-Cluster` and
+  `X-Permitted-Cross-Domain-Policies: none`. These cover helmet's defaults (compared one by one on
+  27 Oct 2026); helmet itself is not used, as the server has no npm dependencies. The image runs
   as the unprivileged `node` user. On Railway it runs as root (`RAILWAY_RUN_UID=0`) because Railway
   mounts the data volume as root; this is accepted for the demo: the server has no runtime npm
   dependencies, only `GET` endpoints, and the volume holds public data only.
-- Per-visitor limits trust the first `X-Forwarded-For` address, which Railway's proxy sets; behind no
-  proxy that header can be forged (see [docs/DEPLOY.md](docs/DEPLOY.md#variables)).
+- Per-visitor limits use `X-Real-IP`, which Railway documents as the client's address, and fall back
+  to the first `X-Forwarded-For` entry (which a client can send) and then the socket address; the
+  limit for all visitors together caps what forged addresses could still do.
+- The server stops after an unhandled rejection or exception (logged), so Railway restarts it. It
+  accepts at most 500 connections and 1,000 requests per connection; idle connections close after 65 s.
+- Search answers are kept in the database for their cache time (no visitor data); searched terms are
+  counted (term, count, last time; no address, no country) for the daily warm-up of the most searched.
 - Downloads of national files are capped at 300 MB, and zip entries at 1 GB unpacked.
 - AI providers' messages for key, billing or permission errors are never passed to visitors, and
   anything that looks like an API key is hidden in other messages.

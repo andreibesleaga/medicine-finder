@@ -73,6 +73,8 @@ export const fimea = {
   homepage: "https://fimea.fi/en/databases_and_registers/basic-register-xml",
   terms: "https://avoindata.suomi.fi/data/en/dataset/fimea-avoin-data",
   refreshMs: 30 * DAY_MS,
+  // Fimea updates the file nightly; a file older than this is flagged on the Sources page
+  staleAfterMs: 45 * DAY_MS,
   // only when the file has been imported; reloaded when a newer one is put in place
   available: (ctx) => Boolean(ctx.importDir) && existsSync(filePath(ctx)),
   unavailableDetail: `no file imported yet (${FIMEA_FILE} in DATA_DIR/imports)`,

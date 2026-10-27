@@ -3,9 +3,13 @@
 // because language models can take much longer.
 
 import type { BrandMatch, MedicineResult, SearchOutcome, SourceKind, SourceRun } from "@/types/medicine";
-import { BROWSER_SOURCES, clinicalTrials } from "./browserSources";
+import { BROWSER_SOURCES, brandIngredient, clinicalTrials } from "./browserSources";
 import { searchAi, searchServer } from "./serverApi";
 import { scopeResults, selectionForServer } from "./countryScope";
+import { serverSourcesOn } from "./coverage";
+
+// a browser source the server takes over when its operator has set a key for it
+const SERVER_TAKES_OVER: Record<string, string> = { openfda: "openfda-server" };
 
 const KIND_ORDER: Record<SourceKind, number> = { official: 0, reference: 1, curated: 2, ai: 3 };
 
@@ -73,7 +77,16 @@ const rawRows = new WeakMap<SearchOutcome, Omit<MedicineResult, "id">[]>();
 
 function finish(term: string, selection: string | undefined, rows: Omit<MedicineResult, "id">[], sources: SourceRun[], extra: Partial<SearchOutcome>) {
   const scoped = scopeResults(mergeResults(rows), selection);
-  const outcome: SearchOutcome = { term, country: selection, results: scoped.results, note: scoped.note, sources: sortRuns(sources), ...extra };
+  const outcome: SearchOutcome = {
+    term,
+    country: selection,
+    results: scoped.results,
+    note: scoped.note,
+    noteKey: scoped.noteKey,
+    noteVars: scoped.noteVars,
+    sources: sortRuns(sources),
+    ...extra,
+  };
   rawRows.set(outcome, rows);
   return outcome;
 }
@@ -93,14 +106,19 @@ export async function searchMedicines(
     emit();
   };
 
+  // progress shows at once; a browser source the server takes over is then taken off the list
   for (const s of BROWSER_SOURCES) set({ id: s.id, name: s.name, kind: s.kind, state: "pending", count: 0 });
   set(SERVER_PLACEHOLDER);
+  const onServer = await serverSourcesOn(fetchImpl);
+  let browserSources = BROWSER_SOURCES.filter((s) => !onServer.has(SERVER_TAKES_OVER[s.id]));
+  for (const s of BROWSER_SOURCES) if (!browserSources.includes(s)) runs.delete(s.id);
+  emit();
 
   // the browser sources' rows, replaced when the term turns out to be a brand name
   const browserRows = new Map<string, Omit<MedicineResult, "id">[]>();
-  const runBrowser = (query: string) =>
+  const runBrowser = (query: string, which = browserSources) =>
     Promise.all(
-      BROWSER_SOURCES.map(async (s) => {
+      which.map(async (s) => {
         try {
           const found = await s.search(query, fetchImpl);
           browserRows.set(s.id, found.map((r) => ({ ...r, sourceId: s.id, sourceName: s.name, kind: s.kind })));
@@ -128,9 +146,22 @@ export async function searchMedicines(
 
   const trialsJob = clinicalTrials(term, fetchImpl).catch(() => undefined);
   let [, , trials] = await Promise.all([runBrowser(term), serverJob, trialsJob]);
+  // the server was to ask for it but could not: the browser asks after all
+  const serverDown = runs.get(SERVER_PLACEHOLDER.id)?.state === "unavailable";
+  const failedOnServer = (id: string) => ["error", "unavailable"].includes(runs.get(id)?.state ?? (serverDown ? "unavailable" : "ok"));
+  const fallBack = BROWSER_SOURCES.filter((s) => !browserSources.includes(s) && failedOnServer(SERVER_TAKES_OVER[s.id]));
+  if (fallBack.length) {
+    browserSources = [...browserSources, ...fallBack];
+    await runBrowser(term, fallBack);
+  }
+  // no server to say whether the term is a brand: RxNorm can, for US brands
+  if (!brand && runs.get(SERVER_PLACEHOLDER.id)?.state === "unavailable") {
+    const ingredient = await brandIngredient(term, fetchImpl).catch(() => null);
+    if (ingredient) brand = { name: term.replace(/^\p{L}/u, (c) => c.toUpperCase()), ingredient, searchFor: ingredient, others: [] };
+  }
   if (brand) {
     // "Nurofen": ask the browser sources and ClinicalTrials.gov for ibuprofen instead
-    for (const s of BROWSER_SOURCES) set({ id: s.id, name: s.name, kind: s.kind, state: "pending", count: 0 });
+    for (const s of browserSources) set({ id: s.id, name: s.name, kind: s.kind, state: "pending", count: 0 });
     browserRows.clear();
     [, trials] = await Promise.all([runBrowser(brand.searchFor), clinicalTrials(brand.searchFor, fetchImpl).catch(() => undefined)]);
   }

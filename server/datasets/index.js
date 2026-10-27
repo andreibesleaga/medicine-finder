@@ -4,7 +4,7 @@
 import { normalize, stems, validateTerm } from "../lib/text.js";
 import { brandKey } from "../db/store.js";
 import { MAX_PER_SOURCE } from "../search.js";
-import { withSynonyms } from "../lib/synonyms.js";
+import { preferredName, searchNames, withSynonyms } from "../lib/synonyms.js";
 import { ema } from "./ema.js";
 import { bdpm } from "./bdpm.js";
 import { aifa } from "./aifa.js";
@@ -37,6 +37,7 @@ export const DATASETS = [
 ];
 
 const RETRY_AFTER_MS = 3600e3;
+const DAY = 24 * 3600e3;
 // a source covering several countries returns at most this many brands per country when no
 // country is chosen (60 for a chosen country, as any source)
 export const PER_COUNTRY = 20;
@@ -117,15 +118,19 @@ export function sameIngredient(a, b) {
 const isCombination = (ingredient) => ingredient.includes(" + ");
 
 // A dataset may also define available(ctx) (false: shown as off, not loaded; e.g. a file imported by
-// hand that is not there yet) and modifiedAt(ctx) (reload when its source is newer than the data).
-export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = MAX_PER_SOURCE, importDir }) {
-  const ctx = { importDir };
-  const available = (d) => !d.available || d.available(ctx);
+// hand that is not there yet), modifiedAt(ctx) (reload when its source is newer than the data) and
+// requires: "VAR" (a key the operator sets in the environment; off until it is set; load() reads it
+// from ctx.env).
+export function createDatasetSources({ store, datasets = DATASETS, fetch, now = Date.now, log = () => {}, limit = MAX_PER_SOURCE, importDir, env = {} }) {
+  const ctx = { importDir, env };
+  const hasKey = (d) => !d.requires || Boolean(String(env[d.requires] ?? "").trim());
+  const available = (d) => hasKey(d) && (!d.available || d.available(ctx));
   const loading = new Set();
   // datasets with refreshMs 0 (built-in data) are reloaded once per start, so edits apply on deploy
   const loadedThisRun = new Set();
 
   function status(d) {
+    if (!hasKey(d)) return { state: "disabled", detail: `set ${d.requires} to enable` };
     if (!available(d)) return { state: "disabled", detail: d.unavailableDetail };
     const info = store.info(d.id);
     const base = info?.loaded_at
@@ -133,6 +138,9 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
       : { state: loading.has(d.id) ? "loading" : info?.error ? "error" : "loading" };
     if (loading.has(d.id) && info?.loaded_at) base.detail = "refreshing";
     if (info?.error) base.detail = info.loaded_at ? `last refresh failed: ${info.error}` : info.error;
+    // a file imported by hand that nobody replaced for a while: say so, the data is getting old
+    const days = d.staleAfterMs && d.modifiedAt ? Math.floor((now() - d.modifiedAt(ctx)) / DAY) : 0;
+    if (days * DAY > d.staleAfterMs) base.detail = [base.detail, `imported file is ${days} days old; replace it (docs/DEPLOY.md)`].filter(Boolean).join("; ");
     return base;
   }
 
@@ -160,9 +168,10 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
       // search each name of the ingredient (e.g. paracetamol and acetaminophen), brands merged
       const seen = new Map();
       let total = 0;
-      for (const name of withSynonyms(term)) {
+      for (const name of searchNames(term)) {
         const { total: t, results } = store.search(d.id, stems(name), limit, { country, perCountry });
-        total += t;
+        // names of one ingredient often find the same products: the largest count, not their sum
+        total = Math.max(total, t);
         for (const r of results) {
           const key = `${r.brandName.toLowerCase()}|${r.country}`;
           if (!seen.has(key)) seen.set(key, r);
@@ -182,7 +191,7 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
     const key = brandKey(term);
     if (key.length < 3) return null;
     const loaded = datasets.filter((d) => available(d) && store.info(d.id)?.loaded_at);
-    if (withSynonyms(term).some((name) => loaded.some((d) => store.hasIngredientWords(d.id, stems(name))))) return null;
+    if (searchNames(term).some((name) => loaded.some((d) => store.hasIngredientWords(d.id, stems(name))))) return null;
     const matches = loaded.flatMap((d) => store.findBrands(d.id, key).map((m) => ({ ...m, source: d.id })));
     if (!matches.length) return null;
     const exact = matches.filter((m) => brandKey(m.brand) === key);
@@ -216,7 +225,7 @@ export function createDatasetSources({ store, datasets = DATASETS, fetch, now = 
     // no product has exactly this name ("dolormin" -> "Dolormin Extra"): the register's spelling of the typed words
     const words = term.trim().split(/\s+/).length;
     const name = exact[0]?.brand ?? matches[0].brand.split(/\s+/).slice(0, words).join(" ");
-    return { name, ingredient: best.ingredient, searchFor, others };
+    return { name, ingredient: preferredName(best.ingredient), searchFor, others };
   }
 
   /** Loads every dataset that is missing or older than its refresh interval, one after another. */

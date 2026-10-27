@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { addAiSuggestions, mergeResults, searchMedicines } from "@/lib/search/searchMedicines";
 import { scopeResults, selectionForServer } from "@/lib/search/countryScope";
 import { cacheKey, readCached, saveCached } from "@/lib/search/resultCache";
+import { forgetServerSources } from "@/lib/search/coverage";
 import type { MedicineResult } from "@/types/medicine";
 import { jsonResponse, stubFetch } from "./helpers";
 
@@ -154,6 +155,46 @@ describe("searchMedicines", () => {
     const withAi = await addAiSuggestions(out, fetch);
     expect(withAi.brand).toEqual(brand);
     expect(fetch.calls.some((u) => u.includes("/api/ai?q=ibuprofen"))).toBe(true);
+  });
+
+  it("leaves openFDA to the server when the server has a key for it", async () => {
+    const fetch = stubFetch([
+      ["/api/sources", () => jsonResponse({ sources: [{ id: "openfda-server", name: "openFDA", kind: "reference", coverage: "", homepage: "", enabled: true, state: "live" }] })],
+      ["/api/search", () => jsonResponse({ results: [], sources: [] })],
+      [/rxnav|wikidata|pubchem|clinicaltrials/, () => jsonResponse({}, 404)],
+    ]);
+    const out = await searchMedicines("ibuprofen", undefined, () => {}, fetch);
+    expect(fetch.calls.some((u) => u.includes("api.fda.gov"))).toBe(false);
+    expect(out.sources.some((s) => s.id === "openfda")).toBe(false);
+    forgetServerSources();
+  });
+
+  it("finds the ingredient of a US brand through RxNorm when there is no search server", async () => {
+    const fetch = stubFetch([
+      ["/api/", () => jsonResponse("<!doctype html>", 200, "text/html")],
+      ["rxcui.json?name=advil", () => jsonResponse({ idGroup: { rxnormId: ["153010"] } })],
+      ["rxcui/153010/properties.json", () => jsonResponse({ properties: { tty: "BN" } })],
+      ["rxcui/153010/related.json?tty=IN", () => jsonResponse({ relatedGroup: { conceptGroup: [{ conceptProperties: [{ rxcui: "5640", name: "ibuprofen" }] }] } })],
+      ["rxcui.json?name=ibuprofen", () => jsonResponse({ idGroup: { rxnormId: ["5640"] } })],
+      ["rxcui/5640/related.json?tty=BN", () => jsonResponse({ relatedGroup: { conceptGroup: [{ conceptProperties: [{ rxcui: "1", name: "Motrin" }] }] } })],
+      [/api\.fda\.gov|wikidata|pubchem|clinicaltrials|related\.json/, () => jsonResponse({}, 404)],
+    ]);
+    const out = await searchMedicines("advil", undefined, () => {}, fetch);
+    expect(out.brand).toMatchObject({ name: "Advil", ingredient: "ibuprofen", searchFor: "ibuprofen" });
+    expect(out.results.map((r) => r.brandName)).toContain("Motrin");
+  });
+
+  it("asks openFDA from the browser after all when the server's openFDA run fails", async () => {
+    const fetch = stubFetch([
+      ["/api/sources", () => jsonResponse({ sources: [{ id: "openfda-server", name: "openFDA", kind: "reference", coverage: "", homepage: "", enabled: true, state: "live" }] })],
+      ["/api/search", () => jsonResponse({ results: [], sources: [{ id: "openfda-server", name: "openFDA", kind: "reference", state: "error", count: 0, detail: "HTTP 500" }] })],
+      ["api.fda.gov", () => jsonResponse({ results: [{ openfda: { brand_name: ["Advil"], generic_name: ["IBUPROFEN"] } }] })],
+      [/rxnav|wikidata|pubchem|clinicaltrials/, () => jsonResponse({}, 404)],
+    ]);
+    const out = await searchMedicines("ibuprofen", undefined, () => {}, fetch);
+    expect(fetch.calls.some((u) => u.includes("api.fda.gov"))).toBe(true);
+    expect(out.results.map((r) => r.brandName)).toContain("Advil");
+    forgetServerSources();
   });
 
   it("still answers when the search server is missing (static hosting) and skips the AI phase", async () => {

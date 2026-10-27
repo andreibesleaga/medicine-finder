@@ -51,9 +51,24 @@ the same brand name stands for a different ingredient in another country, a warn
 
 **Links and downloads:** the address shows the search (`/?q=ibuprofen&country=Germany`), so it can
 be bookmarked or sent. At the end of the results, "Download" gives the same rows as **CSV** (RFC 4180,
-UTF-8, opens in Excel and LibreOffice) or **JSON**. Every row names its source, that source's terms
-and any condition of reuse (Malta: not commercial; Colombia: share-alike; EMA: name EMA in every
-copy); AI suggestions are marked.
+UTF-8, opens in Excel and LibreOffice), an **Excel workbook** (XLSX, with a "Sources" sheet), **JSON**,
+or an **HL7 FHIR R4** Bundle for health-record systems (one `Medication` per brand, ingredients coded
+with RxNorm where the US National Library of Medicine knows them, a `Provenance` naming the sources;
+checked against HL7's official R4 JSON Schema in the tests). Every row names its source, that
+source's terms and any condition of reuse (Malta: not commercial; Colombia: share-alike; EMA: name
+EMA in every copy); AI suggestions are marked, and left out of the FHIR file.
+
+**Languages:** the interface is in 20 languages (English, German, French, Spanish, Italian,
+Portuguese, Polish, Dutch, Romanian, Czech, Hungarian, Greek, Swedish, Danish, Finnish, Norwegian,
+Ukrainian, Lithuanian, Japanese, Traditional Chinese), chosen from the browser's language or the
+switch at the top; `/?lang=de` links to one. Translations other than English are machine-made and
+marked "not reviewed" in their files until a person reviews them. Register data (brands,
+ingredients, statuses) is shown as published; country names follow the chosen language.
+
+**Other names of an ingredient:** a search also finds the ingredient under its other official names
+(US/INN pairs, national spellings, Latin forms such as "Natrii chloridum") from a hand-made list and
+from the US FDA's UNII list (public domain; `scripts/build-unii-synonyms.mjs`). When the search server
+cannot be reached, the browser still turns a US brand name into its ingredient through RxNorm.
 
 ## How it works
 
@@ -84,18 +99,23 @@ This project is automatically and manually built with:
 - Node.js 22 server (no runtime dependencies), SQLite (built into Node), Docker
 - Railway (default deployment), Vercel (optional, off by default)
 - OpenAI, Perplexity, DeepSeek and OpenRouter.ai integrations (optional)
+- Ajv (MIT, development only): checks the FHIR download against HL7's official R4 JSON Schema in the tests
 
 
 ## API keys
 
 All data sources (RxNorm, OpenFDA, EMA, EMA Article 57, BDPM, AIFA, URPL, CBG, HPRA, Swissmedic, SÚKL, DKMA, Läkemedelsverket, Fimea, VVKT, Ukraine's register, Malta's Medicines
 Authority, FDA NDC, INVIMA, TFDA, HSA, Pharmac, CIMA,
-Health Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys. DeepSeek/OpenRouter offers a free tier with generous limits if you
+Health Canada, ClinicalTrials, PubChem, Wikidata) are free and do not require API keys (openFDA
+accepts an optional one, below). DeepSeek/OpenRouter offers a free tier with generous limits if you
 register to use it.
 
 AI keys are **server variables** (`OPENAI_API_KEY`, `PERPLEXITY_API_KEY`, `DEEPSEEK_API_KEY`,
 `OPENROUTER_API_KEY`), set in Railway or in a local `.env`. They are never bundled into the browser
 build. See [.env.example](./.env.example) and [docs/DEPLOY.md](docs/DEPLOY.md).
+
+Optional data keys work the same way: with `OPENFDA_API_KEY` set, the server queries openFDA (120,000
+calls a day, cached) instead of each browser; without it nothing changes.
 
 ## Run & test
 

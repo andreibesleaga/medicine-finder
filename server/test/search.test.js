@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { createSearch, MAX_PER_SOURCE } from "../search.js";
 import { fixedClock } from "./helpers.js";
+import { openStore } from "../db/store.js";
+import { createWarmUp } from "../warmup.js";
 
 const source = (id, kind, impl, enabled = true) => {
   const s = {
@@ -132,5 +134,81 @@ describe("server search", () => {
     expect(seen).toEqual(["ibuprofen"]);
     expect(body).toMatchObject({ term: "nurofen", brand });
     expect((await search("ibuprofen")).brand).toBeUndefined();
+  });
+
+  it("runs one upstream round for identical searches at the same time", async () => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const a = source("a", "official", async () => {
+      await gate;
+      return [{ brandName: "Advil", activeIngredient: "ibuprofen", country: "Canada" }];
+    });
+    const search = createSearch({ sources: [a], now: fixedClock() });
+    const [x, y] = [search("Ibuprofen"), search(" ibuprofen ")];
+    release();
+    const [bx, by] = await Promise.all([x, y]);
+    expect(a.calls).toBe(1);
+    expect(bx).toBe(by);
+  });
+
+  it("keeps answers across a restart when given a store, until they expire", async () => {
+    const now = fixedClock();
+    const store = openStore(":memory:");
+    const a = source("a", "official", async () => [{ brandName: "Advil", activeIngredient: "ibuprofen", country: "Canada" }]);
+    const first = createSearch({ sources: [a], now, cacheTtlMs: 60e3, persist: store.answers("search", { now }) });
+    await first("ibuprofen");
+    // a new process: empty memory, same database
+    const second = createSearch({ sources: [a], now, cacheTtlMs: 60e3, persist: store.answers("search", { now }) });
+    expect(await second("ibuprofen")).toMatchObject({ cached: true, results: [{ brandName: "Advil" }] });
+    expect(a.calls).toBe(1);
+    now.advance(60e3);
+    const third = createSearch({ sources: [a], now, cacheTtlMs: 60e3, persist: store.answers("search", { now }) });
+    expect((await third("ibuprofen")).cached).toBeUndefined();
+    expect(a.calls).toBe(2);
+  });
+
+  it("counts searched terms for the daily warm-up, most searched first", () => {
+    const store = openStore(":memory:");
+    for (const t of ["ibuprofen", "paracetamol", "ibuprofen"]) store.countQuery(t, 1000);
+    store.countQuery("old", 10);
+    expect(store.topQueries(10, 500)).toEqual(["ibuprofen", "paracetamol"]);
+  });
+
+  it("keeps the answer table within its cap, pruning at most every few minutes", () => {
+    const now = fixedClock();
+    const store = openStore(":memory:");
+    const answers = store.answers("t", { now, maxRows: 3, pruneEveryMs: 60e3 });
+    for (let i = 0; i < 6; i++) answers.set(`k${i}`, { i }, now() + 3600e3 + i);
+    // the first set pruned (nothing to do); the next five waited for the interval
+    expect(answers.get("k0")).toBeDefined();
+    now.advance(60e3);
+    answers.set("k6", { i: 6 }, now() + 3600e3 + 6);
+    // over the cap: the ones expiring first went
+    expect(["k0", "k1", "k2", "k3"].map((k) => answers.get(k))).toEqual([undefined, undefined, undefined, undefined]);
+    expect(answers.get("k6")).toEqual({ body: { i: 6 }, expiresAt: now() + 3600e3 + 6 });
+  });
+
+  it("still answers when the answer store fails, and gives each caller its own spelling of the term", async () => {
+    const a = source("a", "official", async () => [{ brandName: "Advil", activeIngredient: "ibuprofen", country: "Canada" }]);
+    const broken = { get: () => { throw new Error("SQLITE_BUSY"); }, set: () => { throw new Error("disk full"); } };
+    const search = createSearch({ sources: [a], now: fixedClock(), persist: broken });
+    expect((await search("Ibuprofen")).results).toHaveLength(1);
+    expect(await search("IBUPROFEN")).toMatchObject({ term: "IBUPROFEN", cached: true });
+    expect(a.calls).toBe(1);
+  });
+
+  it("warms the most searched terms once a day, and survives a failing store", async () => {
+    const now = fixedClock();
+    const store = openStore(":memory:");
+    for (const t of ["ibuprofen", "ibuprofen", "paracetamol"]) store.countQuery(t, now());
+    const seen = [];
+    const warm = createWarmUp({ search: async (t) => seen.push(t), store, terms: 5, now, pause: async () => {} });
+    now.advance(1); // last warm-up "never": the first call runs
+    expect(await warm()).toBe(2);
+    expect(seen).toEqual(["ibuprofen", "paracetamol"]);
+    expect(await warm()).toBe(0); // not again the same day
+    now.advance(24 * 3600e3);
+    const failing = createWarmUp({ search: async () => {}, store: { topQueries: () => { throw new Error("db"); } }, now, pause: async () => {} });
+    await expect(failing()).resolves.toBe(0);
   });
 });

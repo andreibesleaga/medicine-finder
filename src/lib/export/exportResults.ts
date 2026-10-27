@@ -7,6 +7,7 @@ import type { SearchOutcome, SourceKind } from "@/types/medicine";
 import type { ServerSourceInfo } from "@/lib/search/serverApi";
 import { BROWSER_SOURCES } from "@/lib/search/browserSources";
 import { countryCode } from "./countryCodes";
+import { toXlsx } from "./xlsx";
 
 export interface SourceTerms {
   homepage?: string;
@@ -190,8 +191,31 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, "")
     .slice(0, 40);
 
+/** The XLSX workbook: the rows (CSV columns, header bold and frozen) and a "Sources" sheet. */
+export function toXlsxFile(outcome: SearchOutcome, rows: ExportRow[], terms: Map<string, SourceTerms>, ctx: ExportContext): Uint8Array {
+  const json = JSON.parse(toJson(outcome, rows, terms, ctx)) as { sources: { name: string; type: string; homepage: string | null; terms: string | null; reuseCondition: string | null }[]; attribution: string[] };
+  const results = [CSV_COLUMNS.map(([, h]) => h), ...rows.map((r) => CSV_COLUMNS.map(([k]) => r[k]))];
+  const sources = [
+    ["source", "source_type", "homepage", "terms", "reuse_condition"],
+    ...json.sources.map((s) => [s.name, s.type, s.homepage ?? "", s.terms ?? "", s.reuseCondition ?? ""]),
+    [],
+    ["search", outcome.term],
+    ["made", ctx.generatedAt],
+    ["link", ctx.link],
+    ...json.attribution.map((a) => ["attribution", a]),
+    ["notice", NOT_MEDICAL_ADVICE],
+  ];
+  return toXlsx([
+    { name: "Results", rows: results, widths: [28, 28, 16, 8, 28, 14, 18, 18, 28, 10, 40, 40, 40, 28] },
+    { name: "Sources", rows: sources, widths: [36, 12, 40, 40, 50] },
+  ]);
+}
+
+export type ExportKind = "csv" | "json" | "xlsx" | "fhir";
+const EXTENSION: Record<ExportKind, string> = { csv: "csv", json: "json", xlsx: "xlsx", fhir: "fhir-r4.json" };
+
 /** "medicine-finder_ibuprofen_germany_2026-10-26.csv" */
-export function exportFileName(outcome: SearchOutcome, generatedAt: string, ext: "csv" | "json"): string {
+export function exportFileName(outcome: SearchOutcome, generatedAt: string, kind: ExportKind): string {
   const parts = ["medicine-finder", slug(outcome.term), outcome.country ? slug(outcome.country) : "all-countries", generatedAt.slice(0, 10)];
-  return `${parts.filter(Boolean).join("_")}.${ext}`;
+  return `${parts.filter(Boolean).join("_")}.${EXTENSION[kind]}`;
 }

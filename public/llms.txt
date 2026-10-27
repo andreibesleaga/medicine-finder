@@ -10,7 +10,7 @@
 
 - [API reference](https://github.com/andreibesleaga/medicine-finder/blob/main/docs/API.md): GET /api/search?q=<ingredient or brand>&country=<country> (official data; a brand name is answered with its ingredient's brands and a `brand` field), GET /api/ai (AI suggestions), GET /api/sources (source status), GET /api/health. JSON, rate-limited, no key needed.
 
-- Results page: shareable address /?q=<term>&country=<country>; each result list downloads as CSV or JSON with the source and its terms on every row.
+- Results page: shareable address /?q=<term>&country=<country>&lang=<language>; each result list downloads as CSV, XLSX, JSON or HL7 FHIR R4 (Medication + Provenance, RxNorm-coded ingredients) with the source and its terms on every row. Interface in 20 languages.
 
 ## Docs
 

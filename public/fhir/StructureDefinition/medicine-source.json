@@ -1,0 +1,148 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "medicine-source",
+  "url": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-source",
+  "version": "2.5.0",
+  "name": "MedicineSource",
+  "title": "Medicine data source",
+  "status": "active",
+  "publisher": "Medicine Brand Finder",
+  "description": "Where the record comes from: the source's name, its type (official, reference, curated), its terms of use and any condition of reuse that must travel with the data.",
+  "fhirVersion": "4.0.1",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Medication"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Medicine data source",
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "url"
+            }
+          ],
+          "rules": "closed"
+        }
+      },
+      {
+        "id": "Extension.extension:name",
+        "path": "Extension.extension",
+        "sliceName": "name",
+        "min": 1,
+        "max": "1",
+        "short": "Source name"
+      },
+      {
+        "id": "Extension.extension:name.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "name"
+      },
+      {
+        "id": "Extension.extension:name.value[x]",
+        "path": "Extension.extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      {
+        "id": "Extension.extension:type",
+        "path": "Extension.extension",
+        "sliceName": "type",
+        "min": 1,
+        "max": "1",
+        "short": "official | reference | curated"
+      },
+      {
+        "id": "Extension.extension:type.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "type"
+      },
+      {
+        "id": "Extension.extension:type.value[x]",
+        "path": "Extension.extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      {
+        "id": "Extension.extension:terms",
+        "path": "Extension.extension",
+        "sliceName": "terms",
+        "min": 0,
+        "max": "1",
+        "short": "Terms of use"
+      },
+      {
+        "id": "Extension.extension:terms.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "terms"
+      },
+      {
+        "id": "Extension.extension:terms.value[x]",
+        "path": "Extension.extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "uri"
+          }
+        ]
+      },
+      {
+        "id": "Extension.extension:reuse",
+        "path": "Extension.extension",
+        "sliceName": "reuse",
+        "min": 0,
+        "max": "1",
+        "short": "Condition of reuse"
+      },
+      {
+        "id": "Extension.extension:reuse.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "reuse"
+      },
+      {
+        "id": "Extension.extension:reuse.value[x]",
+        "path": "Extension.extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-source"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "max": "0"
+      }
+    ]
+  }
+}

@@ -35,6 +35,7 @@ the source has one.
 | Database of medicinal products (DLP), open data | SÚKL (Czech Republic); source: SÚKL, not endorsed by SÚKL | https://opendata.sukl.gov.cz/podminky-uziti-otevrenych-dat |
 | RxNorm | US National Library of Medicine | https://lhncbc.nlm.nih.gov/RxNav/TermsofService.html |
 | openFDA drug labels | US Food and Drug Administration | https://open.fda.gov/terms/ |
+| UNII substance names (for other names of an ingredient) | US Food and Drug Administration (public domain) | https://www.fda.gov/about-fda/about-website/website-policies |
 | Wikidata | Wikimedia Foundation (CC0) | https://www.wikidata.org/wiki/Wikidata:Licensing |
 | PubChem | US National Center for Biotechnology Information | https://www.ncbi.nlm.nih.gov/home/about/policies/ |
 | ClinicalTrials.gov | US National Library of Medicine | https://clinicaltrials.gov/about-site/terms-conditions |
@@ -45,5 +46,9 @@ for the product and does not endorse or recommend this or any other product.
 
 AI suggestions come from the provider whose key the operator sets (OpenAI, Perplexity, DeepSeek
 or OpenRouter) under that provider's terms. They are model output, not data.
+
+Test fixture (not part of the app): HL7 FHIR R4 JSON Schema, © HL7, licensed under Creative Commons
+"No Rights Reserved" (CC0) (https://hl7.org/fhir/R4/license.html; read 27 October 2026). HL7® and
+FHIR® are trademarks of Health Level Seven International.
 
 Not medical advice: see the disclaimer in the [README](README.md).

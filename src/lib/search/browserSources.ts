@@ -163,6 +163,23 @@ export const pubchem: BrowserSource = {
 
 export const BROWSER_SOURCES: BrowserSource[] = [rxnorm, openFda, wikidata, pubchem];
 
+/**
+ * When the search server cannot be reached: the ingredient(s) of a brand name RxNorm knows (US
+ * brands, "Advil" -> "ibuprofen"), or null when the term is not an RxNorm brand.
+ */
+export async function brandIngredient(term: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+  const base = "https://rxnav.nlm.nih.gov/REST";
+  const ids = await getJson<{ idGroup?: { rxnormId?: string[] } }>(`${base}/rxcui.json?name=${encodeURIComponent(term)}&search=2`, fetchImpl);
+  const rxcui = ids.idGroup?.rxnormId?.[0];
+  if (!rxcui) return null;
+  const props = await getJson<{ properties?: { tty?: string } }>(`${base}/rxcui/${rxcui}/properties.json`, fetchImpl);
+  if (props.properties?.tty !== "BN") return null;
+  const rel = await getJson<{ relatedGroup?: { conceptGroup?: { conceptProperties?: RxConcept[] }[] } }>(`${base}/rxcui/${rxcui}/related.json?tty=IN`, fetchImpl);
+  const names = (rel.relatedGroup?.conceptGroup ?? []).flatMap((g) => g.conceptProperties ?? []).map((c) => c.name);
+  // a brand of three or more substances is not searched by its ingredients (as on the server)
+  return names.length && names.length <= 2 ? names.join(" + ") : null;
+}
+
 /** ClinicalTrials.gov: how many registered studies use the ingredient as an intervention. */
 export async function clinicalTrials(term: string, fetchImpl: typeof fetch = fetch): Promise<TrialsInfo> {
   const data = await getJson<{ totalCount?: number }>(

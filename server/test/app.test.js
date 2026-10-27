@@ -19,6 +19,8 @@ beforeAll(async () => {
   writeFileSync(path.join(dir, "index.html"), `<!doctype html><title>app</title>${" ".repeat(2000)}`);
   writeFileSync(path.join(dir, "assets", "app-123.js"), "console.log(1)");
   writeFileSync(path.join(dir, ".well-known", "sustainability-data"), '{"updated":"2026-10-01"}');
+  mkdirSync(path.join(dir, "fhir", "StructureDefinition"), { recursive: true });
+  writeFileSync(path.join(dir, "fhir", "StructureDefinition", "medicine-country.json"), '{"resourceType":"StructureDefinition"}');
   writeFileSync(path.join(path.dirname(dir), "secret.txt"), "outside");
 
   const handler = createApp({
@@ -57,6 +59,10 @@ describe("static files", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-security-policy")).toContain("connect-src 'self' https://rxnav.nlm.nih.gov");
     expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("content-security-policy")).toContain("script-src-attr 'none'");
+    expect(res.headers.get("origin-agent-cluster")).toBe("?1");
+    expect(res.headers.get("x-permitted-cross-domain-policies")).toBe("none");
+    expect(res.headers.get("cross-origin-resource-policy")).toBe("same-origin");
     expect(res.headers.get("cache-control")).toBe("no-cache");
   });
 
@@ -114,6 +120,22 @@ describe("static files", () => {
   });
 });
 
+describe("FHIR definitions", () => {
+  it("answers an extension's canonical URL with its definition, readable from anywhere", async () => {
+    const res = await get("/fhir/StructureDefinition/medicine-country");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/fhir+json; charset=utf-8");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(await res.json()).toEqual({ resourceType: "StructureDefinition" });
+    expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect((await get("/fhir/StructureDefinition/unknown")).status).toBe(404);
+    // a name with dots or slashes is not a definition: it ends at the app page, never a file outside
+    const odd = await get("/fhir/StructureDefinition/..%2F..%2Fsecret");
+    expect(odd.headers.get("content-type")).not.toContain("fhir");
+    expect(await odd.text()).not.toContain("outside");
+  });
+});
+
 describe("api", () => {
   it("reports health and sources", async () => {
     expect(await (await get("/api/health")).json()).toEqual({ status: "ok", version: "9.9.9", uptimeSec: 0 });
@@ -139,8 +161,42 @@ describe("api", () => {
     await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "203.0.113.9" });
     const limited = await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "203.0.113.9" });
     expect(limited.status).toBe(429);
-    expect(limited.headers.get("retry-after")).toBe("60");
+    expect(limited.headers.get("retry-after")).toBe("80");
     expect((await get("/api/search?q=ibuprofen", { "X-Forwarded-For": "198.51.100.1" })).status).toBe(200);
+  });
+
+  it("lets browsers keep a search answer briefly and answers 304 to a matching ETag", async () => {
+    const h = { "X-Real-IP": "192.0.2.70" };
+    const first = await get("/api/search?q=etagtest", h);
+    expect(first.headers.get("cache-control")).toBe("public, max-age=60, stale-while-revalidate=300");
+    expect(first.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+    const etag = first.headers.get("etag");
+    expect(etag).toMatch(/^W\/"/);
+    const again = await get("/api/search?q=etagtest", { ...h, "If-None-Match": etag });
+    // (a cached copy of the same answer has the same ETag: the "cached" flag is not part of it)
+    expect(again.status).toBe(304);
+    expect(await again.text()).toBe("");
+    // errors are never kept
+    expect((await get("/api/search?q=%3Cb%3E", h)).headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("keeps AI answers only in the visitor's browser and the source list briefly", async () => {
+    const ai = await get("/api/ai?q=cachecheck", { "X-Real-IP": "192.0.2.90" });
+    expect(ai.headers.get("cache-control")).toBe("private, max-age=300");
+    expect((await get("/api/sources")).headers.get("cache-control")).toBe("public, max-age=30");
+    expect((await get("/api/health")).headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("refuses HEAD on the search endpoints (a search costs upstream calls)", async () => {
+    const res = await fetch(base + "/api/search?q=ibuprofen", { method: "HEAD", headers: { "X-Real-IP": "192.0.2.71" } });
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("GET");
+  });
+
+  it("keys the limit on X-Real-IP, so a forged X-Forwarded-For does not get round it", async () => {
+    const one = { "X-Real-IP": "192.0.2.80" };
+    for (let i = 0; i < 3; i++) await get(`/api/search?q=forged&n=${i}`, { ...one, "X-Forwarded-For": `10.0.0.${i}` });
+    expect((await get("/api/search?q=forged", { ...one, "X-Forwarded-For": "10.0.0.99" })).status).toBe(429);
   });
 
   it("compresses large search answers", async () => {
@@ -171,5 +227,49 @@ describe("api", () => {
     expect(other.headers.get("access-control-allow-origin")).toBeNull();
     const pre = await fetch(base + "/api/search", { method: "OPTIONS", headers: { Origin: "https://medicine-finder.vercel.app" } });
     expect(pre.status).toBe(204);
+  });
+});
+
+describe("global limit", () => {
+  it("caps all visitors together, whatever address they claim", async () => {
+    const handler = createApp({
+      distDir: "/nonexistent",
+      version: "1",
+      sources: [],
+      search: async (term) => ({ term, results: [], sources: [] }),
+      aiSearch: async (term) => ({ term, results: [], sources: [] }),
+      rateLimit: { limit: 100, windowMs: 60e3 },
+      globalRateLimit: { limit: 2, windowMs: 60e3 },
+      now: fixedClock(),
+    });
+    const srv = http.createServer(handler);
+    await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+    const url = `http://127.0.0.1:${srv.address().port}/api/search?q=ibuprofen`;
+    const codes = [];
+    for (const ip of ["192.0.2.1", "192.0.2.2", "192.0.2.3"]) codes.push((await fetch(url, { headers: { "X-Real-IP": ip } })).status);
+    await new Promise((r) => srv.close(r));
+    expect(codes).toEqual([200, 200, 429]);
+  });
+});
+
+describe("ETag of a cached copy", () => {
+  it("is the same for the fresh answer and its cached copy, so the browser's first revalidation gets 304", async () => {
+    let calls = 0;
+    const handler = createApp({
+      distDir: "/nonexistent",
+      version: "1",
+      sources: [],
+      search: async (term) => ({ term, results: [{ brandName: "Advil" }], sources: [], ...(calls++ ? { cached: true } : {}) }),
+      aiSearch: async (term) => ({ term, results: [], sources: [] }),
+      now: fixedClock(),
+    });
+    const srv = http.createServer(handler);
+    await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+    const url = `http://127.0.0.1:${srv.address().port}/api/search?q=ibuprofen`;
+    const fresh = await fetch(url, { headers: { "X-Real-IP": "192.0.2.9" } });
+    const etag = fresh.headers.get("etag");
+    const revalidated = await fetch(url, { headers: { "X-Real-IP": "192.0.2.9", "If-None-Match": etag } });
+    await new Promise((r) => srv.close(r));
+    expect(revalidated.status).toBe(304);
   });
 });
