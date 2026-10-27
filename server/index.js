@@ -92,6 +92,8 @@ const handler = createApp({
   globalAiRateLimit: { limit: int(env.GLOBAL_AI_RATE_LIMIT, 60), windowMs: 60e3 },
   // searched terms are counted (no address) so the most searched can be warmed up each day
   onSearch: (term) => store.countQuery(term.toLowerCase(), Date.now()),
+  // behind Railway X-Real-IP is always set; without a proxy, set TRUST_FORWARDED_FOR=false
+  trustForwardedFor: env.TRUST_FORWARDED_FOR !== "false",
   log,
 });
 

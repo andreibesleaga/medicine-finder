@@ -5,6 +5,14 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-10-27
+
+### Changed
+- Counts in Romanian, Polish, Czech, Ukrainian and Lithuanian use the plural form their number
+  needs ("39 de țări", "39 šalys", "Uvádějí 3 zdroje"); large formatted counts use a colon form.
+- `TRUST_FORWARDED_FOR=false` makes the limits ignore `X-Forwarded-For` on a host with no proxy in
+  front (behind Railway nothing changes: `X-Real-IP` is used).
+
 ## [2.5.0] - 2026-10-27
 
 ### Added

@@ -6,7 +6,7 @@ allowed only from the origins in `ALLOWED_ORIGINS`.
 ## `GET /api/health`
 
 ```json
-{ "status": "ok", "version": "2.5.0", "uptimeSec": 42 }
+{ "status": "ok", "version": "2.5.1", "uptimeSec": 42 }
 ```
 
 Used by the Railway health check.

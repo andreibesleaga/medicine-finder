@@ -89,6 +89,8 @@ export function createApp({
   globalRateLimit = { limit: 300, windowMs: 60e3 },
   globalAiRateLimit = { limit: 60, windowMs: 60e3 },
   onSearch = () => {},
+  // false where no proxy sets X-Real-IP or X-Forwarded-For: then a visitor's own header is ignored
+  trustForwardedFor = true,
   now = Date.now,
   log = () => {},
 }) {
@@ -179,7 +181,7 @@ export function createApp({
       const country = countryRaw && countryRaw !== "all" ? validateTerm(countryRaw) : null;
       if (countryRaw && countryRaw !== "all" && !country) return sendJson(res, 400, { error: "Invalid country" }, cors);
       const isAi = url.pathname === "/api/ai";
-      const quota = (isAi ? aiLimiter : limiter).take(clientKey(req));
+      const quota = (isAi ? aiLimiter : limiter).take(clientKey(req, { trustForwardedFor }));
       const overall = quota.ok ? (isAi ? globalAiLimiter : globalLimiter).take("all") : quota;
       if (!quota.ok || !overall.ok) {
         const wait = Math.max(quota.retryAfterSec, overall.retryAfterSec);

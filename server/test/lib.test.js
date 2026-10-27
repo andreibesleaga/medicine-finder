@@ -57,6 +57,12 @@ describe("clientKey", () => {
     expect(clientKey({ headers: { "x-real-ip": "198.51.100.4", "x-forwarded-for": "1.2.3.4, 198.51.100.4" } })).toBe("198.51.100.4");
   });
 
+  it("ignores X-Forwarded-For when told no proxy fronts the server", () => {
+    const req = { headers: { "x-forwarded-for": "1.2.3.4" }, socket: { remoteAddress: "10.0.0.2" } };
+    expect(clientKey(req, { trustForwardedFor: false })).toBe("10.0.0.2");
+    expect(clientKey({ ...req, headers: { ...req.headers, "x-real-ip": "198.51.100.4" } }, { trustForwardedFor: false })).toBe("198.51.100.4");
+  });
+
   it("uses the first X-Forwarded-For entry when there is no X-Real-IP", () => {
     expect(clientKey({ headers: { "x-forwarded-for": " 203.0.113.7 , 10.0.0.1" }, socket: { remoteAddress: "10.0.0.2" } })).toBe("203.0.113.7");
   });

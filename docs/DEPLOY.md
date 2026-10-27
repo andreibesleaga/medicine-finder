@@ -37,6 +37,7 @@ Set them in the Railway dashboard (service → Variables) or with the CLI. None 
 | `SEARCH_RATE_LIMIT` | searches per minute per visitor | `20` |
 | `SEARCH_CACHE_SECONDS` | how long an answer is cached (memory and database, so it survives restarts) | `3600` |
 | `GLOBAL_SEARCH_RATE_LIMIT`, `GLOBAL_AI_RATE_LIMIT` | searches / AI requests per minute for all visitors together | `300`, `60` |
+| `TRUST_FORWARDED_FOR` | `false` on a host where no proxy sets `X-Real-IP`/`X-Forwarded-For`, so a visitor cannot pick its own address for the limits (Railway sets `X-Real-IP`) | `true` |
 | `WARM_TERMS` | most searched terms (last 30 days) searched again once a day; `0` = off | `50` |
 | `OPENFDA_API_KEY` | openFDA labels queried by the server (120,000 calls/day) instead of each browser (1,000/day per address); free key at https://open.fda.gov/apis/authentication/ | off (browser) |
 | `ALLOWED_ORIGINS` | other sites allowed to call `/api` (the Vercel copy) | none |

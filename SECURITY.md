@@ -33,8 +33,9 @@ disclosure window.
   mounts the data volume as root; this is accepted for the demo: the server has no runtime npm
   dependencies, only `GET` endpoints, and the volume holds public data only.
 - Per-visitor limits use `X-Real-IP`, which Railway documents as the client's address, and fall back
-  to the first `X-Forwarded-For` entry (which a client can send) and then the socket address; the
-  limit for all visitors together caps what forged addresses could still do.
+  to the first `X-Forwarded-For` entry (which a client can send; `TRUST_FORWARDED_FOR=false` turns this
+  off on a host without a proxy) and then the socket address; the limit for all visitors together
+  caps what forged addresses could still do.
 - The server stops after an unhandled rejection or exception (logged), so Railway restarts it. It
   accepts at most 500 connections and 1,000 requests per connection; idle connections close after 65 s.
 - Search answers are kept in the database for their cache time (no visitor data); searched terms are
