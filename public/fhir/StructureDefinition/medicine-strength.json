@@ -1,0 +1,54 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "medicine-strength",
+  "url": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-strength",
+  "version": "2.5.0",
+  "name": "Medicinestrengthaspublished",
+  "title": "Medicine strength as published",
+  "status": "active",
+  "publisher": "Medicine Brand Finder",
+  "description": "The strength exactly as the register writes it (\"200 mg\", \"500 mg/30 mg\").",
+  "fhirVersion": "4.0.1",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Medication"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Medicine strength as published",
+        "definition": "The strength exactly as the register writes it (\"200 mg\", \"500 mg/30 mg\").",
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "max": "0"
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-strength"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -31,6 +31,17 @@ CREATE TABLE IF NOT EXISTS brands (
   product_id INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS brands_lookup ON brands(source, key);
+CREATE TABLE IF NOT EXISTS answers (
+  key TEXT PRIMARY KEY,
+  body TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS answers_expiry ON answers(expires_at);
+CREATE TABLE IF NOT EXISTS queries (
+  term TEXT PRIMARY KEY,
+  n INTEGER NOT NULL,
+  last_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS datasets (
   source TEXT PRIMARY KEY,
   loaded_at INTEGER,
@@ -79,6 +90,11 @@ export function openStore(file) {
   const findIds = db.prepare("SELECT product_id FROM words WHERE source = ? AND word >= ? AND word < ?");
   const findExact = db.prepare("SELECT product_id FROM words WHERE source = ? AND word = ?");
   const getInfo = db.prepare("SELECT loaded_at, rows, error, attempted_at, format FROM datasets WHERE source = ?");
+  const getAnswer = db.prepare("SELECT body, expires_at FROM answers WHERE key = ?");
+  const putAnswer = db.prepare("INSERT OR REPLACE INTO answers (key, body, expires_at) VALUES (?, ?, ?)");
+  const countQuery = db.prepare(
+    "INSERT INTO queries (term, n, last_at) VALUES (?, 1, ?) ON CONFLICT(term) DO UPDATE SET n = n + 1, last_at = excluded.last_at",
+  );
   const anyWordFrom = db.prepare("SELECT 1 FROM words WHERE source = ? AND word >= ? AND word < ? LIMIT 1");
   const anyWord = db.prepare("SELECT 1 FROM words WHERE source = ? AND word = ? LIMIT 1");
   const findBrands = db.prepare(
@@ -182,6 +198,50 @@ export function openStore(file) {
           url: r.url ?? undefined,
         })),
       };
+    },
+
+    /**
+     * Search answers kept across restarts (Railway stops the server when idle), under a prefix such
+     * as "search" or "ai": { get(key), set(key, body, expiresAt) }. Expired rows are removed when
+     * read and pruned beyond `maxRows`.
+     */
+    answers(prefix, { now = Date.now, maxRows = 300, pruneEveryMs = 5 * 60e3 } = {}) {
+      // pruning reads the index only, and runs at most every few minutes: SQLite blocks the server
+      let lastPrune = 0;
+      const prune = () => {
+        if (now() - lastPrune < pruneEveryMs) return;
+        lastPrune = now();
+        db.prepare("DELETE FROM answers WHERE expires_at <= ?").run(now());
+        const { n } = db.prepare("SELECT COUNT(*) AS n FROM answers").get();
+        if (n > maxRows) {
+          db.prepare("DELETE FROM answers WHERE key IN (SELECT key FROM answers ORDER BY expires_at LIMIT ?)").run(n - maxRows);
+        }
+      };
+      return {
+        get(key) {
+          const row = getAnswer.get(`${prefix}:${key}`);
+          if (!row) return undefined;
+          if (row.expires_at <= now()) {
+            db.prepare("DELETE FROM answers WHERE key = ?").run(`${prefix}:${key}`);
+            return undefined;
+          }
+          return { body: JSON.parse(row.body), expiresAt: row.expires_at };
+        },
+        set(key, body, expiresAt) {
+          putAnswer.run(`${prefix}:${key}`, JSON.stringify(body), expiresAt);
+          prune();
+        },
+      };
+    },
+
+    /** Counts a searched term (no address or other personal data), for the daily warm-up. */
+    countQuery(term, now) {
+      countQuery.run(term, now);
+    },
+
+    /** The most searched terms since `since`. */
+    topQueries(limit, since = 0) {
+      return db.prepare("SELECT term FROM queries WHERE last_at >= ? ORDER BY n DESC, term LIMIT ?").all(since, limit).map((r) => r.term);
     },
 
     /** True when every stem starts (or, if short, is) a word of some ingredient of this source. */

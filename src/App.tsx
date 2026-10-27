@@ -5,6 +5,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Sources from "./pages/Sources";
 import NotFound from "./pages/NotFound";
+import { I18nProvider } from "./i18n/I18nProvider";
+import type { Dict } from "./i18n/core";
+import { countryCode } from "./lib/export/countryCodes";
 
 // Vercel Web Analytics is off by default; a Vercel deployment turns it on with VITE_VERCEL_ANALYTICS=true.
 const VercelAnalytics =
@@ -12,7 +15,8 @@ const VercelAnalytics =
     ? lazy(() => import("@vercel/analytics/react").then((m) => ({ default: m.Analytics })))
     : null;
 
-const App = () => (
+const App = ({ i18n }: { i18n?: { lang: string; dict: Dict } }) => (
+  <I18nProvider countryCode={countryCode} initial={i18n}>
   <TooltipProvider>
     <Toaster />
     <BrowserRouter>
@@ -29,6 +33,7 @@ const App = () => (
       </Suspense>
     )}
   </TooltipProvider>
+  </I18nProvider>
 );
 
 export default App;

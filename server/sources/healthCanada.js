@@ -5,7 +5,7 @@
 
 import { fetchJson, mapLimit, UpstreamError } from "../lib/http.js";
 import { tidyCase } from "../lib/text.js";
-import { withSynonyms } from "../lib/synonyms.js";
+import { searchNames } from "../lib/synonyms.js";
 
 const API = "https://health-products.canada.ca/api/drug";
 const MAX_PRODUCTS = 40;
@@ -43,7 +43,7 @@ export function createHealthCanadaSource({ fetch }) {
     async search(term) {
       try {
         const found = [];
-        for (const name of withSynonyms(term)) {
+        for (const name of searchNames(term)) {
           const list = await fetchJson(
             fetch,
             `${API}/activeingredient/?lang=en&type=json&ingredientname=${encodeURIComponent(name)}`,

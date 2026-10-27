@@ -6,10 +6,23 @@ allowed only from the origins in `ALLOWED_ORIGINS`.
 ## `GET /api/health`
 
 ```json
-{ "status": "ok", "version": "2.4.0", "uptimeSec": 42 }
+{ "status": "ok", "version": "2.5.0", "uptimeSec": 42 }
 ```
 
 Used by the Railway health check.
+
+## Caching, limits and headers (all `/api` answers)
+
+- `/api/search` answers carry `Cache-Control: public, max-age=60, stale-while-revalidate=300`,
+  `/api/ai` `private, max-age=300`, `/api/sources` `public, max-age=30`, each with a weak `ETag`; a
+  request with a matching `If-None-Match` gets `304` without a body. Errors and `/api/health` are
+  `no-store`.
+- Limits per visitor (keyed on `X-Real-IP`, else the first `X-Forwarded-For` entry) and for all
+  visitors together (a sliding window of one minute); over a limit: `429` with `Retry-After`, the
+  seconds after which one more request fits. `HEAD` on `/api/search` and `/api/ai`
+  answers `405` (`Allow: GET`).
+- `Cross-Origin-Resource-Policy: cross-origin` (other sites may read the answers when `ALLOWED_ORIGINS`
+  lets them).
 
 ## `GET /api/sources`
 
@@ -121,6 +134,9 @@ Errors: `400` invalid `q` or `country`; `429` too many searches (see `Retry-Afte
 
 ## Other paths
 
+- `/fhir/StructureDefinition/<name>`: the definitions of the extensions used in the app's FHIR R4
+  downloads (`medicine-country`, `medicine-strength`, `medicine-status`, `medicine-source`), served as
+  `application/fhir+json` with `Access-Control-Allow-Origin: *`.
 - `/.well-known/sustainability-data`: the site's signed sustainability declaration, served as
   `application/sustainability-data+json` with `Access-Control-Allow-Origin: *`.
 - `/assets/*`: hashed build files, cached for a year.

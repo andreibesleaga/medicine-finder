@@ -40,6 +40,22 @@ checked and why the others are not used.
 
 By contributing you agree that your contribution is licensed under GPL-3.0-or-later.
 
+## Translations
+
+The interface strings are in `src/i18n/locales/<language>.json` (English in `en.json` is the
+source). A new language: copy `en.json`, translate the values (keep every `{placeholder}`; give each
+plural form the language needs, as `Intl.PluralRules` lists them: `key_one`, `key_few`, …), add the
+language to `LANGUAGES` in `src/i18n/core.tsx` and an `hreflang` link in `index.html`; `npm test`
+checks keys, placeholders and plural forms. Set `"_meta.status"` to `"reviewed"` only after a fluent
+speaker has read the file. Register data is never translated.
+
+## Other names of an ingredient
+
+Hand-made groups are in `server/data/synonyms.json`. `server/data/unii-synonyms.json` is generated
+from the FDA's UNII names list: download https://precision.fda.gov/uniisearch/archive/latest/UNIIs.zip,
+then `node scripts/build-unii-synonyms.mjs path/to/UNII_Names_<date>.txt`, review the diff, run
+`npm test`.
+
 ## Reporting issues
 
 Use GitHub issues for bugs and feature ideas. For security reports, see

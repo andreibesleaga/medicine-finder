@@ -1,7 +1,7 @@
-
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe } from "lucide-react";
 import { countries } from "@/constants/countries";
+import { useI18n } from "@/i18n";
 
 interface CountrySelectorProps {
   value: string;
@@ -12,34 +12,36 @@ interface CountrySelectorProps {
 }
 
 export const CountrySelector = ({ value, onValueChange, disabled, withData }: CountrySelectorProps) => {
-  const allOption = countries.find(country => country.value === "all");
-  const regions = countries.filter(country => country.isRegion);
-  const countriesOnly = countries.filter(country => !country.isRegion && country.value !== "all");
+  const { t, lang, countryName } = useI18n();
+  const regions = countries.filter((country) => country.isRegion);
+  // country names in the page's language, in its alphabetical order
+  const countriesOnly = countries
+    .filter((country) => !country.isRegion && country.value !== "all")
+    .map((c) => ({ value: c.value, label: countryName(c.value) }))
+    .sort((a, b) => a.label.localeCompare(b.label, lang));
   const data = new Set(withData ?? []);
   const official = countriesOnly.filter((c) => data.has(c.value));
   const others = data.size ? countriesOnly.filter((c) => !data.has(c.value)) : countriesOnly;
+  // the United Kingdom's official data covers Northern Ireland only (EMA Article 57)
+  const officialLabel = (c: { value: string; label: string }) => (c.value === "United Kingdom" ? t("country.niOnly", { country: c.label }) : c.label);
 
   return (
     <div className="min-w-48">
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger aria-label="Country" className="h-12 border-2 border-gray-200 focus:border-blue-500">
+        <SelectTrigger aria-label={t("country.label")} className="h-12 border-2 border-gray-200 focus:border-blue-500">
           <Globe className="w-4 h-4 mr-2 text-gray-500" aria-hidden="true" />
-          <SelectValue placeholder="Select country" />
+          <SelectValue placeholder={t("country.placeholder")} />
         </SelectTrigger>
         <SelectContent>
-          {/* All Countries option */}
-          {allOption && (
-            <SelectItem key={allOption.value} value={allOption.value}>
-              {allOption.label}
-            </SelectItem>
-          )}
+          <SelectItem value="all">{t("country.all")}</SelectItem>
 
           <SelectSeparator />
           <SelectGroup>
-            <SelectLabel>Regions</SelectLabel>
+            <SelectLabel>{t("country.regions")}</SelectLabel>
             {regions.map((region) => (
               <SelectItem key={region.value} value={region.value}>
-                {region.label}
+                {/* the flag or globe stays; the name is translated */}
+                {`${region.label.match(/^\P{L}+/u)?.[0] ?? ""}${t(`region.${region.value.slice("region:".length)}`)}`}
               </SelectItem>
             ))}
           </SelectGroup>
@@ -47,11 +49,10 @@ export const CountrySelector = ({ value, onValueChange, disabled, withData }: Co
           {official.length > 0 && (
             <>
               <SelectGroup>
-                <SelectLabel>Countries with official data ({official.length})</SelectLabel>
+                <SelectLabel>{t("country.withData", { n: official.length })}</SelectLabel>
                 {official.map((country) => (
                   <SelectItem key={country.value} value={country.value}>
-                    {/* the United Kingdom's official data covers Northern Ireland only (EMA Article 57) */}
-                    {country.value === "United Kingdom" ? `${country.label} (Northern Ireland data)` : country.label}
+                    {officialLabel(country)}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -59,7 +60,7 @@ export const CountrySelector = ({ value, onValueChange, disabled, withData }: Co
             </>
           )}
           <SelectGroup>
-            <SelectLabel>{official.length > 0 ? "Other countries (open references and AI only)" : "Countries"}</SelectLabel>
+            <SelectLabel>{official.length > 0 ? t("country.others") : t("country.countries")}</SelectLabel>
             {others.map((country) => (
               <SelectItem key={country.value} value={country.value}>
                 {country.label}

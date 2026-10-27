@@ -2,7 +2,10 @@
 
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import { brotliCompressSync, gzipSync, constants as zlib } from "node:zlib";
+import { createHash } from "node:crypto";
+import { promisify } from "node:util";
+import { brotliCompressSync, gzip, gzipSync, constants as zlib } from "node:zlib";
+import { TtlCache } from "./lib/cache.js";
 import { validateTerm } from "./lib/text.js";
 import { RateLimiter, clientKey } from "./lib/rateLimit.js";
 
@@ -35,6 +38,7 @@ export function contentSecurityPolicy(extraConnect = []) {
   return [
     "default-src 'self'",
     "script-src 'self'",
+    "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
@@ -53,7 +57,22 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
   "Strict-Transport-Security": "max-age=31536000",
   "Cross-Origin-Opener-Policy": "same-origin",
+  "Origin-Agent-Cluster": "?1",
+  "X-Permitted-Cross-Domain-Policies": "none",
+  // pages and their files are for this site only; /api and the well-known file are read by others
+  "Cross-Origin-Resource-Policy": "same-origin",
 };
+const SHARED_RESOURCE = { "Cross-Origin-Resource-Policy": "cross-origin" };
+
+// how long browsers may keep an answer (no CDN in front): official data briefly and shared, AI
+// suggestions only in the visitor's own browser; errors never
+const API_CACHE = {
+  "/api/search": "public, max-age=60, stale-while-revalidate=300",
+  "/api/ai": "private, max-age=300",
+  "/api/sources": "public, max-age=30",
+};
+const gzipAsync = promisify(gzip);
+const etagOf = (body) => `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 22)}"`;
 
 const COMPRESSIBLE = /^(text\/|application\/(json|javascript|xml)|image\/svg)/;
 
@@ -66,11 +85,19 @@ export function createApp({
   allowedOrigins = [],
   rateLimit = { limit: 20, windowMs: 60e3 },
   aiRateLimit = { limit: 10, windowMs: 60e3 },
+  // all visitors together: a cap that forged client addresses cannot get round
+  globalRateLimit = { limit: 300, windowMs: 60e3 },
+  globalAiRateLimit = { limit: 60, windowMs: 60e3 },
+  onSearch = () => {},
   now = Date.now,
   log = () => {},
 }) {
   const limiter = new RateLimiter({ ...rateLimit, now });
   const aiLimiter = new RateLimiter({ ...aiRateLimit, now });
+  const globalLimiter = new RateLimiter({ ...globalRateLimit, now });
+  const globalAiLimiter = new RateLimiter({ ...globalAiRateLimit, now });
+  // compressed answers by ETag, so a popular answer is compressed once
+  const gzipped = new TtlCache({ ttlMs: 3600e3, maxEntries: 500, maxBytes: 32 * 1024 * 1024, sizeOf: (b) => b.length, now });
   const fileCache = new Map();
   const startedAt = now();
   const csp = contentSecurityPolicy();
@@ -80,13 +107,35 @@ export function createApp({
     res.end(res.req.method === "HEAD" ? undefined : body);
   }
 
-  function sendJson(res, status, data, headers = {}) {
+  /**
+   * A JSON answer. `cacheControl` (only for 200 answers) lets browsers keep it; such answers carry a
+   * weak ETag and a matching If-None-Match gets 304 without a body.
+   */
+  async function sendJson(res, status, data, headers = {}, cacheControl = null) {
     const body = JSON.stringify(data);
     const vary = [headers.Vary, "Accept-Encoding"].filter(Boolean).join(", ");
-    const h = { "Content-Type": MIME[".json"], "Cache-Control": "no-store", ...headers, Vary: vary };
+    const cacheable = status === 200 && cacheControl;
+    // the ETag ignores the "cached" flag, so a fresh and a cached copy of one answer match
+    const etag = cacheable ? etagOf(JSON.stringify({ ...data, cached: undefined })) : null;
+    const h = {
+      "Content-Type": MIME[".json"],
+      ...SHARED_RESOURCE,
+      ...headers,
+      "Cache-Control": cacheable ? cacheControl : "no-store",
+      ...(etag ? { ETag: etag } : {}),
+      Vary: vary,
+    };
+    if (etag && String(res.req.headers["if-none-match"] || "").split(/\s*,\s*/).includes(etag)) {
+      return send(res, 304, undefined, h);
+    }
     // search answers are a few hundred KB; gzip makes them about ten times smaller
     if (body.length > 1024 && /\bgzip\b/.test(res.req.headers["accept-encoding"] || "")) {
-      return send(res, status, gzipSync(body, { level: 6 }), { ...h, "Content-Encoding": "gzip" });
+      let zipped = etag ? gzipped.get(etag) : undefined;
+      if (!zipped) {
+        zipped = await gzipAsync(body, { level: 6 });
+        if (etag) gzipped.set(etag, zipped);
+      }
+      return send(res, status, zipped, { ...h, "Content-Encoding": "gzip" });
     }
     send(res, status, body, h);
   }
@@ -118,10 +167,12 @@ export function createApp({
         enabled: s.enabled(),
         ...s.status(),
       }));
-      return sendJson(res, 200, { sources: list }, cors);
+      return sendJson(res, 200, { sources: list }, cors, API_CACHE["/api/sources"]);
     }
     // /api/search: official databases (fast); /api/ai: AI suggestions (slow, separately limited)
     if (url.pathname === "/api/search" || url.pathname === "/api/ai") {
+      // a search costs upstream calls: GET only, so HEAD cannot run one without being counted as such
+      if (req.method === "HEAD") return send(res, 405, "Method not allowed", { Allow: "GET", "Content-Type": MIME[".txt"], ...cors });
       const term = validateTerm(url.searchParams.get("q"));
       if (!term) return sendJson(res, 400, { error: "Give an ingredient name of 2 to 80 letters, digits or spaces in ?q=" }, cors);
       const countryRaw = (url.searchParams.get("country") || "").trim();
@@ -129,11 +180,21 @@ export function createApp({
       if (countryRaw && countryRaw !== "all" && !country) return sendJson(res, 400, { error: "Invalid country" }, cors);
       const isAi = url.pathname === "/api/ai";
       const quota = (isAi ? aiLimiter : limiter).take(clientKey(req));
-      if (!quota.ok) {
-        return sendJson(res, 429, { error: "Too many searches; try again shortly" }, { ...cors, "Retry-After": String(quota.retryAfterSec) });
+      const overall = quota.ok ? (isAi ? globalAiLimiter : globalLimiter).take("all") : quota;
+      if (!quota.ok || !overall.ok) {
+        const wait = Math.max(quota.retryAfterSec, overall.retryAfterSec);
+        return sendJson(res, 429, { error: "Too many searches; try again shortly" }, { ...cors, "Retry-After": String(wait) });
+      }
+      if (!isAi) {
+        try {
+          onSearch(term, country);
+        } catch (err) {
+          // counting is for the daily warm-up only; a failure must not stop the search
+          log(`counting a search failed: ${err instanceof Error ? err.message : err}`);
+        }
       }
       const body = await (isAi ? aiSearch : search)(term, { country: country || undefined });
-      return sendJson(res, 200, body, { ...cors, "X-RateLimit-Remaining": String(quota.remaining) });
+      return sendJson(res, 200, body, { ...cors, "X-RateLimit-Remaining": String(quota.remaining) }, API_CACHE[url.pathname]);
     }
     return sendJson(res, 404, { error: "Not found" }, cors);
   }
@@ -172,10 +233,23 @@ export function createApp({
     const filePath = path.join(distDir, path.normalize(rel));
     if (!filePath.startsWith(distDir + path.sep) && filePath !== distDir) return send(res, 404, "Not found", { "Content-Type": MIME[".txt"] });
 
+    // FHIR extension definitions answer at their canonical URL (no ".json"), for FHIR tools
+    const fhirDef = /^\/fhir\/StructureDefinition\/[a-z0-9-]+$/.exec(rel);
+    if (fhirDef) {
+      const entry = await loadFile(`${filePath}.json`);
+      if (!entry) return send(res, 404, "Not found", { "Content-Type": MIME[".txt"] });
+      return sendFile(req, res, { ...entry, type: "application/fhir+json; charset=utf-8" }, {
+        ...SHARED_RESOURCE,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=86400",
+      });
+    }
+
     if (rel === "/.well-known/sustainability-data") {
       const entry = await loadFile(filePath);
       if (!entry) return send(res, 404, "Not found", { "Content-Type": MIME[".txt"] });
       return sendFile(req, res, { ...entry, type: "application/sustainability-data+json" }, {
+        ...SHARED_RESOURCE,
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "public, max-age=3600",
       });

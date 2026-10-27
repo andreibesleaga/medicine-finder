@@ -24,7 +24,7 @@ import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { curatedRows } from "../datasets/curated.js";
-import { withSynonyms } from "../lib/synonyms.js";
+import { searchNames, withSynonyms } from "../lib/synonyms.js";
 import { openStore, ingredientWords } from "../db/store.js";
 import { createDatasetSources, DATA_FORMAT, PER_COUNTRY, coreIngredient, sameIngredient } from "../datasets/index.js";
 import { stems } from "../lib/text.js";
@@ -320,6 +320,8 @@ describe("national dataset parsers", () => {
     // a name with a second language after a line break is kept on one line
     const twoLines = parseArticle57([rows[2], ["Aflu \r\nафлу Капки", "Oxymetazoline", "Nasal Use", "Bulgaria", "Tays\r\nPharma", "", "", ""]]);
     expect(twoLines.map((r) => [r.brand, r.holder])).toEqual([["Aflu афлу Капки", "Tays Pharma"]]);
+    // a trailing comma in the register's name is dropped
+    expect(parseArticle57([rows[2], ["Imidin Für Kinder,", "Xylometazoline", "Nasal Use", "Germany", "X", "", "", ""]])[0].brand).toBe("Imidin Für Kinder");
   });
 
   it("EEA (Article 57): substances split on | and commas, herbal descriptions kept whole", () => {
@@ -481,10 +483,14 @@ describe("national dataset parsers", () => {
   });
 
   it("knows every name of an ingredient, whichever one is typed", () => {
-    expect(withSynonyms("Acetaminophen")).toEqual(["acetaminophen", "paracetamol", "acetaminofen"]);
-    expect(withSynonyms("acetaminofen")).toEqual(["acetaminofen", "paracetamol", "acetaminophen"]);
-    expect(withSynonyms("salbutamol")).toEqual(["salbutamol", "albuterol"]);
-    expect(withSynonyms("ibuprofen")).toEqual(["ibuprofen"]);
+    // every name (hand-made first, then the FDA UNII official names)
+    expect(withSynonyms("Acetaminophen").slice(0, 3)).toEqual(["acetaminophen", "paracetamol", "acetaminofen"]);
+    expect(withSynonyms("acetaminofen")).toEqual(expect.arrayContaining(["acetaminofen", "paracetamol", "acetaminophen", "paracetamolum"]));
+    expect(withSynonyms("salbutamol")).toEqual(expect.arrayContaining(["salbutamol", "albuterol"]));
+    // the names a search is sent with: none that an earlier one already finds
+    expect(searchNames("Acetaminophen")).toEqual(["acetaminophen", "paracetamol", "acetaminofen"]);
+    expect(searchNames("salbutamol")).toEqual(["salbutamol", "albuterol"]);
+    expect(searchNames("ibuprofen")).toEqual(["ibuprofen"]);
   });
 });
 
@@ -572,6 +578,29 @@ describe("dataset loading", () => {
     expect(sources[1].status()).toMatchObject({ state: "ready", rows: 1 });
   });
 
+  it("says when a file imported by hand is getting old", async () => {
+    const now = fixedClock();
+    const day = 24 * 3600e3;
+    let fileTime = now();
+    const imported = { ...dataset("imp", async () => [{ brand: "Burana", ingredient: "Ibuprofen", country: "Finland" }], 30 * day), modifiedAt: () => fileTime, staleAfterMs: 45 * day };
+    const { sources, refreshDue } = createDatasetSources({ store: openStore(":memory:"), datasets: [imported], now });
+    await refreshDue();
+    expect(sources[0].status().detail).toBeUndefined();
+    fileTime = now() - 50 * day;
+    expect(sources[0].status().detail).toBe("imported file is 50 days old; replace it (docs/DEPLOY.md)");
+  });
+
+  it("keeps a dataset that needs a key off until the key is set, and gives the key to its loader", async () => {
+    const keyed = { ...dataset("keyed", async (_fetch, ctx) => [{ brand: `B-${ctx.env.SOME_API_KEY}`, ingredient: "Ibuprofen", country: "United Kingdom" }]), requires: "SOME_API_KEY" };
+    const off = createDatasetSources({ store: openStore(":memory:"), datasets: [keyed], now: fixedClock() });
+    await off.refreshDue();
+    expect(off.sources[0].enabled()).toBe(false);
+    expect(off.sources[0].status()).toEqual({ state: "disabled", detail: "set SOME_API_KEY to enable" });
+    const on = createDatasetSources({ store: openStore(":memory:"), datasets: [keyed], now: fixedClock(), env: { SOME_API_KEY: "k1" } });
+    await on.refreshDue();
+    expect((await on.sources[0].search("ibuprofen")).results[0].brandName).toBe("B-k1");
+  });
+
   it("leaves an unavailable dataset off, then loads it, and reloads it when its file is newer", async () => {
     const now = fixedClock();
     const store = openStore(":memory:");
@@ -581,7 +610,7 @@ describe("dataset loading", () => {
     const imported = {
       ...dataset("imported", async (_fetch, ctx) => {
         loads += 1;
-        expect(ctx).toEqual({ importDir: "/data/imports" });
+        expect(ctx).toEqual({ importDir: "/data/imports", env: {} });
         return [{ brand: "Burana", ingredient: "Ibuprofen", country: "Finland" }];
       }, 30 * 24 * 3600e3),
       available: () => present,

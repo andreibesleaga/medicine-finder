@@ -67,8 +67,11 @@ export interface SearchOutcome {
   results: MedicineResult[];
   sources: SourceRun[];
   trials?: TrialsInfo;
-  /** set when results come from a wider area than the one chosen */
+  /** set when results come from a wider area than the one chosen (English) */
   note?: string;
+  /** the same note as a dictionary key and values (src/i18n), for the page's language */
+  noteKey?: string;
+  noteVars?: Record<string, string>;
   /** true while AI suggestions are still on their way */
   aiPending?: boolean;
   /** when the outcome was read from this browser's cache: the time it was saved */

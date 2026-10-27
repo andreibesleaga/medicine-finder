@@ -55,7 +55,11 @@ export function parseArticle57(rows) {
   const out = [];
   const seen = new Set();
   // some names hold a second language after a line break ("Aflu \r\nафлу …"): one line
-  const cell = (r, i) => String(r[i] ?? "").replace(/\s+/g, " ").trim();
+  const cell = (r, i) =>
+    String(r[i] ?? "")
+      .replace(/\s+/g, " ")
+      .replace(/[\s,;]+$/, "")
+      .trim();
   for (const r of rows.slice(headerAt + 1)) {
     const brand = cell(r, name);
     const where = cell(r, country);

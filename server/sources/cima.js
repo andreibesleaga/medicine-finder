@@ -2,7 +2,7 @@
 
 import { fetchJson } from "../lib/http.js";
 import { stems, splitProductName, tidyCase } from "../lib/text.js";
-import { withSynonyms } from "../lib/synonyms.js";
+import { searchNames } from "../lib/synonyms.js";
 
 const API = "https://cima.aemps.es/cima/rest/medicamentos";
 
@@ -39,7 +39,7 @@ export function createCimaSource({ fetch }) {
       // CIMA matches the start of the Spanish substance name; the stem bridges English and Spanish
       // spellings, and the other international name (acetaminophen -> paracetamol) is tried too
       const pages = await Promise.allSettled(
-        withSynonyms(term).map((name) =>
+        searchNames(term).map((name) =>
           fetchJson(fetch, `${API}?practiv1=${encodeURIComponent(stems(name).join(" "))}&comerc=1&pagina=1`, { timeoutMs: 12000 }),
         ),
       );

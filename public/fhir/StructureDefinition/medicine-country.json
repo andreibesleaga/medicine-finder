@@ -1,0 +1,54 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "medicine-country",
+  "url": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-country",
+  "version": "2.5.0",
+  "name": "Medicinecountry",
+  "title": "Medicine country",
+  "status": "active",
+  "publisher": "Medicine Brand Finder",
+  "description": "The country (ISO 3166-1 alpha-2 code, \"EU\" for EU-wide authorisations) where the register lists the product, with its name as text.",
+  "fhirVersion": "4.0.1",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Medication"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Medicine country",
+        "definition": "The country (ISO 3166-1 alpha-2 code, \"EU\" for EU-wide authorisations) where the register lists the product, with its name as text.",
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "max": "0"
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "https://medicine-finder.up.railway.app/fhir/StructureDefinition/medicine-country"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "CodeableConcept"
+          }
+        ]
+      }
+    ]
+  }
+}

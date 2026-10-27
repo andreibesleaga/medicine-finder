@@ -20,8 +20,11 @@ const NOT_STATED = "not stated";
 
 export interface Scoped {
   results: MedicineResult[];
-  /** set when the results come from a wider area than the one chosen */
+  /** set when the results come from a wider area than the one chosen (English) */
   note?: string;
+  /** the same note as a dictionary key and its values, for the page's language */
+  noteKey?: string;
+  noteVars?: Record<string, string>;
 }
 
 export const isRegion = (selection: string) => selection.startsWith("region:");
@@ -49,7 +52,7 @@ export function scopeResults(all: MedicineResult[], selection?: string): Scoped 
         ? all.filter((r) => EU_MEMBERS.has(r.country.toLowerCase()) || r.country.toLowerCase() === EU_WIDE)
         : all.filter((r) => r.country.toLowerCase() !== NOT_STATED && regionOf(r.country) === region);
     if (inRegion.length) return { results: [...inRegion, ...general] };
-    return { results: all, note: `No data for ${selectionLabel(selection)} yet; showing results from all countries.` };
+    return { results: all, note: `No data for ${selectionLabel(selection)} yet; showing results from all countries.`, noteKey: "note.noData", noteVars: { place: selection } };
   }
 
   const c = selection.toLowerCase();
@@ -60,6 +63,8 @@ export function scopeResults(all: MedicineResult[], selection?: string): Scoped 
     return {
       results: [...euWide, ...general],
       note: `No national data for ${selection} yet; showing EU-wide authorisations (valid in ${selection}) and worldwide references.`,
+      noteKey: "note.euWide",
+      noteVars: { place: selection },
     };
   }
   const region = getRegionForCountry(selection);
@@ -68,7 +73,14 @@ export function scopeResults(all: MedicineResult[], selection?: string): Scoped 
     return {
       results: [...sameRegion, ...general],
       note: `No data for ${selection} yet; showing other countries in ${region} and worldwide references. Brands differ by country.`,
+      noteKey: "note.region",
+      noteVars: { place: selection, region },
     };
   }
-  return { results: all, note: `No data for ${selection} or ${region} yet; showing results from all countries. Brands differ by country.` };
+  return {
+    results: all,
+    note: `No data for ${selection} or ${region} yet; showing results from all countries. Brands differ by country.`,
+    noteKey: "note.nothing",
+    noteVars: { place: selection, region },
+  };
 }

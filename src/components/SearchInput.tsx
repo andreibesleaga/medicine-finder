@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Loader2, Database } from "lucide-react";
 import { CountrySelector } from "./CountrySelector";
 import { Link } from "react-router-dom";
+import { useI18n } from "@/i18n";
 
 interface SearchInputProps {
   searchTerm: string;
@@ -17,17 +18,19 @@ interface SearchInputProps {
   euData?: boolean;
 }
 
-export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCountryChange, isLoading, onSearch, onKeyDown, withData, euData }: SearchInputProps) => (
+export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCountryChange, isLoading, onSearch, onKeyDown, withData, euData }: SearchInputProps) => {
+  const { t } = useI18n();
+  return (
   <div className="max-w-4xl mx-auto mb-8">
     <div className="flex flex-col gap-4 sm:flex-row">
       <div className="flex-1">
         <label htmlFor="ingredient" className="sr-only">
-          Active ingredient or brand name
+          {t("search.label")}
         </label>
         <Input
           id="ingredient"
           type="search"
-          placeholder="Ingredient or brand, e.g. ibuprofen, Nurofen, amoxicillin"
+          placeholder={t("search.placeholder")}
           value={searchTerm}
           onChange={(e) => onTermChange(e.target.value)}
           onKeyDown={onKeyDown}
@@ -49,12 +52,12 @@ export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCount
         {isLoading ? (
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" aria-hidden="true" />
-            Searching...
+            {t("search.searching")}
           </>
         ) : (
           <>
             <Search className="w-5 h-5 mr-2" aria-hidden="true" />
-            Search
+            {t("search.button")}
           </>
         )}
       </Button>
@@ -64,13 +67,15 @@ export const SearchInput = ({ searchTerm, onTermChange, selectedCountry, onCount
       <div className="flex items-center gap-2">
         <Database className="w-4 h-4 text-blue-600" aria-hidden="true" />
         <span>
-          {withData?.length ? `Official databases in ${withData.length} countries${euData ? " and the EU" : ""}` : "Official databases"} • open
-          references • optional AI
+          {withData?.length
+            ? t("search.coverage", { n: withData.length, eu: euData ? t("search.coverageEu") : "" })
+            : t("search.coverageNone")}
         </span>
       </div>
       <Link to="/sources" className="text-blue-700 hover:underline">
-        Data sources and their status
+        {t("search.sourcesLink")}
       </Link>
     </div>
   </div>
-);
+  );
+};

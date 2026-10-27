@@ -3,6 +3,7 @@ import type { SearchOutcome, SourceRun } from "@/types/medicine";
 import { addAiSuggestions, searchMedicines } from "@/lib/search/searchMedicines";
 import { cacheKey, readCached, saveCached } from "@/lib/search/resultCache";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/i18n";
 
 interface UseSearchMedicineProps {
   onResult: (outcome: SearchOutcome) => void;
@@ -19,6 +20,7 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress, onSea
   // a newer search makes the AI answer of an older one irrelevant
   const searchId = useRef(0);
   const { toast } = useToast();
+  const { t } = useI18n();
 
   /** `fresh` skips this browser's saved results; `from` searches a term and country given by a link. */
   const handleSearch = async (fresh = false, from?: { term: string; country: string }) => {
@@ -29,7 +31,7 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress, onSea
     const term = (from?.term ?? searchTerm).trim().replace(/\s+/g, " ").toLowerCase();
     const country = from?.country ?? selectedCountry;
     if (term.length < 2) {
-      toast({ title: "Search term required", description: "Enter an active ingredient or a brand name, for example ibuprofen or Nurofen.", variant: "destructive" });
+      toast({ title: t("search.needTerm.title"), description: t("search.needTerm.text"), variant: "destructive" });
       return;
     }
     const id = ++searchId.current;
@@ -53,8 +55,8 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress, onSea
       outcome = await searchMedicines(term, selection, onProgress);
     } catch (error) {
       toast({
-        title: "Search failed",
-        description: error instanceof Error ? error.message : "Unknown error. Please try again.",
+        title: t("search.failed.title"),
+        description: error instanceof Error ? error.message : t("search.failed.unknown"),
         variant: "destructive",
       });
       return;
@@ -65,7 +67,7 @@ export const useSearchMedicine = ({ onResult, onLoadingChange, onProgress, onSea
     if (id !== searchId.current) return;
     onResult(outcome);
     if (outcome.results.length === 0 && !outcome.aiPending) {
-      toast({ title: "No results found", description: `Nothing found for "${term}". Check the spelling or use the active ingredient.` });
+      toast({ title: t("search.none.title"), description: t("search.none.toast", { term }) });
     }
     if (outcome.aiPending) {
       const withAi = await addAiSuggestions(outcome);
