@@ -54,3 +54,27 @@ describe("interface languages", () => {
     expect(matchLanguage(["ko"])).toBe("en");
   });
 });
+
+describe("counts in languages whose words change with the number", () => {
+  const t = (code: string) => makeT(code, dicts[code]);
+  it("agrees the country word with the count", () => {
+    expect(t("ro")("ready.coverage", { n: 39 })).toBe(" (UE și 39 de țări)");
+    expect(t("ro")("ready.coverage", { n: 5 })).toBe(" (UE și 5 țări)");
+    expect(t("ro")("search.coverage", { n: 39, eu: "" })).toContain("39 de țări");
+    expect(t("lt")("ready.coverage", { n: 39 })).toBe(" (ES ir 39 šalys)");
+    expect(t("lt")("ready.coverage", { n: 20 })).toBe(" (ES ir 20 šalių)");
+    expect(t("pl")("ready.coverage", { n: 42 })).toBe(" (UE i 42 kraje)");
+    expect(t("pl")("ready.coverage", { n: 39 })).toBe(" (UE i 39 krajów)");
+    expect(t("uk")("ready.coverage", { n: 41 })).toBe(" (ЄС і 41 країна)");
+    expect(t("cs")("card.listedBy", { n: 3 })).toBe("Uvádějí 3 zdroje:");
+    expect(t("cs")("card.listedBy", { n: 5 })).toBe("Uvádí 5 zdrojů:");
+  });
+
+  it("gives every language's extra plural forms for every category it needs", () => {
+    for (const [code, d] of Object.entries(dicts)) {
+      const cats = new Intl.PluralRules(code).resolvedOptions().pluralCategories;
+      const bases = new Set(Object.keys(d).filter((k) => PLURAL.test(k)).map((k) => k.replace(PLURAL, "")));
+      for (const base of bases) for (const c of cats) expect(d[`${base}_${c}`], `${code}: ${base}_${c}`).toBeTypeOf("string");
+    }
+  });
+});

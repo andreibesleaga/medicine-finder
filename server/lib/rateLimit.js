@@ -49,12 +49,14 @@ export class RateLimiter {
 /**
  * Client address behind Railway's proxy. Railway documents X-Real-IP as the client's address
  * (https://docs.railway.com/networking/public-networking/specs-and-limits); X-Forwarded-For is
- * only a fallback, because a client can send its own. A global limit (app.js) caps what forged
- * addresses could still do.
+ * only a fallback, because a client can send its own, and can be switched off for a server that
+ * no proxy fronts (TRUST_FORWARDED_FOR=false). A global limit (app.js) caps what forged addresses
+ * could still do.
  */
-export function clientKey(req) {
+export function clientKey(req, { trustForwardedFor = true } = {}) {
   const real = req.headers["x-real-ip"];
   if (typeof real === "string" && real.trim()) return real.trim();
+  if (!trustForwardedFor) return req.socket?.remoteAddress || "unknown";
   const xff = req.headers["x-forwarded-for"];
   const first = typeof xff === "string" ? xff.split(",")[0].trim() : "";
   return first || req.socket?.remoteAddress || "unknown";
