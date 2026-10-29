@@ -62,9 +62,14 @@ All notable changes to this project are documented here, following
 - The brand line names the ingredient by its international name ("Paracetamol"); Article 57 names
   lose trailing commas; source counts take the largest per name instead of adding them up.
 
-### Moved to 2.6.0
+### Not yet done (planned for 2.6.0)
 - New countries (Brazil, Norway, Latvia, United Kingdom via NHS dm+d, Australia PBS, Japan) and the
   uptime monitor.
+
+## [2.4.1] - 2026-10-26
+
+### Changed
+- Docs: README diagram fix (a parenthesis closed the database node).
 
 ## [2.4.0] - 2026-10-26
 
