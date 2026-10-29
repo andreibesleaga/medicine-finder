@@ -45,9 +45,11 @@ Set them in the Railway dashboard (service → Variables) or with the CLI. None 
 
 `PORT` is provided by Railway.
 
-The per-visitor limits count by the first address in `X-Forwarded-For`, which Railway's proxy sets.
-Run the image behind a proxy that sets that header too; without one, a visitor can send any value
-and get round the per-visitor limits (the daily AI cap still holds).
+The per-visitor limits count by `X-Real-IP`, which Railway's proxy sets, and fall back to the first
+`X-Forwarded-For` entry and then the socket address (`server/lib/rateLimit.js`). A client can send
+`X-Forwarded-For` itself, so on a host with no proxy that sets `X-Real-IP`, set
+`TRUST_FORWARDED_FOR=false`; the limits for all visitors together and the daily AI cap still hold
+against forged addresses.
 
 **Volume:** a Railway volume is mounted at `/app/data`, so the national datasets survive deploys
 and searches are complete right after a deploy. Without it they are downloaded again after each
@@ -94,6 +96,23 @@ curl -s https://medicine-finder.up.railway.app/api/health
 curl -s https://medicine-finder.up.railway.app/api/sources | jq '.sources[] | {id, state, detail}'
 curl -s 'https://medicine-finder.up.railway.app/api/search?q=ibuprofen' | jq '.sources'
 ```
+
+### Roll back, recover, rotate keys
+
+- **Bad deploy:** `railway redeploy -s medicine-finder --commit <SHA of the last good commit> -y`
+  deploys that commit once, without pinning it; the next push to `main` deploys as usual.
+  `railway redeploy -s medicine-finder -y` redeploys the latest deployment as it is, and
+  `--from-source` pulls the latest commit again (`railway redeploy --help`).
+- **Damaged or lost database:** nothing needs a backup. The database only copies public registers
+  (and the search answers it caches); every dataset downloads again within about 3 minutes of a
+  start. With the service stopped, delete `medicines.sqlite`, `medicines.sqlite-wal` and
+  `medicines.sqlite-shm` from `DATA_DIR`, keep the `imports/` folder, and start it again. On
+  Railway the delete command is `railway volume files --volume medicine-finder-data delete <path>`.
+  Finland comes back from the file in `imports/`; if that is gone, import it again (above).
+- **Rotate an AI or openFDA key:** create the new key at the provider, set it with
+  `railway variables --set "<NAME>=<new key>"`, restart the service (a running server keeps the
+  variables it started with), then revoke the old key at the provider. `railway logs` shows which
+  AI providers are active.
 
 ## Vercel (off by default)
 
