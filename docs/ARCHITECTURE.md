@@ -18,9 +18,10 @@ flowchart LR
   U -->|direct| T[ClinicalTrials.gov count]
   U -.->|GET /api/ai, after| AI2[AI suggestions]
   U --- C[(Last 50 searches<br/>IndexedDB, 24 h)]
-  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Sweden, Finland,<br/>Lithuania, Ukraine, Malta, Canada, US,<br/>Colombia, Taiwan, Singapore,<br/>New Zealand, curated lists)]
+  S -->|downloaded files| D[(SQLite: EMA, France, Italy,<br/>Poland, Netherlands, Ireland,<br/>Switzerland, Czech Republic,<br/>Denmark, Sweden, Finland,<br/>Lithuania, Ukraine, Malta, Canada, US,<br/>Colombia, Taiwan, Singapore,<br/>New Zealand, EMA Article 57<br/>for 19 more countries,<br/>curated lists)]
   S -->|live| ES[Spain CIMA API]
   S -.->|live, if HEALTH_CANADA=live or both| HC[Health Canada DPD API]
+  S -.->|live, if OPENFDA_API_KEY is set| OF[openFDA labels]
   S -->|key on server| AI[OpenAI / Perplexity /<br/>DeepSeek / OpenRouter]
 ```
 
@@ -152,17 +153,23 @@ server/            search server (plain JavaScript, ES modules)
   index.js         entry point, configuration from environment variables
   app.js           HTTP routes, static files, headers, compression
   search.js        runs a set of sources, caching, AI daily cap
-  db/store.js      SQLite store: products, ingredient words, dataset status
+  warmup.js        the daily search of the most searched terms
+  db/store.js      SQLite store: products, ingredient words, brands, dataset status, cached
+                   answers, counted search terms
   datasets/        one loader per national dataset + the background runner (index.js)
-  data/            curated.json (static samples), synonyms.json (other names of an ingredient)
-  sources/         live sources: cima.js, healthCanada.js (+ the HEALTH_CANADA switch), ai.js
+  data/            curated.json (static samples), synonyms.json and unii-synonyms.json (other
+                   names of an ingredient)
+  sources/         live sources: cima.js, healthCanada.js (+ the HEALTH_CANADA switch), openfda.js
+                   (needs OPENFDA_API_KEY), ai.js
   lib/             text matching, other names (synonyms.js), CSV and XLSX readers, HTTP helpers,
                    cache, rate limiter
   test/            server tests (Vitest): parsers (datasets.test.js), downloads (loaders.test.js), ...
 src/
   lib/search/      browser sources, server client, merging and ranking, country scope, browser cache
+  lib/export/      CSV, XLSX, JSON and FHIR R4 downloads
+  i18n/            interface languages (locales/*.json)
   pages/           Index (search), Sources (data sources and their status), NotFound
-  components/      search box, progress, results, cards
+  components/      search box, progress, results, cards, download bar, language switch
 tests/             browser-side tests (Vitest)
 ```
 

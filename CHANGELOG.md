@@ -5,6 +5,10 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+- Docs: rate-limit address and `Cache-Control` statements corrected (`docs/DEPLOY.md`,
+  `docs/API.md`); Node 22.13 minimum, CI jobs, release steps, rollback, recovery and key rotation
+  added; architecture diagram and file map brought up to date.
+
 ## [2.5.1] - 2026-10-27
 
 ### Changed

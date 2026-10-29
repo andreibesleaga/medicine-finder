@@ -1,7 +1,7 @@
 # Search server API
 
-All endpoints are `GET`, return JSON and send `Cache-Control: no-store`. Cross-origin calls are
-allowed only from the origins in `ALLOWED_ORIGINS`.
+All endpoints are `GET` and return JSON. Which answers a browser may keep is under "Caching, limits
+and headers" below. Cross-origin calls are allowed only from the origins in `ALLOWED_ORIGINS`.
 
 ## `GET /api/health`
 
@@ -23,6 +23,8 @@ Used by the Railway health check.
   answers `405` (`Allow: GET`).
 - `Cross-Origin-Resource-Policy: cross-origin` (other sites may read the answers when `ALLOWED_ORIGINS`
   lets them).
+- A `200` answer from `/api/search` or `/api/ai` also carries `X-RateLimit-Remaining`, the requests
+  the visitor has left in the current window.
 
 ## `GET /api/sources`
 
@@ -126,11 +128,12 @@ Response:
   products first, written as an English-language register spells it; salt words after the first
   word ("Sodium Phosphate", "Hydrochloride") are left out of `searchFor` so every salt is found.
 
-CSV and JSON downloads are made in the browser from the merged results (see the README), not by
-the server.
+The CSV, XLSX, JSON and FHIR R4 downloads are made in the browser from the merged results (see
+the README), not by the server.
 
 Errors: `400` invalid `q` or `country`; `429` too many searches (see `Retry-After`); `404` unknown
-`/api` path; `405` any method other than `GET`, `HEAD` or `OPTIONS`.
+`/api` path; `405` any method other than `GET`, `HEAD` or `OPTIONS`; `500` an unexpected server error
+(`{"error": "Internal error"}`).
 
 ## Other paths
 

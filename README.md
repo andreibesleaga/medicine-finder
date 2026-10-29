@@ -122,7 +122,7 @@ calls a day, cached) instead of each browser; without it nothing changes.
 ## Run & test
 
 ```bash
-npm ci               # install
+npm ci               # install (Node 22.13 or later: package.json "engines")
 npm run dev          # app only, http://localhost:8080
 npm run build        # production build
 npm start            # app + /api from dist/ on http://localhost:8080
