@@ -1,4 +1,4 @@
-# Welcome to Medicine Brand Finder
+# Medicine Brand Finder
 
 > [!WARNING]
 > **Proof-of-concept / demo — not medical advice.** Results are aggregated from
@@ -17,7 +17,7 @@ keys are configured, AI. Every result says where it came from.
 
 ## Project info
 
-Medicine Finder uses several online free medicine APIs (in RxNorm international format or others) and other 3rd party AI engines calls and Databases, to search for an active drug medicine substance component and return all known brands, medicines, containing the specified substance, useful for finding medicines in different other countries by doctor's prescription, moving patient data from one system into another and other international usages.
+Medicine Finder uses several online free medicine APIs (in RxNorm international format or others) and other 3rd party AI engines calls and Databases, to search for an active drug medicine substance component and return all known brands, medicines, containing the specified substance, useful for finding the equivalent of a medicine in another country.
 
 Since version 2.0 the project has a small backend: a Node server that serves the app and an `/api`
 for the official databases and AI engines a browser cannot call directly. It is still a
