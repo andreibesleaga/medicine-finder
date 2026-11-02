@@ -1,30 +1,30 @@
 {
-  "updated": "2026-10-24T00:00:00Z",
+  "updated": "2026-11-02T00:00:00Z",
   "capabilities": "basic",
-  "provider": "Andrei Nicolae Besleaga (https://andreibesleaga.com/contact/)",
+  "provider": "Andrei Nicolae Besleaga (https://andreibesleaga.com)",
   "measurement-method": "third-party-modeled",
   "methodology-uri": "https://andreibesleaga.com/sustainability-methodology.html",
   "period": {
-    "start": "2026-09-01T00:00:00Z",
-    "end": "2026-10-01T00:00:00Z"
+    "start": "2026-10-01T00:00:00Z",
+    "end": "2026-11-01T00:00:00Z"
   },
   "target": "medicine-finder.up.railway.app",
   "target-type": "origin",
-  "energy-consumption": 0.09,
+  "energy-consumption": 0.049,
   "energy-unit": "kWh",
-  "carbon-footprint": 44.5,
+  "carbon-footprint": 24,
   "carbon-unit": "gCO2e",
   "carbon-accounting": "location-based",
   "carbon-intensity-gCO2e-per-kWh": 494,
   "scope-1": 0,
   "scope-2": 0,
-  "scope-3": 44.5,
-  "estimated-annual-emissions-kgCO2e": 0.534,
+  "scope-3": 24,
+  "estimated-annual-emissions-kgCO2e": 0.288,
   "disclosure-uri": "https://andreibesleaga.com/disclosures.html",
   "extensions": {
     "https://andreibesleaga.com/sustainability/extensions/transferred-bytes": {
-      "data-transferred-gb": 0.3
+      "data-transferred-gb": 0.1619
     }
   },
-  "signed": "eyJhbGciOiJFZDI1NTE5IiwiY3R5Ijoic3VzdGFpbmFiaWxpdHktZGF0YStqc29uIiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoibkRCVlBqemxaZmJFUlBvcXRtR2NiY05nUV9ubDluXzZxQ056eVZWOGhWVSJ9fQ.eyJ1cGRhdGVkIjoiMjAyNi0xMC0yNFQwMDowMDowMFoiLCJjYXBhYmlsaXRpZXMiOiJiYXNpYyIsInByb3ZpZGVyIjoiQW5kcmVpIE5pY29sYWUgQmVzbGVhZ2EgKGh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tL2NvbnRhY3QvKSIsIm1lYXN1cmVtZW50LW1ldGhvZCI6InRoaXJkLXBhcnR5LW1vZGVsZWQiLCJtZXRob2RvbG9neS11cmkiOiJodHRwczovL2FuZHJlaWJlc2xlYWdhLmNvbS9zdXN0YWluYWJpbGl0eS1tZXRob2RvbG9neS5odG1sIiwicGVyaW9kIjp7InN0YXJ0IjoiMjAyNi0wOS0wMVQwMDowMDowMFoiLCJlbmQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiJ9LCJ0YXJnZXQiOiJtZWRpY2luZS1maW5kZXIudXAucmFpbHdheS5hcHAiLCJ0YXJnZXQtdHlwZSI6Im9yaWdpbiIsImVuZXJneS1jb25zdW1wdGlvbiI6MC4wOSwiZW5lcmd5LXVuaXQiOiJrV2giLCJjYXJib24tZm9vdHByaW50Ijo0NC41LCJjYXJib24tdW5pdCI6ImdDTzJlIiwiY2FyYm9uLWFjY291bnRpbmciOiJsb2NhdGlvbi1iYXNlZCIsImNhcmJvbi1pbnRlbnNpdHktZ0NPMmUtcGVyLWtXaCI6NDk0LCJzY29wZS0xIjowLCJzY29wZS0yIjowLCJzY29wZS0zIjo0NC41LCJlc3RpbWF0ZWQtYW5udWFsLWVtaXNzaW9ucy1rZ0NPMmUiOjAuNTM0LCJkaXNjbG9zdXJlLXVyaSI6Imh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tL2Rpc2Nsb3N1cmVzLmh0bWwiLCJleHRlbnNpb25zIjp7Imh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tL3N1c3RhaW5hYmlsaXR5L2V4dGVuc2lvbnMvdHJhbnNmZXJyZWQtYnl0ZXMiOnsiZGF0YS10cmFuc2ZlcnJlZC1nYiI6MC4zfX19.gfZIps2GpFdH5lgZS60DrQWRMpQlrDMRZaq9OhaT1OG6AusdAblgJ7TLCE2OeX3pd4CxeycqxSyJ_ZbTxZ-vDw"
+  "signed": "eyJhbGciOiJFZDI1NTE5IiwiY3R5Ijoic3VzdGFpbmFiaWxpdHktZGF0YStqc29uIiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoibkRCVlBqemxaZmJFUlBvcXRtR2NiY05nUV9ubDluXzZxQ056eVZWOGhWVSJ9fQ.eyJ1cGRhdGVkIjoiMjAyNi0xMS0wMlQwMDowMDowMFoiLCJjYXBhYmlsaXRpZXMiOiJiYXNpYyIsInByb3ZpZGVyIjoiQW5kcmVpIE5pY29sYWUgQmVzbGVhZ2EgKGh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tKSIsIm1lYXN1cmVtZW50LW1ldGhvZCI6InRoaXJkLXBhcnR5LW1vZGVsZWQiLCJtZXRob2RvbG9neS11cmkiOiJodHRwczovL2FuZHJlaWJlc2xlYWdhLmNvbS9zdXN0YWluYWJpbGl0eS1tZXRob2RvbG9neS5odG1sIiwicGVyaW9kIjp7InN0YXJ0IjoiMjAyNi0xMC0wMVQwMDowMDowMFoiLCJlbmQiOiIyMDI2LTExLTAxVDAwOjAwOjAwWiJ9LCJ0YXJnZXQiOiJtZWRpY2luZS1maW5kZXIudXAucmFpbHdheS5hcHAiLCJ0YXJnZXQtdHlwZSI6Im9yaWdpbiIsImVuZXJneS1jb25zdW1wdGlvbiI6MC4wNDksImVuZXJneS11bml0Ijoia1doIiwiY2FyYm9uLWZvb3RwcmludCI6MjQsImNhcmJvbi11bml0IjoiZ0NPMmUiLCJjYXJib24tYWNjb3VudGluZyI6ImxvY2F0aW9uLWJhc2VkIiwiY2FyYm9uLWludGVuc2l0eS1nQ08yZS1wZXIta1doIjo0OTQsInNjb3BlLTEiOjAsInNjb3BlLTIiOjAsInNjb3BlLTMiOjI0LCJlc3RpbWF0ZWQtYW5udWFsLWVtaXNzaW9ucy1rZ0NPMmUiOjAuMjg4LCJkaXNjbG9zdXJlLXVyaSI6Imh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tL2Rpc2Nsb3N1cmVzLmh0bWwiLCJleHRlbnNpb25zIjp7Imh0dHBzOi8vYW5kcmVpYmVzbGVhZ2EuY29tL3N1c3RhaW5hYmlsaXR5L2V4dGVuc2lvbnMvdHJhbnNmZXJyZWQtYnl0ZXMiOnsiZGF0YS10cmFuc2ZlcnJlZC1nYiI6MC4xNjE5fX19.xno5bwjWEPY1sQyFhDlHF3LQFfS8BqjPpUsfES-64SHoBMe3ceRT9taORjlm1lJjwm1vv7pSIX4KWQrE2ZT3AQ"
 }
