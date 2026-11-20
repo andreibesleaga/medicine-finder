@@ -62,7 +62,7 @@ jobs:
         with:
           persist-credentials: false
       - name: OSV-Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.7.0
+        uses: google/osv-scanner-action/osv-scanner-action@v2.7.1
         with:
           scan-args: --lockfile=package-lock.json
       - name: Trivy filesystem scan
